@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - {{ user.get_full_name|default:user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- En-tête de bienvenue -->
+    <div class="col-12 mb-4">
+        <div class="card border-start-primary">
+            <div class="card-body">
+                <h1 class="card-title mb-1">
+                    <i class="bi bi-house-door text-primary"></i>
+                    Bonjour, {{ user.get_full_name|default:user.username }} !
+                </h1>
+                <p class="card-text text-muted mb-0">
+                    Bienvenue sur votre tableau de bord personnel
+                    {% if user.employee_profile.department %}
+                        - {{ user.employee_profile.department.name }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pointage du jour -->
+    {% if user.employee_profile.can_punch %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-geo-alt"></i>
+                    Pointage du jour - {{ today|date:"d/m/Y" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if today_attendance %}
+                    <div class="row">
+                        {% for attendance in today_attendance %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    {% if attendance.punch_type == 'in' %}
+                                        <i class="bi bi-box-arrow-in-right text-success fs-4"></i>
+                                    {% else %}
+                                        <i class="bi bi-box-arrow-right text-danger fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">{{ attendance.get_punch_type_display }}</h6>
+                                    <p class="text-muted mb-0">{{ attendance.time|time:"H:i" }}</p>
+                                    {% if attendance.status != 'normal' %}
+                                        <small class="badge bg-warning">{{ attendance.get_status_display }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Aucun pointage enregistré aujourd'hui</p>
+                        <a href="{% url 'attendance:punch' %}" class="btn btn-primary">
+                            <i class="bi bi-geo-alt"></i> Pointer maintenant
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistiques du mois -->
+    <div class="col-lg-8 mb-4">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card dashboard-card">
+                    <div class="card-body text-center">
+                        <div class="dashboard-stat">{{ total_work_days }}</div>
+                        <div class="dashboard-label">Jours travaillés ce mois</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card dashboard-card">
+                    <div class="card-body text-center">
+                        <div class="dashboard-stat">{{ total_hours }}h</div>
+                        <div class="dashboard-label">Heures totales</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Alertes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_anomalies > 0 %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>{{ pending_anomalies }}</strong> anomalie(s) en attente
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-check-circle text-success fs-4"></i>
+                        <p class="mt-2 mb-0">Aucune alerte</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Soldes de congés -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check"></i>
+                    Mes soldes de congés
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if leave_balances %}
+                    <div class="row">
+                        {% for balance in leave_balances %}
+                        <div class="col-12 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge" style="background-color: {{ balance.leave_type.color }};">
+                                        {{ balance.leave_type.name }}
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <strong>{{ balance.remaining_balance }}</strong>
+                                    <small class="text-muted">/ {{ balance.total_balance }}</small>
+                                </div>
+                            </div>
+                            <div class="progress mt-1" style="height: 6px;">
+                                {% widthratio balance.remaining_balance balance.total_balance 100 as percentage %}
+                                <div class="progress-bar" style="background-color: {{ balance.leave_type.color }}; width: {{ percentage }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'leave:leave_request_create' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus"></i> Nouvelle demande
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-calendar-x text-muted fs-4"></i>
+                        <p class="mt-2 mb-0">Aucun solde de congé</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Dernières demandes de congés -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Mes dernières demandes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_leave_requests %}
+                    <div class="list-group list-group-flush">
+                        {% for request in recent_leave_requests %}
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="badge" style="background-color: {{ request.leave_type.color }};">
+                                            {{ request.leave_type.name }}
+                                        </span>
+                                    </h6>
+                                    <p class="text-muted mb-1">
+                                        {{ request.start_date|date:"d/m" }} - {{ request.end_date|date:"d/m/Y" }}
+                                        ({{ request.duration_days }} jour{{ request.duration_days|pluralize }})
+                                    </p>
+                                    <small class="text-muted">{{ request.created_at|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <div>
+                                    {% if request.status == 'approved_rh' %}
+                                        <span class="badge bg-success">{{ request.get_status_display }}</span>
+                                    {% elif request.status == 'rejected_rh' or request.status == 'rejected_manager' %}
+                                        <span class="badge bg-danger">{{ request.get_status_display }}</span>
+                                    {% elif request.status == 'approved_manager' %}
+                                        <span class="badge bg-info">{{ request.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ request.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'leave:leave_request_list' %}" class="btn btn-outline-secondary">
+                            Voir toutes les demandes
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-calendar-x text-muted fs-4"></i>
+                        <p class="mt-2 mb-0">Aucune demande de congé</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des présences récentes -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock"></i>
+                    Historique des présences
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_attendance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Heure</th>
+                                    <th>Statut</th>
+                                    <th>Distance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in recent_attendance %}
+                                <tr>
+                                    <td>{{ attendance.date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if attendance.punch_type == 'in' %}
+                                            <i class="bi bi-box-arrow-in-right text-success"></i> Entrée
+                                        {% else %}
+                                            <i class="bi bi-box-arrow-right text-danger"></i> Sortie
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ attendance.time|time:"H:i" }}</td>
+                                    <td>
+                                        {% if attendance.status == 'normal' %}
+                                            <span class="badge bg-success">Normal</span>
+                                        {% elif attendance.status == 'late' %}
+                                            <span class="badge bg-warning">Retard</span>
+                                        {% elif attendance.status == 'early' %}
+                                            <span class="badge bg-warning">Sortie anticipée</span>
+                                        {% elif attendance.status == 'outside_zone' %}
+                                            <span class="badge bg-danger">Hors zone</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ attendance.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.distance_from_site %}
+                                            {% if attendance.distance_from_site <= 200 %}
+                                                <span class="text-success">{{ attendance.distance_from_site|floatformat:0 }}m</span>
+                                            {% else %}
+                                                <span class="text-danger">{{ attendance.distance_from_site|floatformat:0 }}m</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'attendance:my_attendance' %}" class="btn btn-outline-secondary">
+                            Voir tout l'historique
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-clock-history text-muted fs-4"></i>
+                        <p class="mt-2 mb-0">Aucun historique de présence</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Actualisation automatique de la page toutes les 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}
+

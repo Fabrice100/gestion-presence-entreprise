@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nouvelle demande de congé{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-start-primary">
+            <div class="card-body">
+                <h1 class="card-title mb-1">
+                    <i class="bi bi-calendar-plus text-primary"></i>
+                    Nouvelle demande de congé
+                </h1>
+                <p class="card-text text-muted mb-4">
+                    Remplissez le formulaire ci-dessous pour faire une demande de congé
+                </p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Information :</strong> Votre demande sera soumise à validation selon la procédure en vigueur.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="leave_type" class="form-label">Type de congé</label>
+                            <select class="form-select" id="leave_type" name="leave_type" required>
+                                <option value="">Sélectionnez un type</option>
+                                <option value="annual">Congés annuels</option>
+                                <option value="sick">Congé maladie</option>
+                                <option value="personal">Congé personnel</option>
+                                <option value="maternity">Congé maternité</option>
+                                <option value="paternity">Congé paternité</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="duration" class="form-label">Durée (en jours)</label>
+                            <input type="number" class="form-control" id="duration" name="duration" 
+                                   min="1" max="30" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Date de début</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">Date de fin</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Motif</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="4" 
+                                  placeholder="Décrivez le motif de votre demande de congé..." required></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'leave:leave_request_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Soumettre la demande
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    const duration = document.getElementById('duration');
+    
+    // Calculer la durée automatiquement
+    function calculateDuration() {
+        if (startDate.value && endDate.value) {
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            duration.value = diffDays;
+        }
+    }
+    
+    startDate.addEventListener('change', calculateDuration);
+    endDate.addEventListener('change', calculateDuration);
+    
+    // Définir la date minimum (aujourd'hui)
+    const today = new Date().toISOString().split('T')[0];
+    startDate.min = today;
+    endDate.min = today;
+});
+</script>
+{% endblock %}
+

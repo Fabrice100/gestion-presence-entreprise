@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapports{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card border-start-primary">
+            <div class="card-body">
+                <h1 class="card-title mb-1">
+                    <i class="bi bi-graph-up text-primary"></i>
+                    Rapports
+                </h1>
+                <p class="card-text text-muted mb-0">
+                    Générez et consultez les différents rapports du système
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-clock-history text-white" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Rapports de présence</h5>
+                <p class="card-text text-muted">
+                    Consultez les rapports détaillés de présence des employés
+                </p>
+                <a href="{% url 'reports:attendance_report' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-right"></i> Voir les rapports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-calendar-check text-white" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Rapports de congés</h5>
+                <p class="card-text text-muted">
+                    Analysez les demandes et utilisations de congés
+                </p>
+                <a href="{% url 'reports:leave_report' %}" class="btn btn-success">
+                    <i class="bi bi-arrow-right"></i> Voir les rapports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="bg-info rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-bar-chart text-white" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Rapports récapitulatifs</h5>
+                <p class="card-text text-muted">
+                    Vue d'ensemble des statistiques du système
+                </p>
+                <a href="{% url 'reports:summary_report' %}" class="btn btn-info">
+                    <i class="bi bi-arrow-right"></i> Voir les rapports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

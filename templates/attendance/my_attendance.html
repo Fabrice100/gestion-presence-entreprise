@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes présences - {{ user.get_full_name|default:user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- En-tête -->
+    <div class="col-12 mb-4">
+        <div class="card border-start-primary">
+            <div class="card-body">
+                <h1 class="card-title mb-1">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    Mes présences
+                </h1>
+                <p class="card-text text-muted mb-0">
+                    Historique de vos pointages et présences
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label">Date de début</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" 
+                               value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label">Date de fin</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" 
+                               value="{{ request.GET.date_to }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Statut</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">Tous les statuts</option>
+                            <option value="normal" {% if request.GET.status == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="late" {% if request.GET.status == 'late' %}selected{% endif %}>En retard</option>
+                            <option value="early" {% if request.GET.status == 'early' %}selected{% endif %}>Sortie anticipée</option>
+                            <option value="outside_zone" {% if request.GET.status == 'outside_zone' %}selected{% endif %}>Hors zone</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Filtrer
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des présences -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul"></i>
+                    Historique des présences
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if attendances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Heure</th>
+                                    <th>Statut</th>
+                                    <th>Distance</th>
+                                    <th>Précision</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in attendances %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ attendance.date|date:"d/m/Y" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ attendance.date|date:"l" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if attendance.punch_type == 'in' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-box-arrow-in-right"></i> Entrée
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-box-arrow-right"></i> Sortie
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ attendance.time|time:"H:i" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ attendance.time|time:"s" }}s</small>
+                                    </td>
+                                    <td>
+                                        {% if attendance.status == 'normal' %}
+                                            <span class="badge bg-success">Normal</span>
+                                        {% elif attendance.status == 'late' %}
+                                            <span class="badge bg-warning">En retard</span>
+                                        {% elif attendance.status == 'early' %}
+                                            <span class="badge bg-warning">Sortie anticipée</span>
+                                        {% elif attendance.status == 'outside_zone' %}
+                                            <span class="badge bg-danger">Hors zone</span>
+                                        {% elif attendance.status == 'low_accuracy' %}
+                                            <span class="badge bg-warning">Précision faible</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ attendance.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.distance_from_site %}
+                                            {% if attendance.distance_from_site <= 200 %}
+                                                <span class="text-success">
+                                                    <i class="bi bi-check-circle"></i> {{ attendance.distance_from_site|floatformat:0 }}m
+                                                </span>
+                                            {% else %}
+                                                <span class="text-danger">
+                                                    <i class="bi bi-x-circle"></i> {{ attendance.distance_from_site|floatformat:0 }}m
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.accuracy %}
+                                            {% if attendance.accuracy <= 50 %}
+                                                <span class="text-success">{{ attendance.accuracy|floatformat:0 }}m</span>
+                                            {% elif attendance.accuracy <= 100 %}
+                                                <span class="text-warning">{{ attendance.accuracy|floatformat:0 }}m</span>
+                                            {% else %}
+                                                <span class="text-danger">{{ attendance.accuracy|floatformat:0 }}m</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.notes %}
+                                            <span class="text-truncate d-inline-block" style="max-width: 150px;" 
+                                                  title="{{ attendance.notes }}">
+                                                {{ attendance.notes }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <nav aria-label="Pagination des présences">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-clock-history fs-1"></i>
+                        <h4 class="mt-3">Aucune présence trouvée</h4>
+                        <p>Aucun pointage ne correspond aux critères sélectionnés.</p>
+                        <a href="{% url 'attendance:punch' %}" class="btn btn-primary">
+                            <i class="bi bi-geo-alt"></i> Faire un pointage
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

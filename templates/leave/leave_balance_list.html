@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes soldes de congés{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card border-start-primary">
+            <div class="card-body">
+                <h1 class="card-title mb-1">
+                    <i class="bi bi-calendar-check text-primary"></i>
+                    Mes soldes de congés
+                </h1>
+                <p class="card-text text-muted mb-0">
+                    Consultez vos soldes de congés par type
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if leave_balances %}
+        {% for balance in leave_balances %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ balance.leave_type.name }}</h5>
+                        <span class="badge bg-primary">{{ balance.year }}</span>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h3 class="text-success mb-0">{{ balance.available_days }}</h3>
+                                <small class="text-muted">Disponibles</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <h3 class="text-warning mb-0">{{ balance.used_days }}</h3>
+                                <small class="text-muted">Utilisés</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-info mb-0">{{ balance.total_days }}</h3>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ balance.available_percentage }}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ balance.used_percentage }}%"></div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            {{ balance.leave_type.description|default:"Aucune description disponible" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">Aucun solde de congé</h4>
+                    <p class="text-muted">Vos soldes de congés seront disponibles prochainement.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
