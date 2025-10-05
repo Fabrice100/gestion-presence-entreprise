@@ -1,303 +1,476 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de bord - {{ user.get_full_name|default:user.username }}{% endblock %}
+{% block title %}Tableau de Bord - Employé{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .quick-action-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .quick-action-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .quick-action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .action-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .action-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-description {
+        color: #718096;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .action-button {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid #667eea;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(102, 126, 234, 0.05), transparent);
+        border-radius: 50%;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .stat-icon {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        color: #667eea;
+        opacity: 0.3;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.75rem;
+        color: #667eea;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1rem;
+        color: white;
+    }
+    
+    .activity-icon.success {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+    }
+    
+    .activity-icon.warning {
+        background: linear-gradient(135deg, #ed8936, #dd6b20);
+    }
+    
+    .activity-icon.info {
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+    
+    .activity-time {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+    
+    .punch-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .punch-status.warning {
+        background: linear-gradient(135deg, #ed8936, #dd6b20);
+    }
+    
+    .punch-status.danger {
+        background: linear-gradient(135deg, #f56565, #e53e3e);
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+        
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .quick-actions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- En-tête de bienvenue -->
-    <div class="col-12 mb-4">
-        <div class="card border-start-primary">
-            <div class="card-body">
-                <h1 class="card-title mb-1">
-                    <i class="bi bi-house-door text-primary"></i>
-                    Bonjour, {{ user.get_full_name|default:user.username }} !
-                </h1>
-                <p class="card-text text-muted mb-0">
-                    Bienvenue sur votre tableau de bord personnel
-                    {% if user.employee_profile.department %}
-                        - {{ user.employee_profile.department.name }}
-                    {% endif %}
-                </p>
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="bi bi-house-door me-3"></i>
+            Bonjour, {{ user.get_full_name|default:user.username }} !
+        </h1>
+        <p class="dashboard-subtitle">
+            Voici un aperçu de votre activité aujourd'hui
+        </p>
+    </div>
+    
+    <!-- Actions rapides -->
+    <div class="quick-actions-grid">
+        <div class="quick-action-card">
+            <div class="action-icon">
+                <i class="bi bi-fingerprint"></i>
             </div>
+            <h3 class="action-title">Pointage Rapide</h3>
+            <p class="action-description">
+                Enregistrez votre heure d'arrivée ou de départ en un clic avec géolocalisation.
+            </p>
+            <a href="{% url 'attendance:punch' %}" class="action-button">
+                <i class="bi bi-clock me-2"></i>
+                Pointer maintenant
+            </a>
+        </div>
+        
+        <div class="quick-action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <h3 class="action-title">Mes Présences</h3>
+            <p class="action-description">
+                Consultez votre historique de pointage et vos statistiques de présence.
+            </p>
+            <a href="{% url 'attendance:my_attendance' %}" class="action-button" style="background: linear-gradient(135deg, #48bb78, #38a169);">
+                <i class="bi bi-list-ul me-2"></i>
+                Voir l'historique
+            </a>
+        </div>
+        
+        <div class="quick-action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <h3 class="action-title">Mes Demandes de Congés</h3>
+            <p class="action-description">
+                Gérez et suivez vos demandes de congés en temps réel.
+            </p>
+            <a href="{% url 'leave:leave_request_list' %}" class="action-button" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
+                <i class="bi bi-send me-2"></i>
+                Gérer les demandes
+            </a>
+        </div>
+        
+        <div class="quick-action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 class="action-title">Solde de Congés</h3>
+            <p class="action-description">
+                Consultez votre solde de jours de congés restants pour cette année.
+            </p>
+            <a href="{% url 'leave:leave_balance_list' %}" class="action-button" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
+                <i class="bi bi-eye me-2"></i>
+                Voir le solde
+            </a>
         </div>
     </div>
-
-    <!-- Pointage du jour -->
-    {% if user.employee_profile.can_punch %}
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-geo-alt"></i>
-                    Pointage du jour - {{ today|date:"d/m/Y" }}
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if today_attendance %}
-                    <div class="row">
-                        {% for attendance in today_attendance %}
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    {% if attendance.punch_type == 'in' %}
-                                        <i class="bi bi-box-arrow-in-right text-success fs-4"></i>
-                                    {% else %}
-                                        <i class="bi bi-box-arrow-right text-danger fs-4"></i>
-                                    {% endif %}
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">{{ attendance.get_punch_type_display }}</h6>
-                                    <p class="text-muted mb-0">{{ attendance.time|time:"H:i" }}</p>
-                                    {% if attendance.status != 'normal' %}
-                                        <small class="badge bg-warning">{{ attendance.get_status_display }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
-                        <p class="text-muted mt-2">Aucun pointage enregistré aujourd'hui</p>
-                        <a href="{% url 'attendance:punch' %}" class="btn btn-primary">
-                            <i class="bi bi-geo-alt"></i> Pointer maintenant
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
+    
+    <!-- Statistiques rapides -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">8h 30</div>
+            <div class="stat-label">Temps de travail</div>
+            <i class="bi bi-clock stat-icon"></i>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">22</div>
+            <div class="stat-label">Jours de congés restants</div>
+            <i class="bi bi-calendar-minus stat-icon"></i>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">95%</div>
+            <div class="stat-label">Taux de présence</div>
+            <i class="bi bi-check-circle stat-icon"></i>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Demandes en cours</div>
+            <i class="bi bi-hourglass-split stat-icon"></i>
         </div>
     </div>
-    {% endif %}
-
-    <!-- Statistiques du mois -->
-    <div class="col-lg-8 mb-4">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="card dashboard-card">
-                    <div class="card-body text-center">
-                        <div class="dashboard-stat">{{ total_work_days }}</div>
-                        <div class="dashboard-label">Jours travaillés ce mois</div>
-                    </div>
-                </div>
+    
+    <!-- Statut de pointage actuel -->
+    <div class="punch-status">
+        <i class="bi bi-check-circle me-2"></i>
+        <span>Vous avez pointé ce matin à 08:15</span>
+    </div>
+    
+    <!-- Activité récente -->
+    <div class="recent-activity">
+        <h2 class="section-title">
+            <i class="bi bi-activity"></i>
+            Activité récente
+        </h2>
+        
+        <div class="activity-item">
+            <div class="activity-icon success">
+                <i class="bi bi-fingerprint"></i>
             </div>
-            <div class="col-md-6 mb-3">
-                <div class="card dashboard-card">
-                    <div class="card-body text-center">
-                        <div class="dashboard-stat">{{ total_hours }}h</div>
-                        <div class="dashboard-label">Heures totales</div>
-                    </div>
-                </div>
+            <div class="activity-content">
+                <div class="activity-title">Pointage d'arrivée</div>
+                <div class="activity-time">Aujourd'hui à 08:15</div>
             </div>
         </div>
-    </div>
-
-    <!-- Alertes -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    Alertes
-                </h5>
+        
+        <div class="activity-item">
+            <div class="activity-icon info">
+                <i class="bi bi-briefcase"></i>
             </div>
-            <div class="card-body">
-                {% if pending_anomalies > 0 %}
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>{{ pending_anomalies }}</strong> anomalie(s) en attente
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted">
-                        <i class="bi bi-check-circle text-success fs-4"></i>
-                        <p class="mt-2 mb-0">Aucune alerte</p>
-                    </div>
-                {% endif %}
+            <div class="activity-content">
+                <div class="activity-title">Demande de congé approuvée</div>
+                <div class="activity-time">Hier à 14:30</div>
             </div>
         </div>
-    </div>
-
-    <!-- Soldes de congés -->
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
+        
+        <div class="activity-item">
+            <div class="activity-icon warning">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">Retard de 5 minutes</div>
+                <div class="activity-time">Lundi à 08:20</div>
+            </div>
+        </div>
+        
+        <div class="activity-item">
+            <div class="activity-icon success">
+                <div class="activity-icon success">
                     <i class="bi bi-calendar-check"></i>
-                    Mes soldes de congés
-                </h5>
+                </div>
             </div>
-            <div class="card-body">
-                {% if leave_balances %}
-                    <div class="row">
-                        {% for balance in leave_balances %}
-                        <div class="col-12 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge" style="background-color: {{ balance.leave_type.color }};">
-                                        {{ balance.leave_type.name }}
-                                    </span>
-                                </div>
-                                <div class="text-end">
-                                    <strong>{{ balance.remaining_balance }}</strong>
-                                    <small class="text-muted">/ {{ balance.total_balance }}</small>
-                                </div>
-                            </div>
-                            <div class="progress mt-1" style="height: 6px;">
-                                {% widthratio balance.remaining_balance balance.total_balance 100 as percentage %}
-                                <div class="progress-bar" style="background-color: {{ balance.leave_type.color }}; width: {{ percentage }}%"></div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'leave:leave_request_create' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-plus"></i> Nouvelle demande
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted">
-                        <i class="bi bi-calendar-x text-muted fs-4"></i>
-                        <p class="mt-2 mb-0">Aucun solde de congé</p>
-                    </div>
-                {% endif %}
+            <div class="activity-content">
+                <div class="activity-title">Présence complète</div>
+                <div class="activity-time">Vendredi dernier</div>
             </div>
         </div>
     </div>
-
-    <!-- Dernières demandes de congés -->
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-clock-history"></i>
-                    Mes dernières demandes
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if recent_leave_requests %}
-                    <div class="list-group list-group-flush">
-                        {% for request in recent_leave_requests %}
-                        <div class="list-group-item border-0 px-0">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">
-                                        <span class="badge" style="background-color: {{ request.leave_type.color }};">
-                                            {{ request.leave_type.name }}
-                                        </span>
-                                    </h6>
-                                    <p class="text-muted mb-1">
-                                        {{ request.start_date|date:"d/m" }} - {{ request.end_date|date:"d/m/Y" }}
-                                        ({{ request.duration_days }} jour{{ request.duration_days|pluralize }})
-                                    </p>
-                                    <small class="text-muted">{{ request.created_at|date:"d/m/Y H:i" }}</small>
-                                </div>
-                                <div>
-                                    {% if request.status == 'approved_rh' %}
-                                        <span class="badge bg-success">{{ request.get_status_display }}</span>
-                                    {% elif request.status == 'rejected_rh' or request.status == 'rejected_manager' %}
-                                        <span class="badge bg-danger">{{ request.get_status_display }}</span>
-                                    {% elif request.status == 'approved_manager' %}
-                                        <span class="badge bg-info">{{ request.get_status_display }}</span>
-                                    {% else %}
-                                        <span class="badge bg-warning">{{ request.get_status_display }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'leave:leave_request_list' %}" class="btn btn-outline-secondary">
-                            Voir toutes les demandes
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted">
-                        <i class="bi bi-calendar-x text-muted fs-4"></i>
-                        <p class="mt-2 mb-0">Aucune demande de congé</p>
-                    </div>
-                {% endif %}
-            </div>
+    
+    <!-- Annonces -->
+    <div class="recent-activity">
+        <h2 class="section-title">
+            <i class="bi bi-megaphone"></i>
+            Annonces importantes
+        </h2>
+        
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Rappel :</strong> Les demandes de congés doivent être soumises au moins 48h à l'avance.
         </div>
-    </div>
-
-    <!-- Historique des présences récentes -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-clock"></i>
-                    Historique des présences
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if recent_attendance %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Heure</th>
-                                    <th>Statut</th>
-                                    <th>Distance</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for attendance in recent_attendance %}
-                                <tr>
-                                    <td>{{ attendance.date|date:"d/m/Y" }}</td>
-                                    <td>
-                                        {% if attendance.punch_type == 'in' %}
-                                            <i class="bi bi-box-arrow-in-right text-success"></i> Entrée
-                                        {% else %}
-                                            <i class="bi bi-box-arrow-right text-danger"></i> Sortie
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ attendance.time|time:"H:i" }}</td>
-                                    <td>
-                                        {% if attendance.status == 'normal' %}
-                                            <span class="badge bg-success">Normal</span>
-                                        {% elif attendance.status == 'late' %}
-                                            <span class="badge bg-warning">Retard</span>
-                                        {% elif attendance.status == 'early' %}
-                                            <span class="badge bg-warning">Sortie anticipée</span>
-                                        {% elif attendance.status == 'outside_zone' %}
-                                            <span class="badge bg-danger">Hors zone</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ attendance.get_status_display }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if attendance.distance_from_site %}
-                                            {% if attendance.distance_from_site <= 200 %}
-                                                <span class="text-success">{{ attendance.distance_from_site|floatformat:0 }}m</span>
-                                            {% else %}
-                                                <span class="text-danger">{{ attendance.distance_from_site|floatformat:0 }}m</span>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'attendance:my_attendance' %}" class="btn btn-outline-secondary">
-                            Voir tout l'historique
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-clock-history text-muted fs-4"></i>
-                        <p class="mt-2 mb-0">Aucun historique de présence</p>
-                    </div>
-                {% endif %}
-            </div>
+        
+        <div class="alert alert-success" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Bonne nouvelle :</strong> Le système de pointage a été mis à jour avec de nouvelles fonctionnalités.
         </div>
     </div>
 </div>
@@ -305,10 +478,30 @@
 
 {% block extra_js %}
 <script>
-// Actualisation automatique de la page toutes les 5 minutes
-setTimeout(function() {
-    location.reload();
-}, 300000);
+    // Animation d'entrée pour les cartes
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.quick-action-card, .stat-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+    
+    // Animation du statut de pointage
+    const punchStatus = document.querySelector('.punch-status');
+    if (punchStatus) {
+        punchStatus.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        punchStatus.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    }
 </script>
 {% endblock %}
-

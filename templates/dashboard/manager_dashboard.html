@@ -1,0 +1,629 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+        color: #2d3748;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+        animation: rotate 25s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.8;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .manager-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .stat-card.team {
+        border-left-color: #ff9a9e;
+    }
+    
+    .stat-card.present {
+        border-left-color: #48bb78;
+    }
+    
+    .stat-card.requests {
+        border-left-color: #ed8936;
+    }
+    
+    .stat-card.anomalies {
+        border-left-color: #f56565;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .stat-icon {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        font-size: 2rem;
+        opacity: 0.3;
+    }
+    
+    .team-overview {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .team-members {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .team-member {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .team-member:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+        border-left-color: #ff9a9e;
+    }
+    
+    .member-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        margin-right: 1rem;
+    }
+    
+    .member-info {
+        flex: 1;
+    }
+    
+    .member-name {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+    
+    .member-status {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+    
+    .member-status.present {
+        color: #48bb78;
+    }
+    
+    .member-status.absent {
+        color: #f56565;
+    }
+    
+    .member-status.late {
+        color: #ed8936;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .action-button {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        border: none;
+        border-radius: 12px;
+        color: #2d3748;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 154, 158, 0.3);
+        color: #2d3748;
+    }
+    
+    .action-button.secondary {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        color: white;
+    }
+    
+    .action-button.secondary:hover {
+        box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+        color: white;
+    }
+    
+    .pending-requests {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .request-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .request-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .request-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .request-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        margin-right: 1rem;
+    }
+    
+    .request-details {
+        flex: 1;
+    }
+    
+    .request-employee {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+    
+    .request-type {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+    
+    .request-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-approve {
+        background: #48bb78;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-approve:hover {
+        background: #38a169;
+        transform: translateY(-1px);
+    }
+    
+    .btn-reject {
+        background: #f56565;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-reject:hover {
+        background: #e53e3e;
+        transform: translateY(-1px);
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.75rem;
+        color: #ff9a9e;
+    }
+    
+    @media (max-width: 768px) {
+        .team-overview {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+        
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .manager-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .manager-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="bi bi-person-badge me-3"></i>
+            Dashboard Manager
+        </h1>
+        <p class="dashboard-subtitle">
+            Gestion de votre équipe et supervision des activités
+        </p>
+    </div>
+    
+    <!-- Statistiques de l'équipe -->
+    <div class="manager-stats">
+        <div class="stat-card team">
+            <div class="stat-number">{{ team_stats.total_employees|default:4 }}</div>
+            <div class="stat-label">Membres de l'équipe</div>
+            <i class="bi bi-people stat-icon" style="color: #ff9a9e;"></i>
+        </div>
+        
+        <div class="stat-card present">
+            <div class="stat-number">{{ team_stats.present_today|default:3 }}</div>
+            <div class="stat-label">Présents aujourd'hui</div>
+            <i class="bi bi-check-circle stat-icon" style="color: #48bb78;"></i>
+        </div>
+        
+        <div class="stat-card requests">
+            <div class="stat-number">{{ team_stats.pending_requests|default:2 }}</div>
+            <div class="stat-label">Demandes en attente</div>
+            <i class="bi bi-clock stat-icon" style="color: #ed8936;"></i>
+        </div>
+        
+        <div class="stat-card anomalies">
+            <div class="stat-number">{{ team_stats.pending_anomalies|default:0 }}</div>
+            <div class="stat-label">Anomalies à traiter</div>
+            <i class="bi bi-exclamation-triangle stat-icon" style="color: #f56565;"></i>
+        </div>
+    </div>
+    
+    <!-- Vue d'ensemble de l'équipe -->
+    <div class="team-overview">
+        <div class="team-members">
+            <h2 class="section-title">
+                <i class="bi bi-people"></i>
+                Membres de l'équipe
+            </h2>
+            
+            <div class="team-member">
+                <div class="member-avatar">JD</div>
+                <div class="member-info">
+                    <div class="member-name">Jean DOSSOU</div>
+                    <div class="member-status present">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Présent depuis 08:15
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-member">
+                <div class="member-avatar">MK</div>
+                <div class="member-info">
+                    <div class="member-name">Marie KOUMASSI</div>
+                    <div class="member-status present">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Présent depuis 08:05
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-member">
+                <div class="member-avatar">PA</div>
+                <div class="member-info">
+                    <div class="member-name">Pierre ADJOVI</div>
+                    <div class="member-status late">
+                        <i class="bi bi-clock me-1"></i>
+                        En retard (08:25)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-member">
+                <div class="member-avatar">FS</div>
+                <div class="member-info">
+                    <div class="member-name">Fatou SOW</div>
+                    <div class="member-status absent">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Absent aujourd'hui
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <h2 class="section-title">
+                <i class="bi bi-lightning"></i>
+                Actions rapides
+            </h2>
+            
+            <a href="{% url 'leave:leave_approval_list' %}" class="action-button">
+                <i class="bi bi-check-circle me-2"></i>
+                Valider les congés
+            </a>
+            
+            <a href="{% url 'attendance:punch' %}" class="action-button secondary">
+                <i class="bi bi-fingerprint me-2"></i>
+                Pointer maintenant
+            </a>
+            
+            <a href="{% url 'reports:attendance_report' %}" class="action-button">
+                <i class="bi bi-graph-up me-2"></i>
+                Rapport d'équipe
+            </a>
+            
+            <a href="#" class="action-button">
+                <i class="bi bi-calendar-event me-2"></i>
+                Planifier réunion
+            </a>
+        </div>
+    </div>
+    
+    <!-- Demandes en attente -->
+    <div class="pending-requests">
+        <h2 class="section-title">
+            <i class="bi bi-hourglass-split"></i>
+            Demandes en attente de validation
+        </h2>
+        
+        <div class="request-item">
+            <div class="request-info">
+                <div class="request-avatar">JD</div>
+                <div class="request-details">
+                    <div class="request-employee">Jean DOSSOU</div>
+                    <div class="request-type">Congés payés - 3 jours (15-17 Nov)</div>
+                </div>
+            </div>
+            <div class="request-actions">
+                <button class="btn-approve">
+                    <i class="bi bi-check me-1"></i>
+                    Approuver
+                </button>
+                <button class="btn-reject">
+                    <i class="bi bi-x me-1"></i>
+                    Refuser
+                </button>
+            </div>
+        </div>
+        
+        <div class="request-item">
+            <div class="request-info">
+                <div class="request-avatar">MK</div>
+                <div class="request-details">
+                    <div class="request-employee">Marie KOUMASSI</div>
+                    <div class="request-type">Congé maladie - 2 jours</div>
+                </div>
+            </div>
+            <div class="request-actions">
+                <button class="btn-approve">
+                    <i class="bi bi-check me-1"></i>
+                    Approuver
+                </button>
+                <button class="btn-reject">
+                    <i class="bi bi-x me-1"></i>
+                    Refuser
+                </button>
+            </div>
+        </div>
+        
+        <div class="request-item">
+            <div class="request-info">
+                <div class="request-avatar">FS</div>
+                <div class="request-details">
+                    <div class="request-employee">Fatou SOW</div>
+                    <div class="request-type">Télétravail - 1 jour</div>
+                </div>
+            </div>
+            <div class="request-actions">
+                <button class="btn-approve">
+                    <i class="bi bi-check me-1"></i>
+                    Approuver
+                </button>
+                <button class="btn-reject">
+                    <i class="bi bi-x me-1"></i>
+                    Refuser
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Anomalies détectées -->
+    <div class="pending-requests">
+        <h2 class="section-title">
+            <i class="bi bi-exclamation-triangle"></i>
+            Anomalies détectées
+        </h2>
+        
+        <div class="request-item">
+            <div class="request-info">
+                <div class="request-avatar">PA</div>
+                <div class="request-details">
+                    <div class="request-employee">Pierre ADJOVI</div>
+                    <div class="request-type">Retard répété - 3 fois cette semaine</div>
+                </div>
+            </div>
+            <div class="request-actions">
+                <button class="btn-approve">
+                    <i class="bi bi-check me-1"></i>
+                    Ignorer
+                </button>
+                <button class="btn-reject">
+                    <i class="bi bi-chat me-1"></i>
+                    Contacter
+                </button>
+            </div>
+        </div>
+        
+        <div class="request-item">
+            <div class="request-info">
+                <div class="request-avatar">FS</div>
+                <div class="request-details">
+                    <div class="request-employee">Fatou SOW</div>
+                    <div class="request-type">Pointage depuis un lieu inhabituel</div>
+                </div>
+            </div>
+            <div class="request-actions">
+                <button class="btn-approve">
+                    <i class="bi bi-check me-1"></i>
+                    Valider
+                </button>
+                <button class="btn-reject">
+                    <i class="bi bi-x me-1"></i>
+                    Rejeter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation d'entrée pour les cartes
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.stat-card, .team-member, .request-item');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+    
+    // Animation des boutons d'action
+    document.querySelectorAll('.btn-approve, .btn-reject').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-check me-1"></i>Traité';
+            this.style.background = '#48bb78';
+            
+            setTimeout(() => {
+                this.parentElement.parentElement.style.opacity = '0.5';
+                this.parentElement.parentElement.style.transform = 'translateX(-100px)';
+                
+                setTimeout(() => {
+                    this.parentElement.parentElement.remove();
+                }, 500);
+            }, 1000);
+        });
+    });
+</script>
+{% endblock %}

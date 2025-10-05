@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon profil{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="bi bi-person"></i>
+                    Mon profil
+                </h2>
+            </div>
+            <div class="card-body">
+                {% if profile %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Informations personnelles</h5>
+                            <p><strong>Nom d'utilisateur:</strong> {{ user.username }}</p>
+                            <p><strong>Nom complet:</strong> {{ user.get_full_name|default:"Non renseigné" }}</p>
+                            <p><strong>Email:</strong> {{ user.email|default:"Non renseigné" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Informations professionnelles</h5>
+                            <p><strong>Rôle:</strong> {{ profile.get_role_display }}</p>
+                            <p><strong>Département:</strong> {{ profile.department|default:"Non assigné" }}</p>
+                            <p><strong>Type d'employé:</strong> {{ profile.get_employee_type_display }}</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Aucun profil trouvé. Contactez l'administrateur.
+                    </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Retour au tableau de bord
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

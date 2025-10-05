@@ -15,6 +15,7 @@ Version: 1.0
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.db.models import Count, Q
@@ -138,32 +139,35 @@ class ManagerDashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         today = date.today()
         
-        # Employés gérés
-        managed_employees = user.managed_employees.filter(
-            employee_profile__is_active=True
+        # Employés gérés (profils)
+        managed_profiles = user.managed_employees.filter(
+            is_active=True
         )
+        
+        # Obtenir les utilisateurs des employés gérés
+        managed_users = [profile.user for profile in managed_profiles]
         
         # Présences de l'équipe aujourd'hui
         team_attendance_today = Attendance.objects.filter(
-            employee__in=managed_employees,
+            employee__in=managed_users,
             date=today
-        ).select_related('employee__employee_profile')
+        ).select_related('employee')
         
         # Demandes de congés en attente
         pending_leave_requests = LeaveRequest.objects.filter(
-            employee__in=managed_employees,
+            employee__in=managed_users,
             status='pending'
-        ).select_related('employee__employee_profile', 'leave_type')
+        ).select_related('employee', 'leave_type')
         
         # Anomalies de l'équipe
         team_anomalies = AttendanceAnomaly.objects.filter(
-            attendance__employee__in=managed_employees,
+            attendance__employee__in=managed_users,
             status='pending'
-        ).select_related('attendance__employee__employee_profile')
+        ).select_related('attendance__employee')
         
         # Statistiques de l'équipe
         team_stats = {
-            'total_employees': managed_employees.count(),
+            'total_employees': managed_profiles.count(),
             'present_today': team_attendance_today.filter(punch_type='in').count(),
             'pending_requests': pending_leave_requests.count(),
             'pending_anomalies': team_anomalies.count(),
@@ -172,7 +176,7 @@ class ManagerDashboardView(LoginRequiredMixin, TemplateView):
         # Graphique des présences de la semaine
         week_start = today - timedelta(days=today.weekday())
         week_attendance = Attendance.objects.filter(
-            employee__in=managed_employees,
+            employee__in=managed_users,
             date__gte=week_start,
             date__lte=today
         ).values('date').annotate(
@@ -180,7 +184,7 @@ class ManagerDashboardView(LoginRequiredMixin, TemplateView):
         ).order_by('date')
         
         context.update({
-            'managed_employees': managed_employees,
+            'managed_employees': managed_profiles,
             'team_attendance_today': team_attendance_today,
             'pending_leave_requests': pending_leave_requests,
             'team_anomalies': team_anomalies,

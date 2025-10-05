@@ -28,7 +28,7 @@ urlpatterns = [
         next_page='/accounts/login/'
     ), name='logout'),
     
-    # Gestion des mots de passe
+    # Gestion des mots de passe (templates créés)
     path('password-change/', auth_views.PasswordChangeView.as_view(
         template_name='accounts/password_change.html'
     ), name='password_change'),
@@ -54,17 +54,7 @@ urlpatterns = [
         template_name='accounts/password_reset_complete.html'
     ), name='password_reset_complete'),
     
-    # Profils utilisateurs
+    # Profil utilisateur
     path('profile/', views.ProfileView.as_view(), name='profile'),
-    path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
-    
-    # Gestion des utilisateurs (admin seulement)
-    path('users/', views.UserListView.as_view(), name='user_list'),
-    path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
-    path('users/<int:pk>/edit/', views.UserEditView.as_view(), name='user_edit'),
-    
-    # Départements
-    path('departments/', views.DepartmentListView.as_view(), name='department_list'),
-    path('departments/<int:pk>/', views.DepartmentDetailView.as_view(), name='department_detail'),
 ]
 

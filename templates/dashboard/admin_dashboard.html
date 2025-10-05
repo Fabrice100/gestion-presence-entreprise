@@ -1,0 +1,658 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Administrateur{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 35s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .admin-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .stat-card.users {
+        border-left-color: #ff6b6b;
+    }
+    
+    .stat-card.departments {
+        border-left-color: #667eea;
+    }
+    
+    .stat-card.attendance {
+        border-left-color: #48bb78;
+    }
+    
+    .stat-card.anomalies {
+        border-left-color: #f39c12;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .stat-icon {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        font-size: 2rem;
+        opacity: 0.3;
+    }
+    
+    .admin-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .system-overview {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .system-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .system-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+        border-left-color: #ff6b6b;
+    }
+    
+    .system-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .system-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-right: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .system-details h4 {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+    
+    .system-status {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+    
+    .system-metric {
+        text-align: right;
+    }
+    
+    .metric-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .admin-tools {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .tool-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .tool-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        color: white;
+    }
+    
+    .tool-button.secondary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .tool-button.secondary:hover {
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .tool-button.success {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+    }
+    
+    .tool-button.success:hover {
+        box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+    }
+    
+    .tool-button.warning {
+        background: linear-gradient(135deg, #ed8936, #dd6b20);
+    }
+    
+    .tool-button.warning:hover {
+        box-shadow: 0 8px 25px rgba(237, 137, 54, 0.3);
+    }
+    
+    .tool-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .tool-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .activity-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #ff6b6b, #ee5a24);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ff6b6b;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #ff6b6b;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 12px;
+        border-left: 4px solid #ff6b6b;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-description {
+        color: #718096;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-time {
+        color: #a0aec0;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.75rem;
+        color: #ff6b6b;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-online {
+        background: #c6f6d5;
+        color: #22543d;
+    }
+    
+    .status-warning {
+        background: #feebc8;
+        color: #c05621;
+    }
+    
+    .status-error {
+        background: #fed7d7;
+        color: #c53030;
+    }
+    
+    @media (max-width: 768px) {
+        .admin-controls {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+        
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .admin-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .tool-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .admin-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="bi bi-gear-fill me-3"></i>
+            Dashboard Administrateur
+        </h1>
+        <p class="dashboard-subtitle">
+            Administration complète du système de gestion de présence
+        </p>
+    </div>
+    
+    <!-- Statistiques système -->
+    <div class="admin-stats">
+        <div class="stat-card users">
+            <div class="stat-number">{{ total_users|default:7 }}</div>
+            <div class="stat-label">Utilisateurs actifs</div>
+            <i class="bi bi-people stat-icon" style="color: #ff6b6b;"></i>
+        </div>
+        
+        <div class="stat-card departments">
+            <div class="stat-number">{{ total_departments|default:3 }}</div>
+            <div class="stat-label">Départements</div>
+            <i class="bi bi-building stat-icon" style="color: #667eea;"></i>
+        </div>
+        
+        <div class="stat-card attendance">
+            <div class="stat-number">{{ today_present|default:5 }}</div>
+            <div class="stat-label">Présents aujourd'hui</div>
+            <i class="bi bi-check-circle stat-icon" style="color: #48bb78;"></i>
+        </div>
+        
+        <div class="stat-card anomalies">
+            <div class="stat-number">{{ pending_anomalies|default:2 }}</div>
+            <div class="stat-label">Anomalies système</div>
+            <i class="bi bi-exclamation-triangle stat-icon" style="color: #f39c12;"></i>
+        </div>
+    </div>
+    
+    <!-- Contrôles d'administration -->
+    <div class="admin-controls">
+        <div class="system-overview">
+            <h2 class="section-title">
+                <i class="bi bi-cpu"></i>
+                État du système
+            </h2>
+            
+            <div class="system-item">
+                <div class="system-info">
+                    <div class="system-icon">
+                        <i class="bi bi-database"></i>
+                    </div>
+                    <div class="system-details">
+                        <h4>Base de données</h4>
+                        <div class="system-status">SQLite - Opérationnel</div>
+                    </div>
+                </div>
+                <div class="system-metric">
+                    <div class="metric-value">
+                        <span class="status-indicator status-online">En ligne</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="system-item">
+                <div class="system-info">
+                    <div class="system-icon">
+                        <i class="bi bi-cloud"></i>
+                    </div>
+                    <div class="system-details">
+                        <h4>Serveur web</h4>
+                        <div class="system-status">Django - Développement</div>
+                    </div>
+                </div>
+                <div class="system-metric">
+                    <div class="metric-value">
+                        <span class="status-indicator status-online">Actif</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="system-item">
+                <div class="system-info">
+                    <div class="system-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="system-details">
+                        <h4>Sécurité</h4>
+                        <div class="system-status">Authentification active</div>
+                    </div>
+                </div>
+                <div class="system-metric">
+                    <div class="metric-value">
+                        <span class="status-indicator status-online">Sécurisé</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="system-item">
+                <div class="system-info">
+                    <div class="system-icon">
+                        <i class="bi bi-geo-alt"></i>
+                    </div>
+                    <div class="system-details">
+                        <h4>Géolocalisation</h4>
+                        <div class="system-status">GPS - Fonctionnel</div>
+                    </div>
+                </div>
+                <div class="system-metric">
+                    <div class="metric-value">
+                        <span class="status-indicator status-warning">Attention</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin-tools">
+            <h2 class="section-title">
+                <i class="bi bi-tools"></i>
+                Outils d'administration
+            </h2>
+            
+            <div class="tool-grid">
+                <a href="/admin/" class="tool-button">
+                    <i class="bi bi-gear-fill tool-icon"></i>
+                    <span class="tool-label">Django Admin</span>
+                </a>
+                
+                <a href="{% url 'reports:system_settings' %}" class="tool-button secondary">
+                    <i class="bi bi-sliders tool-icon"></i>
+                    <span class="tool-label">Paramètres</span>
+                </a>
+                
+                <a href="{% url 'reports:report_list' %}" class="tool-button success">
+                    <i class="bi bi-graph-up tool-icon"></i>
+                    <span class="tool-label">Rapports</span>
+                </a>
+                
+                <a href="#" class="tool-button warning">
+                    <i class="bi bi-arrow-clockwise tool-icon"></i>
+                    <span class="tool-label">Sauvegarde</span>
+                </a>
+                
+                <a href="#" class="tool-button">
+                    <i class="bi bi-people tool-icon"></i>
+                    <span class="tool-label">Utilisateurs</span>
+                </a>
+                
+                <a href="#" class="tool-button secondary">
+                    <i class="bi bi-building tool-icon"></i>
+                    <span class="tool-label">Départements</span>
+                </a>
+                
+                <a href="#" class="tool-button success">
+                    <i class="bi bi-calendar-event tool-icon"></i>
+                    <span class="tool-label">Jours fériés</span>
+                </a>
+                
+                <a href="#" class="tool-button warning">
+                    <i class="bi bi-exclamation-triangle tool-icon"></i>
+                    <span class="tool-label">Logs système</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activité récente -->
+    <div class="recent-activity">
+        <h2 class="section-title">
+            <i class="bi bi-activity"></i>
+            Activité système récente
+        </h2>
+        
+        <div class="activity-timeline">
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div class="timeline-title">Connexion utilisateur</div>
+                    <div class="timeline-description">L'utilisateur 'manager.it' s'est connecté avec succès</div>
+                    <div class="timeline-time">Il y a 5 minutes</div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div class="timeline-title">Pointage géolocalisé</div>
+                    <div class="timeline-description">Pointage d'arrivée enregistré pour 'dev1' à Lomé, Togo</div>
+                    <div class="timeline-time">Il y a 15 minutes</div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div class="timeline-title">Validation de congé</div>
+                    <div class="timeline-description">Demande de congé approuvée pour 'com1' par 'rh.dg'</div>
+                    <div class="timeline-time">Il y a 1 heure</div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div class="timeline-title">Anomalie détectée</div>
+                    <div class="timeline-description">Retard détecté pour 'dev2' - 25 minutes de retard</div>
+                    <div class="timeline-time">Il y a 2 heures</div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <div class="timeline-title">Sauvegarde automatique</div>
+                    <div class="timeline-description">Sauvegarde de la base de données effectuée avec succès</div>
+                    <div class="timeline-time">Il y a 3 heures</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation d'entrée pour les cartes
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.stat-card, .system-item, .timeline-item');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+    
+    // Animation des boutons d'outils
+    document.querySelectorAll('.tool-button').forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px) scale(1.05)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Animation de la timeline
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateX(0)';
+            }
+        });
+    });
+    
+    timelineItems.forEach(item => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-50px)';
+        item.style.transition = 'all 0.6s ease';
+        observer.observe(item);
+    });
+</script>
+{% endblock %}
