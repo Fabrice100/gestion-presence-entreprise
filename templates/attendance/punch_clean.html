@@ -1,0 +1,374 @@
+{% extends 'base_clean.html' %}
+{% load static %}
+
+{% block title %}Pointage - {{ user.get_full_name|default:user.username }}{% endblock %}
+
+{% block page_title %}Pointage{% endblock %}
+
+{% block page_subtitle %}<p class="page-subtitle">{{ today|date:"l d F Y" }} - {{ today|time:"H:i" }}</p>{% endblock %}
+
+{% block extra_css %}
+<style>
+    .punch-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .status-card {
+        border-left: 4px solid var(--primary);
+    }
+    
+    .status-card.success {
+        border-left-color: var(--success);
+    }
+    
+    .status-card.warning {
+        border-left-color: var(--warning);
+    }
+    
+    .status-card.error {
+        border-left-color: var(--error);
+    }
+    
+    .punch-button {
+        width: 100%;
+        padding: var(--space-8);
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        background: var(--white);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        text-align: center;
+    }
+    
+    .punch-button:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    
+    .punch-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .punch-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto var(--space-4);
+        font-size: var(--font-size-2xl);
+        color: var(--white);
+    }
+    
+    .punch-icon.in {
+        background: var(--success);
+    }
+    
+    .punch-icon.out {
+        background: var(--error);
+    }
+    
+    .location-status {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+    }
+    
+    .location-status.loading {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+    
+    .location-status.success {
+        background: var(--success-light);
+        color: var(--success);
+    }
+    
+    .location-status.error {
+        background: var(--error-light);
+        color: var(--error);
+    }
+    
+    .location-details {
+        margin-top: var(--space-4);
+        padding: var(--space-4);
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-xs);
+        color: var(--gray-600);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="punch-container">
+    <!-- Statut de géolocalisation -->
+    <div class="card status-card mb-6">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="card-title text-lg mb-1">Géolocalisation</h3>
+                    <p class="text-gray-600 text-sm">Vérification de votre position</p>
+                </div>
+                <div id="location-status" class="location-status loading">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>Recherche...</span>
+                </div>
+            </div>
+            
+            <div id="location-details" class="location-details" style="display: none;">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="font-medium">Latitude:</span>
+                        <span id="latitude">-</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">Longitude:</span>
+                        <span id="longitude">-</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">Précision:</span>
+                        <span id="accuracy">-</span>m
+                    </div>
+                    <div>
+                        <span class="font-medium">Distance:</span>
+                        <span id="distance">-</span>m
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Boutons de pointage -->
+    <div class="space-y-4">
+        {% if next_punch_type == 'in' %}
+        <button class="punch-button" onclick="punch('in')" id="punch-in-btn">
+            <div class="punch-icon in">
+                <i class="bi bi-box-arrow-in-right"></i>
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Pointage d'entrée</h3>
+            <p class="text-gray-600">Marquer votre arrivée</p>
+        </button>
+        {% endif %}
+        
+        {% if next_punch_type == 'out' %}
+        <button class="punch-button" onclick="punch('out')" id="punch-out-btn">
+            <div class="punch-icon out">
+                <i class="bi bi-box-arrow-right"></i>
+            </div>
+            <h3 class="text-xl font-semibold mb-2">Pointage de sortie</h3>
+            <p class="text-gray-600">Marquer votre départ</p>
+        </button>
+        {% endif %}
+    </div>
+    
+    <!-- Historique du jour -->
+    {% if today_attendance %}
+    <div class="card mt-6">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-clock-history me-2"></i>
+                Pointages d'aujourd'hui
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="space-y-0">
+                {% for attendance in today_attendance %}
+                <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center {% if attendance.punch_type == 'in' %}bg-success{% else %}bg-error{% endif %}">
+                            <i class="bi bi-{% if attendance.punch_type == 'in' %}box-arrow-in-right{% else %}box-arrow-right{% endif %} text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">
+                                {% if attendance.punch_type == 'in' %}Arrivée{% else %}Départ{% endif %}
+                            </p>
+                            <p class="text-xs text-gray-600">{{ attendance.time|time:"H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        {% if attendance.status == 'normal' %}
+                            <span class="badge badge-success">Normal</span>
+                        {% elif attendance.status == 'late' %}
+                            <span class="badge badge-warning">En retard</span>
+                        {% elif attendance.status == 'outside_zone' %}
+                            <span class="badge badge-error">Hors zone</span>
+                        {% else %}
+                            <span class="badge badge-gray">{{ attendance.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentLocation = null;
+    let watchId = null;
+    
+    // Vérifier la géolocalisation
+    if (navigator.geolocation) {
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 30000
+        };
+        
+        watchId = navigator.geolocation.watchPosition(
+            updateLocation,
+            handleLocationError,
+            options
+        );
+    } else {
+        showLocationError('La géolocalisation n\'est pas supportée par ce navigateur.');
+    }
+    
+    function updateLocation(position) {
+        currentLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+        };
+        
+        // Calculer la distance par rapport au centre
+        const centerLat = {{ center_lat }};
+        const centerLng = {{ center_lng }};
+        const distance = calculateDistance(
+            centerLat, centerLng,
+            currentLocation.latitude, currentLocation.longitude
+        );
+        
+        // Mettre à jour l'interface
+        document.getElementById('latitude').textContent = currentLocation.latitude.toFixed(6);
+        document.getElementById('longitude').textContent = currentLocation.longitude.toFixed(6);
+        document.getElementById('accuracy').textContent = Math.round(currentLocation.accuracy);
+        document.getElementById('distance').textContent = Math.round(distance);
+        document.getElementById('location-details').style.display = 'block';
+        
+        // Vérifier si dans la zone autorisée
+        const maxDistance = {{ max_distance }};
+        const maxAccuracy = {{ max_accuracy }};
+        
+        if (distance <= maxDistance && currentLocation.accuracy <= maxAccuracy) {
+            showLocationSuccess();
+        } else {
+            showLocationWarning();
+        }
+    }
+    
+    function handleLocationError(error) {
+        let message = 'Erreur de géolocalisation: ';
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                message += 'Permission refusée';
+                break;
+            case error.POSITION_UNAVAILABLE:
+                message += 'Position indisponible';
+                break;
+            case error.TIMEOUT:
+                message += 'Timeout';
+                break;
+            default:
+                message += 'Erreur inconnue';
+                break;
+        }
+        showLocationError(message);
+    }
+    
+    function showLocationSuccess() {
+        const status = document.getElementById('location-status');
+        status.className = 'location-status success';
+        status.innerHTML = '<i class="bi bi-check-circle"></i><span>Position validée</span>';
+    }
+    
+    function showLocationWarning() {
+        const status = document.getElementById('location-status');
+        status.className = 'location-status warning';
+        status.innerHTML = '<i class="bi bi-exclamation-triangle"></i><span>Position non validée</span>';
+    }
+    
+    function showLocationError(message) {
+        const status = document.getElementById('location-status');
+        status.className = 'location-status error';
+        status.innerHTML = '<i class="bi bi-x-circle"></i><span>Erreur de position</span>';
+    }
+    
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; // Rayon de la Terre en mètres
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+        
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        return R * c;
+    }
+    
+    function punch(type) {
+        if (!currentLocation) {
+            alert('Position GPS non disponible. Veuillez attendre ou réessayer.');
+            return;
+        }
+        
+        // Désactiver le bouton
+        const button = document.getElementById(`punch-${type}-btn`);
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i><span>Enregistrement...</span>';
+        
+        // Envoyer les données
+        fetch('{% url "attendance:punch_api" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                punch_type: type,
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                accuracy: currentLocation.accuracy
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Pointage enregistré avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'enregistrement du pointage.');
+            button.disabled = false;
+        });
+    }
+    
+    // Nettoyer le watcher lors de la fermeture
+    window.addEventListener('beforeunload', function() {
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+        }
+    });
+</script>
+{% endblock %}
