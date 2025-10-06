@@ -121,7 +121,7 @@
                     <div class="nav-section-title">Administration</div>
                     
                     <div class="nav-item">
-                        <a href="{% url 'reports:report_list' %}" class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'reports:reports_dashboard' %}" class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
                             <i class="nav-icon bi bi-graph-up"></i>
                             <span>Rapports</span>
                         </a>

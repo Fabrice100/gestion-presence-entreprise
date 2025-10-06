@@ -57,10 +57,6 @@ class NotificationService:
             action_text=action_text
         )
         
-        # Envoyer par email si demandé
-        if send_email:
-            notification.send_email()
-        
         return notification
     
     @staticmethod
@@ -71,7 +67,7 @@ class NotificationService:
         try:
             # Récupérer le template
             template = EmailTemplate.objects.get(
-                template_type=template_type,
+                name=template_type,
                 is_active=True
             )
             
@@ -86,22 +82,28 @@ class NotificationService:
                 'current_year': timezone.now().year,
             })
             
-            # Rendre le template
-            rendered = template.render(context)
-            
             # Préparer les destinataires
             recipients = [recipient.email] if hasattr(recipient, 'email') else [recipient]
             if extra_recipients:
                 recipients.extend(extra_recipients)
             
+            # Rendre le template
+            from django.template import Context, Template
+            subject_template = Template(template.subject)
+            body_template = Template(template.body_html)
+            
+            subject = subject_template.render(Context(context))
+            body_html = body_template.render(Context(context))
+            body_text = template.body_text or strip_tags(body_html)
+            
             # Envoyer l'email
             email = EmailMultiAlternatives(
-                subject=rendered['subject'],
-                body=rendered['text_content'],
+                subject=subject,
+                body=body_text,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=recipients
             )
-            email.attach_alternative(rendered['html_content'], "text/html")
+            email.attach_alternative(body_html, "text/html")
             email.send()
             
             logger.info(f"Email envoyé: {template_type} à {recipients}")

@@ -68,9 +68,9 @@ class NotificationSettingsView(LoginRequiredMixin, UpdateView):
     model = NotificationSettings
     template_name = 'notifications/notification_settings.html'
     fields = [
-        'email_notifications', 'email_frequency', 'leave_notifications',
-        'attendance_notifications', 'system_notifications',
-        'quiet_hours_start', 'quiet_hours_end'
+        'email_enabled', 'in_app_enabled', 'frequency',
+        'notify_leave_requests', 'notify_attendance_anomalies', 'notify_system_updates',
+        'silent_hours_start', 'silent_hours_end'
     ]
     success_url = reverse_lazy('notifications:settings')
     
@@ -146,8 +146,7 @@ def get_notifications_api(request):
             'type': notification.notification_type,
             'priority': notification.priority,
             'is_read': notification.is_read,
-            'action_url': notification.action_url,
-            'action_text': notification.action_text,
+            'link': notification.action_url,
             'created_at': notification.created_at.isoformat(),
         })
     
@@ -180,8 +179,7 @@ def test_notification(request):
         title="Notification de test",
         message="Ceci est une notification de test pour vérifier le fonctionnement du système.",
         notification_type='info',
-        action_url='/dashboard/',
-        action_text='Aller au tableau de bord'
+        action_url='/dashboard/'
     )
     
     messages.success(request, 'Notification de test créée avec succès.')

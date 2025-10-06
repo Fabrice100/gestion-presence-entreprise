@@ -14,6 +14,7 @@ Version: 1.0
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.decorators import method_decorator
@@ -22,6 +23,41 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 
 from .models import EmployeeProfile, Department
+
+
+class CustomLoginView(LoginView):
+    """
+    Vue de connexion personnalisée avec redirection par rôle.
+    """
+    template_name = 'accounts/login.html'
+    
+    def get_success_url(self):
+        """
+        Redirige l'utilisateur vers la page appropriée selon son rôle.
+        """
+        user = self.request.user
+        
+        if user.is_superuser:
+            return reverse_lazy('dashboard:admin_dashboard')
+        
+        try:
+            profile = user.employee_profile
+            
+            if profile.role == 'rh_dg':
+                return reverse_lazy('dashboard:rh_dg_dashboard')
+            elif profile.role == 'manager':
+                return reverse_lazy('dashboard:manager_dashboard')
+            elif profile.role == 'employee':
+                # Si l'employé peut pointer, rediriger vers le pointage
+                if profile.can_punch:
+                    return reverse_lazy('attendance:punch')
+                else:
+                    return reverse_lazy('dashboard:employee_dashboard')
+            else:
+                return reverse_lazy('dashboard:employee_dashboard')
+                
+        except EmployeeProfile.DoesNotExist:
+            return reverse_lazy('dashboard:employee_dashboard')
 
 
 class LoginRequiredMixin:
