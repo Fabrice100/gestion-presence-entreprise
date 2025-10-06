@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'attendance',    # Système de pointage avec géolocalisation
     'leave',         # Gestion des congés et validations
     'reports',       # Rapports et exports
+    'notifications', # Système de notifications et emails
 ]
 
 # Configuration pour crispy-forms (formulaires Bootstrap)
@@ -165,6 +166,12 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+# Configuration des emails
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Pour le développement
+DEFAULT_FROM_EMAIL = 'noreply@attendance-system.local'
+SITE_NAME = 'Système de Gestion de Présence'
+SITE_URL = 'http://localhost:8000'
 
 # Configuration du logging pour voir les erreurs
 LOGGING = {

@@ -29,8 +29,11 @@ urlpatterns = [
            path('reports/', include('reports.urls')),
            path('dashboard/', include('accounts.dashboard_urls')),
            
-           # Interface RH/DG
-           path('hr/', include('accounts.hr_urls')),
+    # Interface RH/DG
+    path('hr/', include('accounts.hr_urls')),
+
+    # Notifications
+    path('notifications/', include('notifications.urls')),
 ]
 
 # Configuration pour les fichiers statiques et médias en développement

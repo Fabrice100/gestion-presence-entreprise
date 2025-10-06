@@ -114,6 +114,9 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         
         leave_request.save()
         
+        # Déclencher les notifications (sera géré par les signaux)
+        pass
+        
         messages.success(self.request, 'Demande de congé créée avec succès.')
         return redirect(self.get_success_url())
 
@@ -212,6 +215,10 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, UpdateView):
                     leave_request.status = 'rejected_rh'
             
             leave_request.save()
+        
+        # Déclencher les notifications
+        from notifications.services import NotificationService
+        NotificationService.send_leave_notifications(leave_request, action)
         
         # Messages de succès
         if action == 'approve':
