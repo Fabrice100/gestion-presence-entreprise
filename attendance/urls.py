@@ -6,6 +6,7 @@ Ce module définit les routes pour :
 - Consultation des présences
 - Gestion des anomalies
 - Rapports de présence
+- Heures supplémentaires
 
 Auteur: Votre nom
 Projet: Système de gestion de présence - Projet de fin de cycle
@@ -14,6 +15,7 @@ Version: 1.0
 
 from django.urls import path
 from . import views
+from . import overtime_views
 
 app_name = 'attendance'
 
@@ -28,4 +30,14 @@ urlpatterns = [
     
     # API pour le pointage (AJAX)
     path('api/punch/', views.PunchAPIView.as_view(), name='punch_api'),
+
+    # Heures supplémentaires
+    path('overtime/', overtime_views.OvertimeRequestListView.as_view(), name='overtime_request_list'),
+    path('overtime/create/', overtime_views.OvertimeRequestCreateView.as_view(), name='overtime_request_create'),
+    path('overtime/<int:pk>/', overtime_views.OvertimeRequestDetailView.as_view(), name='overtime_request_detail'),
+    path('overtime/approvals/', overtime_views.OvertimeApprovalListView.as_view(), name='overtime_approval_list'),
+    path('overtime/<int:pk>/approve/', overtime_views.OvertimeApprovalProcessView.as_view(), name='overtime_approval_process'),
+
+    # API pour les heures supplémentaires
+    path('api/overtime/stats/', overtime_views.get_overtime_stats_api, name='api_overtime_stats'),
 ]

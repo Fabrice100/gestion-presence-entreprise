@@ -4,6 +4,9 @@ Modèles pour la gestion du pointage et des présences.
 Ce module contient les modèles Django pour :
 - Attendance : Pointages d'entrée et de sortie avec géolocalisation
 - AttendanceAnomaly : Anomalies détectées lors du pointage
+- OvertimeConfiguration : Configuration des règles d'heures supplémentaires
+- OvertimeRequest : Demandes d'heures supplémentaires
+- OvertimeCalculation : Calculs automatiques des heures supplémentaires
 
 Auteur: Votre nom
 Projet: Système de gestion de présence - Projet de fin de cycle
@@ -380,3 +383,7 @@ class AttendanceAnomaly(models.Model):
         self.status = 'justified'
         self.justification = justification
         self.save()
+
+
+# Import des modèles d'heures supplémentaires
+from .overtime_models import OvertimeConfiguration, OvertimeRequest
