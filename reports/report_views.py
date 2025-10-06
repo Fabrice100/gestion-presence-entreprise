@@ -580,16 +580,61 @@ def export_report_api(request):
     """
     API pour l'export de rapports en différents formats.
     """
+    from .export_services import PDFExportService, ExcelExportService
+    
     report_type = request.GET.get('type')
     format_type = request.GET.get('format', 'pdf')
     
-    # Ici on pourrait implémenter l'export en PDF/Excel
-    # Pour l'instant, on retourne un JSON
-    data = {
-        'report_type': report_type,
-        'format': format_type,
-        'generated_at': timezone.now().isoformat(),
-        'message': 'Export fonctionnel - implémentation PDF/Excel en cours'
-    }
+    try:
+        if report_type == 'attendance':
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            department_id = request.GET.get('department')
+            
+            # Conversion des dates
+            from datetime import datetime
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else date.today() - timedelta(days=30)
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else date.today()
+            
+            if format_type == 'pdf':
+                pdf_service = PDFExportService()
+                return pdf_service.export_attendance_report(request, start_date, end_date, department_id)
+            elif format_type == 'excel':
+                excel_service = ExcelExportService()
+                return excel_service.export_attendance_report(request, start_date, end_date, department_id)
+        
+        elif report_type == 'leave':
+            year = int(request.GET.get('year', date.today().year))
+            leave_type_id = request.GET.get('leave_type')
+            status = request.GET.get('status')
+            
+            if format_type == 'pdf':
+                pdf_service = PDFExportService()
+                return pdf_service.export_leave_report(request, year, leave_type_id, status)
+            elif format_type == 'excel':
+                excel_service = ExcelExportService()
+                return excel_service.export_leave_report(request, year, leave_type_id, status)
+        
+        elif report_type == 'summary':
+            # Export récapitulatif
+            if format_type == 'pdf':
+                pdf_service = PDFExportService()
+                # Pour l'instant, on exporte le rapport de présence du mois
+                start_date = date.today().replace(day=1)
+                end_date = date.today()
+                return pdf_service.export_attendance_report(request, start_date, end_date)
+            elif format_type == 'excel':
+                excel_service = ExcelExportService()
+                start_date = date.today().replace(day=1)
+                end_date = date.today()
+                return excel_service.export_attendance_report(request, start_date, end_date)
+        
+        else:
+            return JsonResponse({'error': 'Type de rapport non supporté'}, status=400)
     
-    return JsonResponse(data)
+    except Exception as e:
+        # En cas d'erreur, retourner un message d'erreur
+        return JsonResponse({
+            'error': 'Erreur lors de l\'export',
+            'details': str(e)
+        }, status=500)
