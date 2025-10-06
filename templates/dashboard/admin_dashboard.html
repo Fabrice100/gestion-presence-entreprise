@@ -193,66 +193,6 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
-    .tool-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-    
-    .tool-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 1.5rem 1rem;
-        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-        border: none;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-    
-    .tool-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
-        color: white;
-    }
-    
-    .tool-button.secondary {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    
-    .tool-button.secondary:hover {
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    }
-    
-    .tool-button.success {
-        background: linear-gradient(135deg, #48bb78, #38a169);
-    }
-    
-    .tool-button.success:hover {
-        box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
-    }
-    
-    .tool-button.warning {
-        background: linear-gradient(135deg, #ed8936, #dd6b20);
-    }
-    
-    .tool-button.warning:hover {
-        box-shadow: 0 8px 25px rgba(237, 137, 54, 0.3);
-    }
-    
-    .tool-icon {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .tool-label {
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
     
     .recent-activity {
         background: white;
@@ -508,54 +448,6 @@
             </div>
         </div>
         
-        <div class="admin-tools">
-            <h2 class="section-title">
-                <i class="bi bi-tools"></i>
-                Outils d'administration
-            </h2>
-            
-            <div class="tool-grid">
-                <a href="/admin/" class="tool-button">
-                    <i class="bi bi-gear-fill tool-icon"></i>
-                    <span class="tool-label">Django Admin</span>
-                </a>
-                
-                <a href="{% url 'reports:system_settings' %}" class="tool-button secondary">
-                    <i class="bi bi-sliders tool-icon"></i>
-                    <span class="tool-label">Paramètres</span>
-                </a>
-                
-                <a href="{% url 'reports:reports_dashboard' %}" class="tool-button success">
-                    <i class="bi bi-graph-up tool-icon"></i>
-                    <span class="tool-label">Rapports</span>
-                </a>
-                
-                <a href="#" class="tool-button warning">
-                    <i class="bi bi-arrow-clockwise tool-icon"></i>
-                    <span class="tool-label">Sauvegarde</span>
-                </a>
-                
-                <a href="#" class="tool-button">
-                    <i class="bi bi-people tool-icon"></i>
-                    <span class="tool-label">Utilisateurs</span>
-                </a>
-                
-                <a href="#" class="tool-button secondary">
-                    <i class="bi bi-building tool-icon"></i>
-                    <span class="tool-label">Départements</span>
-                </a>
-                
-                <a href="#" class="tool-button success">
-                    <i class="bi bi-calendar-event tool-icon"></i>
-                    <span class="tool-label">Jours fériés</span>
-                </a>
-                
-                <a href="#" class="tool-button warning">
-                    <i class="bi bi-exclamation-triangle tool-icon"></i>
-                    <span class="tool-label">Logs système</span>
-                </a>
-            </div>
-        </div>
     </div>
     
     <!-- Activité récente -->
@@ -626,16 +518,6 @@
         });
     });
     
-    // Animation des boutons d'outils
-    document.querySelectorAll('.tool-button').forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px) scale(1.05)';
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
     
     // Animation de la timeline
     const timelineItems = document.querySelectorAll('.timeline-item');

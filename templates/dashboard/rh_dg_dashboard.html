@@ -248,43 +248,6 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
-    .tool-button {
-        display: block;
-        width: 100%;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        text-align: center;
-        font-size: 1rem;
-    }
-    
-    .tool-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        color: white;
-    }
-    
-    .tool-button.secondary {
-        background: linear-gradient(135deg, #48bb78, #38a169);
-    }
-    
-    .tool-button.secondary:hover {
-        box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
-    }
-    
-    .tool-button.warning {
-        background: linear-gradient(135deg, #ed8936, #dd6b20);
-    }
-    
-    .tool-button.warning:hover {
-        box-shadow: 0 8px 25px rgba(237, 137, 54, 0.3);
-    }
     
     .department-overview {
         background: white;
@@ -570,52 +533,6 @@
             </div>
         </div>
         
-        <div class="management-tools">
-            <h2 class="section-title">
-                <i class="bi bi-tools"></i>
-                Outils de gestion
-            </h2>
-            
-            <a href="{% url 'leave:leave_approval_list' %}" class="tool-button">
-                <i class="bi bi-check-circle me-2"></i>
-                Valider les congés
-            </a>
-            
-            <a href="{% url 'reports:attendance_report' %}" class="tool-button secondary">
-                <i class="bi bi-graph-up me-2"></i>
-                Rapports RH
-            </a>
-            
-            <a href="#" class="tool-button warning">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Gérer les anomalies
-            </a>
-            
-            <a href="#" class="tool-button">
-                <i class="bi bi-calendar-event me-2"></i>
-                Planifier formation
-            </a>
-            
-            <a href="{% url 'hr:manager_create' %}" class="tool-button">
-                <i class="bi bi-person-badge me-2"></i>
-                Nouveau manager
-            </a>
-            
-            <a href="{% url 'hr:employee_create' %}" class="tool-button">
-                <i class="bi bi-person-plus me-2"></i>
-                Nouvel employé
-            </a>
-            
-                <a href="{% url 'hr:hr_dashboard' %}" class="tool-button">
-                    <i class="bi bi-gear me-2"></i>
-                    Interface RH/DG
-                </a>
-
-                <a href="{% url 'reports:reports_dashboard' %}" class="tool-button">
-                    <i class="bi bi-graph-up me-2"></i>
-                    Rapports et Analyses
-                </a>
-                        </div>
                     </div>
     
     <!-- Vue d'ensemble des départements -->
@@ -719,15 +636,5 @@
         });
     });
     
-    // Animation des boutons d'outils
-    document.querySelectorAll('.tool-button').forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px) scale(1.02)';
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-    });
 </script>
 {% endblock %}
