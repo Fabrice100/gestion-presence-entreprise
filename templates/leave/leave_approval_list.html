@@ -1,43 +1,267 @@
-{% extends 'base.html' %}
+{% extends 'base_clean.html' %}
 {% load static %}
 
 {% block title %}Validation des congés{% endblock %}
 
+{% block page_title %}Validation des congés{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page-subtitle">
+        {% if user.employee_profile.role == 'manager' %}
+            Validez les demandes de congés de votre équipe
+        {% elif user.employee_profile.role == 'rh_dg' %}
+            Validation finale des demandes de congés
+        {% endif %}
+    </p>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-12 mb-4">
-        <div class="card border-start-warning">
-            <div class="card-body">
-                <h1 class="card-title mb-1">
-                    <i class="bi bi-check-circle text-warning"></i>
-                    Validation des congés
-                </h1>
-                <p class="card-text text-muted mb-0">
-                    Validez ou rejetez les demandes de congés en attente
-                </p>
+<!-- Navigation -->
+<div class="mb-6">
+    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Retour au tableau de bord
+    </a>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center mx-auto mb-3">
+                <i class="bi bi-hourglass-split text-white text-xl"></i>
             </div>
+            <h3 class="text-lg font-semibold mb-1">{{ leave_requests|length }}</h3>
+            <p class="text-gray-600 text-sm">Demandes en attente</p>
         </div>
     </div>
+    
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="w-12 h-12 bg-info rounded-lg flex items-center justify-center mx-auto mb-3">
+                <i class="bi bi-people text-white text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-1">
+                {% for request in leave_requests %}
+                    {% if request.employee.employee_profile.department %}{{ request.employee.employee_profile.department.name }}{% endif %}
+                {% endfor %}
+            </h3>
+            <p class="text-gray-600 text-sm">Départements concernés</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body text-center">
+            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center mx-auto mb-3">
+                <i class="bi bi-check-circle text-white text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-1">0</h3>
+            <p class="text-gray-600 text-sm">Validées aujourd'hui</p>
+        </div>
+    </div>
+</div>
 
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>Information :</strong> La validation des congés est en cours de développement.
+<!-- Liste des demandes à valider -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="bi bi-list-check me-2"></i>
+            Demandes à valider
+        </h3>
+    </div>
+    <div class="card-body p-0">
+        {% if leave_requests %}
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employé</th>
+                            <th>Type de congé</th>
+                            <th>Période</th>
+                            <th>Durée</th>
+                            <th>Motif</th>
+                            <th>Priorité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in leave_requests %}
+                        <tr class="{% if request.leave_type.name|lower == 'urgent' or request.start_date <= 'today'|date:'Y-m-d' %}bg-red-50{% endif %}">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                        <i class="bi bi-person text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium">{{ request.employee.get_full_name|default:request.employee.username }}</h4>
+                                        <p class="text-gray-600 text-sm">{{ request.employee.email }}</p>
+                                        {% if request.employee.employee_profile.department %}
+                                            <p class="text-gray-500 text-xs">
+                                                <i class="bi bi-building me-1"></i>
+                                                {{ request.employee.employee_profile.department.name }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-info rounded-lg flex items-center justify-center">
+                                        <i class="bi bi-calendar-event text-white text-sm"></i>
+                                    </div>
+                                    <span class="font-medium">{{ request.leave_type.name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <p class="font-medium">{{ request.start_date|date:"d/m/Y" }}</p>
+                                    <p class="text-gray-600 text-sm">{{ request.end_date|date:"d/m/Y" }}</p>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="font-medium">
+                                    {% with duration=request.end_date|timeuntil:request.start_date %}
+                                        {{ duration|add:1 }} jour{{ duration|add:1|pluralize }}
+                                    {% endwith %}
+                                </span>
+                            </td>
+                            <td>
+                                <p class="text-sm text-gray-600 max-w-xs truncate">{{ request.reason }}</p>
+                            </td>
+                            <td>
+                                {% if request.start_date <= 'today'|date:'Y-m-d' %}
+                                    <span class="badge badge-error">Urgent</span>
+                                {% elif request.leave_type.name|lower == 'urgent' %}
+                                    <span class="badge badge-warning">Élevée</span>
+                                {% else %}
+                                    <span class="badge badge-success">Normale</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <a href="{% url 'leave:leave_approval_detail' request.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye me-1"></i>
+                                        Examiner
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <div class="card-footer">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600">
+                            Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                        </div>
+                        <div class="flex gap-2">
+                            {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <span class="btn btn-sm btn-primary">{{ num }}</span>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <a href="?page={{ num }}" class="btn btn-sm btn-secondary">{{ num }}</a>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-tools fs-1"></i>
-                    <h4 class="mt-3">Fonctionnalité en développement</h4>
-                    <p>La validation des congés sera disponible prochainement.</p>
-                    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
-                        <i class="bi bi-arrow-left"></i> Retour au tableau de bord
-                    </a>
+            {% endif %}
+        {% else %}
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-check-circle text-2xl text-gray-400"></i>
                 </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune demande en attente</h3>
+                <p class="text-gray-600 mb-4">
+                    {% if user.employee_profile.role == 'manager' %}
+                        Toutes les demandes de votre équipe sont à jour
+                    {% elif user.employee_profile.role == 'rh_dg' %}
+                        Toutes les demandes sont traitées
+                    {% endif %}
+                </p>
+                <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
+                    <i class="bi bi-house me-2"></i>
+                    Retour au tableau de bord
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="mt-6">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-info-circle me-2"></i>
+                Instructions de validation
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% if user.employee_profile.role == 'manager' %}
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-1-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Examinez la demande</h4>
+                            <p class="text-sm text-gray-600">Vérifiez la période, le motif et l'impact sur l'équipe</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-2-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Consultez le planning</h4>
+                            <p class="text-sm text-gray-600">Assurez-vous qu'il n'y a pas de conflit avec d'autres absences</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-3-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Prenez une décision</h4>
+                            <p class="text-sm text-gray-600">Approuvez ou rejetez avec un commentaire explicatif</p>
+                        </div>
+                    </div>
+                {% elif user.employee_profile.role == 'rh_dg' %}
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-1-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Validation finale</h4>
+                            <p class="text-sm text-gray-600">Examinez la demande déjà approuvée par le manager</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-2-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Vérifiez les soldes</h4>
+                            <p class="text-sm text-gray-600">Confirmez que l'employé a suffisamment de jours disponibles</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-3-circle text-primary mt-1"></i>
+                        <div>
+                            <h4 class="font-medium">Finalisez l'approbation</h4>
+                            <p class="text-sm text-gray-600">Approuvez définitivement ou rejetez avec justification</p>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
