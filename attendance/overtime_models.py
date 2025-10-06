@@ -2,9 +2,8 @@
 Modèles pour la gestion des heures supplémentaires.
 
 Ce module contient les modèles Django pour :
-- OvertimeRequest : Demandes d'heures supplémentaires
 - OvertimeConfiguration : Configuration des règles d'heures supplémentaires
-- OvertimeCalculation : Calculs automatiques des heures supplémentaires
+- OvertimeRecord : Enregistrement des heures supplémentaires calculées automatiquement
 
 Auteur: Votre nom
 Projet: Système de gestion de présence - Projet de fin de cycle
@@ -70,22 +69,21 @@ class OvertimeConfiguration(models.Model):
         help_text="Nombre d'heures par semaine avant déclenchement des heures supplémentaires"
     )
     
-    # Heures spécifiques
+    # Heures spécifiques pour les HS de nuit
     night_start_hour = models.TimeField(
         blank=True,
         null=True,
-        verbose_name="Début des heures de nuit",
+        verbose_name="Heure de début nuit",
         help_text="Heure de début des heures de nuit (ex: 22:00)"
     )
     
     night_end_hour = models.TimeField(
         blank=True,
         null=True,
-        verbose_name="Fin des heures de nuit",
+        verbose_name="Heure de fin nuit",
         help_text="Heure de fin des heures de nuit (ex: 06:00)"
     )
     
-    # Statut
     is_active = models.BooleanField(
         default=True,
         verbose_name="Actif",
@@ -104,8 +102,8 @@ class OvertimeConfiguration(models.Model):
     )
     
     class Meta:
-        verbose_name = "Configuration heures supplémentaires"
-        verbose_name_plural = "Configurations heures supplémentaires"
+        verbose_name = "Configuration Heures Supplémentaires"
+        verbose_name_plural = "Configurations Heures Supplémentaires"
         ordering = ['config_type', 'name']
     
     def __str__(self):
@@ -113,81 +111,38 @@ class OvertimeConfiguration(models.Model):
         return f"{self.name} ({self.get_config_type_display()})"
 
 
-class OvertimeRequest(models.Model):
+class OvertimeRecord(models.Model):
     """
-    Demande d'heures supplémentaires par un employé.
+    Enregistrement des heures supplémentaires calculées automatiquement.
     
-    Permet aux employés de demander des heures supplémentaires
-    avec validation hiérarchique. Focus sur le suivi de présence.
+    Les heures supplémentaires sont détectées automatiquement à partir
+    des pointages et doivent être validées par la hiérarchie.
     """
     
     # Choix pour les types d'heures supplémentaires
     OVERTIME_TYPE_CHOICES = [
-        ('planned', 'Planifiées'),
-        ('unplanned', 'Non planifiées'),
-        ('emergency', 'Urgentes'),
-        ('project', 'Projet'),
+        ('daily', 'Quotidiennes'),
+        ('weekly', 'Hebdomadaires'),
+        ('weekend', 'Weekend'),
+        ('holiday', 'Jours fériés'),
+        ('night', 'Heures de nuit'),
     ]
     
     # Choix pour les statuts
     STATUS_CHOICES = [
-        ('pending', 'En attente'),
-        ('approved', 'Approuvées'),
+        ('detected', 'Détectées'),
+        ('pending_approval', 'En attente validation'),
+        ('approved', 'Validées'),
         ('rejected', 'Rejetées'),
-        ('cancelled', 'Annulées'),
+        ('disputed', 'Contestées'),
     ]
     
     employee = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='overtime_requests',
+        related_name='overtime_records',
         verbose_name="Employé",
-        help_text="Employé qui demande les heures supplémentaires"
-    )
-    
-    overtime_type = models.CharField(
-        max_length=20,
-        choices=OVERTIME_TYPE_CHOICES,
-        default='unplanned',
-        verbose_name="Type d'heures supplémentaires",
-        help_text="Type de demande d'heures supplémentaires"
-    )
-    
-    date = models.DateField(
-        verbose_name="Date",
-        help_text="Date des heures supplémentaires"
-    )
-    
-    start_time = models.TimeField(
-        verbose_name="Heure de début",
-        help_text="Heure de début des heures supplémentaires"
-    )
-    
-    end_time = models.TimeField(
-        verbose_name="Heure de fin",
-        help_text="Heure de fin des heures supplémentaires"
-    )
-    
-    hours_requested = models.DecimalField(
-        max_digits=4,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        verbose_name="Heures demandées",
-        help_text="Nombre d'heures supplémentaires demandées"
-    )
-    
-    reason = models.TextField(
-        verbose_name="Motif",
-        help_text="Motif de la demande d'heures supplémentaires"
-    )
-    
-    # Validation
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending',
-        verbose_name="Statut",
-        help_text="Statut de la demande"
+        help_text="Employé concerné par les heures supplémentaires"
     )
     
     manager = models.ForeignKey(
@@ -195,11 +150,55 @@ class OvertimeRequest(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='managed_overtime_requests',
+        related_name='managed_overtime_records',
         verbose_name="Manager",
         help_text="Manager responsable de la validation"
     )
     
+    # Référence aux pointages
+    attendance_records = models.ManyToManyField(
+        'Attendance',
+        related_name='overtime_records',
+        verbose_name="Pointages concernés",
+        help_text="Pointages ayant généré ces heures supplémentaires"
+    )
+    
+    overtime_type = models.CharField(
+        max_length=20,
+        choices=OVERTIME_TYPE_CHOICES,
+        verbose_name="Type d'heures supplémentaires",
+        help_text="Type d'heures supplémentaires détectées"
+    )
+    
+    date = models.DateField(
+        verbose_name="Date",
+        help_text="Date des heures supplémentaires"
+    )
+    
+    # Heures calculées automatiquement
+    normal_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Heures normales",
+        help_text="Nombre d'heures normales travaillées"
+    )
+    
+    overtime_hours = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        verbose_name="Heures supplémentaires",
+        help_text="Nombre d'heures supplémentaires détectées"
+    )
+    
+    total_hours = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name="Total heures",
+        help_text="Total des heures travaillées"
+    )
+    
+    # Workflow de validation
     manager_decision = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -246,6 +245,13 @@ class OvertimeRequest(models.Model):
         help_text="Date de décision du RH/DG"
     )
     
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='detected',
+        verbose_name="Statut global"
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -258,46 +264,30 @@ class OvertimeRequest(models.Model):
     )
     
     class Meta:
-        verbose_name = "Demande d'heures supplémentaires"
-        verbose_name_plural = "Demandes d'heures supplémentaires"
-        ordering = ['-created_at']
+        verbose_name = "Enregistrement Heures Supplémentaires"
+        verbose_name_plural = "Enregistrements Heures Supplémentaires"
+        ordering = ['-date', '-created_at']
+        unique_together = ['employee', 'date', 'overtime_type']
     
     def __str__(self):
-        """Représentation string de la demande."""
-        return f"{self.employee.get_full_name()} - {self.date} - {self.hours_requested}h"
+        """Représentation string de l'enregistrement."""
+        return f"HS {self.get_overtime_type_display()} - {self.employee.get_full_name()} le {self.date} ({self.overtime_hours}h)"
     
     def save(self, *args, **kwargs):
         """
-        Override de la méthode save pour calculer automatiquement les heures.
+        Override de la méthode save pour mettre à jour le statut global.
         """
-        # Calculer les heures demandées si pas déjà fait
-        if not self.hours_requested and self.start_time and self.end_time:
-            self.hours_requested = self.calculate_hours()
-        
-        # Déterminer le manager si pas déjà défini
-        if not self.manager and self.employee.employee_profile.manager:
-            self.manager = self.employee.employee_profile.manager
+        # Mettre à jour le statut global basé sur les décisions
+        if self.rh_decision == 'rejected' or self.manager_decision == 'rejected':
+            self.status = 'rejected'
+        elif self.rh_decision == 'approved' and self.manager_decision == 'approved':
+            self.status = 'approved'
+        elif self.manager_decision == 'approved' and not self.rh_decision:
+            self.status = 'pending_approval'  # En attente RH
+        elif self.manager_decision == 'detected' or not self.manager_decision:
+            self.status = 'detected'  # Détectées, en attente manager
         
         super().save(*args, **kwargs)
-    
-    def calculate_hours(self):
-        """
-        Calcule le nombre d'heures entre start_time et end_time.
-        """
-        if not self.start_time or not self.end_time:
-            return Decimal('0.00')
-        
-        start_dt = datetime.combine(date.today(), self.start_time)
-        end_dt = datetime.combine(date.today(), self.end_time)
-        
-        # Gérer le cas où end_time est le lendemain
-        if end_dt < start_dt:
-            end_dt += timedelta(days=1)
-        
-        duration = end_dt - start_dt
-        hours = duration.total_seconds() / 3600
-        
-        return Decimal(str(round(hours, 2)))
     
     def is_weekend(self):
         """Vérifie si la date est un weekend."""
@@ -305,11 +295,17 @@ class OvertimeRequest(models.Model):
     
     def is_holiday(self):
         """Vérifie si la date est un jour férié."""
-        from leave.models import Holiday
-        return Holiday.objects.filter(date=self.date, is_active=True).exists()
+        # TODO: Implémenter la vérification des jours fériés
+        # from leave.models import Holiday
+        # return Holiday.objects.filter(date=self.date, is_active=True).exists()
+        return False
     
     def is_night_shift(self):
-        """Vérifie si les heures sont en période de nuit."""
+        """Vérifie si les heures supplémentaires sont de nuit."""
+        if not self.overtime_type == 'night':
+            return False
+        
+        # Vérifier si les heures se chevauchent avec la période de nuit
         config = OvertimeConfiguration.objects.filter(
             config_type='night',
             is_active=True
@@ -318,17 +314,16 @@ class OvertimeRequest(models.Model):
         if not config or not config.night_start_hour or not config.night_end_hour:
             return False
         
-        # Vérifier si les heures chevauchent avec la période de nuit
         night_start = config.night_start_hour
         night_end = config.night_end_hour
         
         # Cas simple : période de nuit dans la même journée
         if night_start < night_end:
-            return (self.start_time >= night_start and self.start_time < night_end) or \
-                   (self.end_time > night_start and self.end_time <= night_end)
+            # TODO: Récupérer les heures de pointage pour vérifier
+            return True
         
         # Cas complexe : période de nuit sur deux jours (ex: 22h-06h)
-        return (self.start_time >= night_start) or (self.end_time <= night_end)
+        return True
     
     def get_overtime_type_display_name(self):
         """
@@ -342,5 +337,3 @@ class OvertimeRequest(models.Model):
             return "Heures de nuit"
         else:
             return "Heures quotidiennes"
-
-

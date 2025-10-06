@@ -15,7 +15,7 @@ from django.utils.html import format_html
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Attendance, AttendanceAnomaly, OvertimeConfiguration, OvertimeRequest
+from .models import Attendance, AttendanceAnomaly, OvertimeConfiguration, OvertimeRecord
 
 
 class AttendanceAnomalyInline(admin.TabularInline):
@@ -476,17 +476,17 @@ class OvertimeConfigurationAdmin(admin.ModelAdmin):
     is_active_display.short_description = "Statut"
 
 
-@admin.register(OvertimeRequest)
-class OvertimeRequestAdmin(admin.ModelAdmin):
+@admin.register(OvertimeRecord)
+class OvertimeRecordAdmin(admin.ModelAdmin):
     """
-    Configuration de l'administration pour le modèle OvertimeRequest.
+    Configuration de l'administration pour le modèle OvertimeRecord.
     """
     
     list_display = [
         'employee_name',
         'date',
         'overtime_type_display',
-        'hours_requested',
+        'overtime_hours',
         'status_display',
         'manager_decision_display',
         'rh_decision_display',
@@ -505,23 +505,25 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
     search_fields = [
         'employee__first_name',
         'employee__last_name',
-        'employee__username',
-        'reason'
+        'employee__username'
     ]
     
     ordering = ['-created_at']
     
     fieldsets = (
-        ('Informations de la demande', {
+        ('Informations de l\'enregistrement', {
             'fields': (
                 'employee',
                 'overtime_type',
                 'date',
-                'start_time',
-                'end_time',
-                'hours_requested',
-                'reason'
+                'normal_hours',
+                'overtime_hours',
+                'total_hours'
             )
+        }),
+        ('Pointages concernés', {
+            'fields': ('attendance_records',),
+            'classes': ('collapse',)
         }),
         ('Validation Manager', {
             'fields': (
@@ -547,7 +549,7 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
         }),
     )
     
-    readonly_fields = ['hours_requested', 'created_at', 'updated_at']
+    readonly_fields = ['normal_hours', 'overtime_hours', 'total_hours', 'created_at', 'updated_at']
     
     def employee_name(self, obj):
         """Affiche le nom de l'employé."""
@@ -561,10 +563,11 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
     def overtime_type_display(self, obj):
         """Affiche le type d'heures supplémentaires avec une couleur."""
         colors = {
-            'planned': 'blue',
-            'unplanned': 'orange',
-            'emergency': 'red',
-            'project': 'green'
+            'daily': 'blue',
+            'weekly': 'green',
+            'weekend': 'orange',
+            'holiday': 'red',
+            'night': 'purple'
         }
         color = colors.get(obj.overtime_type, 'black')
         
@@ -578,10 +581,11 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
     def status_display(self, obj):
         """Affiche le statut avec une couleur."""
         colors = {
-            'pending': 'orange',
+            'detected': 'blue',
+            'pending_approval': 'orange',
             'approved': 'green',
             'rejected': 'red',
-            'cancelled': 'gray'
+            'disputed': 'purple'
         }
         color = colors.get(obj.status, 'black')
         
@@ -598,7 +602,7 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
             colors = {
                 'approved': 'green',
                 'rejected': 'red',
-                'pending': 'orange'
+                'pending_approval': 'orange'
             }
             color = colors.get(obj.manager_decision, 'black')
             
@@ -616,7 +620,7 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
             colors = {
                 'approved': 'green',
                 'rejected': 'red',
-                'pending': 'orange'
+                'pending_approval': 'orange'
             }
             color = colors.get(obj.rh_decision, 'black')
             
@@ -628,23 +632,23 @@ class OvertimeRequestAdmin(admin.ModelAdmin):
         return "En attente"
     rh_decision_display.short_description = "RH/DG"
     
-    actions = ['approve_requests', 'reject_requests']
+    actions = ['approve_records', 'reject_records']
     
-    def approve_requests(self, request, queryset):
-        """Approuve les demandes sélectionnées."""
+    def approve_records(self, request, queryset):
+        """Approuve les enregistrements sélectionnés."""
         updated = queryset.update(status='approved')
         self.message_user(
             request,
-            f'{updated} demande(s) ont été approuvée(s).'
+            f'{updated} enregistrement(s) ont été approuvé(s).'
         )
-    approve_requests.short_description = "Approuver les demandes sélectionnées"
+    approve_records.short_description = "Approuver les enregistrements sélectionnés"
     
-    def reject_requests(self, request, queryset):
-        """Rejette les demandes sélectionnées."""
+    def reject_records(self, request, queryset):
+        """Rejette les enregistrements sélectionnés."""
         updated = queryset.update(status='rejected')
         self.message_user(
             request,
-            f'{updated} demande(s) ont été rejetée(s).'
+            f'{updated} enregistrement(s) ont été rejeté(s).'
         )
-    reject_requests.short_description = "Rejeter les demandes sélectionnées"
+    reject_records.short_description = "Rejeter les enregistrements sélectionnés"
 

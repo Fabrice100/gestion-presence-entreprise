@@ -386,4 +386,4 @@ class AttendanceAnomaly(models.Model):
 
 
 # Import des modèles d'heures supplémentaires
-from .overtime_models import OvertimeConfiguration, OvertimeRequest
+from .overtime_models import OvertimeConfiguration, OvertimeRecord

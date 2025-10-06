@@ -32,9 +32,8 @@ urlpatterns = [
     path('api/punch/', views.PunchAPIView.as_view(), name='punch_api'),
 
     # Heures supplémentaires
-    path('overtime/', overtime_views.OvertimeRequestListView.as_view(), name='overtime_request_list'),
-    path('overtime/create/', overtime_views.OvertimeRequestCreateView.as_view(), name='overtime_request_create'),
-    path('overtime/<int:pk>/', overtime_views.OvertimeRequestDetailView.as_view(), name='overtime_request_detail'),
+    path('overtime/', overtime_views.OvertimeRecordListView.as_view(), name='overtime_record_list'),
+    path('overtime/<int:pk>/', overtime_views.OvertimeRecordDetailView.as_view(), name='overtime_record_detail'),
     path('overtime/approvals/', overtime_views.OvertimeApprovalListView.as_view(), name='overtime_approval_list'),
     path('overtime/<int:pk>/approve/', overtime_views.OvertimeApprovalProcessView.as_view(), name='overtime_approval_process'),
 

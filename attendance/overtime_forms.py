@@ -2,8 +2,9 @@
 Formulaires pour la gestion des heures supplémentaires.
 
 Ce module contient les formulaires Django pour :
-- OvertimeRequestForm : Création/modification d'une demande d'heures supplémentaires
-- OvertimeApprovalForm : Validation d'une demande
+- OvertimeRecordForm : Modification d'un enregistrement d'heures supplémentaires
+- OvertimeApprovalForm : Validation d'un enregistrement
+- OvertimeConfigurationForm : Configuration des règles
 
 Auteur: Votre nom
 Projet: Système de gestion de présence - Projet de fin de cycle
@@ -13,168 +14,137 @@ Version: 1.0
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import date, datetime, timedelta
+from .overtime_models import OvertimeRecord, OvertimeConfiguration
+from accounts.models import EmployeeProfile
+from datetime import date, timedelta
+from decimal import Decimal
 
-from .models import OvertimeRequest, OvertimeConfiguration
 
-
-class OvertimeRequestForm(forms.ModelForm):
+class OvertimeRecordForm(forms.ModelForm):
     """
-    Formulaire pour la création d'une demande d'heures supplémentaires.
+    Formulaire pour la modification d'un enregistrement d'heures supplémentaires.
     """
-
+    
     class Meta:
-        model = OvertimeRequest
-        fields = ['overtime_type', 'date', 'start_time', 'end_time', 'reason']
+        model = OvertimeRecord
+        fields = ['manager_decision', 'manager_comment', 'rh_decision', 'rh_comment']
         widgets = {
-            'overtime_type': forms.Select(attrs={
+            'manager_decision': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'date': forms.DateInput(attrs={
+            'manager_comment': forms.Textarea(attrs={
                 'class': 'form-control',
-                'type': 'date',
-                'min': timezone.now().date().isoformat()
+                'rows': 3,
+                'placeholder': 'Votre commentaire...'
             }),
-            'start_time': forms.TimeInput(attrs={
-                'class': 'form-control',
-                'type': 'time'
+            'rh_decision': forms.Select(attrs={
+                'class': 'form-control'
             }),
-            'end_time': forms.TimeInput(attrs={
+            'rh_comment': forms.Textarea(attrs={
                 'class': 'form-control',
-                'type': 'time'
+                'rows': 3,
+                'placeholder': 'Votre commentaire...'
             }),
-            'reason': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Décrivez le motif de votre demande d\'heures supplémentaires...'
-            })
         }
-
+    
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.user = user
         
-        # Initialiser la date par défaut (demain)
-        if not self.instance.pk:
-            self.fields['date'].initial = (timezone.now().date() + timedelta(days=1))
-
+        # Désactiver les champs si l'utilisateur n'a pas la permission
+        if self.user and self.instance:
+            is_manager = self.user.employee_profile.is_manager()
+            is_rh_dg = self.user.employee_profile.is_rh_dg()
+            
+            if is_manager and self.instance.manager != self.user:
+                # Un manager ne peut pas valider les enregistrements d'un autre manager
+                for field in ['manager_decision', 'manager_comment']:
+                    self.fields[field].widget.attrs['readonly'] = True
+                    self.fields[field].required = False
+            
+            if is_rh_dg and not is_manager:  # RH/DG ne doit pas toucher aux champs manager
+                for field in ['manager_decision', 'manager_comment']:
+                    self.fields[field].widget.attrs['readonly'] = True
+                    self.fields[field].required = False
+            
+            if is_manager and not is_rh_dg:  # Manager ne doit pas toucher aux champs RH
+                for field in ['rh_decision', 'rh_comment']:
+                    self.fields[field].widget.attrs['readonly'] = True
+                    self.fields[field].required = False
+            
+            # Si la décision a déjà été prise, rendre les champs readonly
+            if self.instance.manager_decision and is_manager:
+                self.fields['manager_decision'].widget.attrs['readonly'] = True
+                self.fields['manager_comment'].widget.attrs['readonly'] = True
+            
+            if self.instance.rh_decision and is_rh_dg:
+                self.fields['rh_decision'].widget.attrs['readonly'] = True
+                self.fields['rh_comment'].widget.attrs['readonly'] = True
+    
     def clean(self):
         cleaned_data = super().clean()
-        start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
-        date = cleaned_data.get('date')
-
-        if start_time and end_time and date:
-            # Vérifier que l'heure de fin est après l'heure de début
-            start_datetime = datetime.combine(date, start_time)
-            end_datetime = datetime.combine(date, end_time)
+        
+        if self.user:
+            is_manager = self.user.employee_profile.is_manager()
+            is_rh_dg = self.user.employee_profile.is_rh_dg()
             
-            # Gérer le cas où end_time est le lendemain
-            if end_datetime <= start_datetime:
-                end_datetime += timedelta(days=1)
+            if is_manager and self.instance.manager == self.user:
+                # Manager valide sa partie
+                if not cleaned_data.get('manager_decision'):
+                    raise ValidationError("La décision du manager est requise.")
+                if cleaned_data.get('manager_decision') == 'rejected' and not cleaned_data.get('manager_comment'):
+                    raise ValidationError("Un commentaire est requis pour un rejet par le manager.")
             
-            # Calculer la durée
-            duration = end_datetime - start_datetime
-            hours = duration.total_seconds() / 3600
-            
-            # Vérifier que la durée est raisonnable (max 12h par jour)
-            if hours > 12:
-                raise ValidationError('La durée maximale d\'heures supplémentaires est de 12 heures par jour.')
-            
-            if hours < 0.5:
-                raise ValidationError('La durée minimale d\'heures supplémentaires est de 30 minutes.')
-            
-            # Vérifier que ce n'est pas dans le passé
-            if date < timezone.now().date():
-                raise ValidationError('Vous ne pouvez pas demander des heures supplémentaires pour une date passée.')
-            
-            # Vérifier que ce n'est pas trop loin dans le futur (max 30 jours)
-            max_future_date = timezone.now().date() + timedelta(days=30)
-            if date > max_future_date:
-                raise ValidationError('Vous ne pouvez pas demander des heures supplémentaires plus de 30 jours à l\'avance.')
-
+            if is_rh_dg:
+                # RH/DG valide sa partie
+                if not cleaned_data.get('rh_decision'):
+                    raise ValidationError("La décision du RH/DG est requise.")
+                if cleaned_data.get('rh_decision') == 'rejected' and not cleaned_data.get('rh_comment'):
+                    raise ValidationError("Un commentaire est requis pour un rejet par le RH/DG.")
+        
         return cleaned_data
-
-    def clean_date(self):
-        date = self.cleaned_data.get('date')
-        if date:
-            # Vérifier que ce n'est pas un weekend (pour les demandes planifiées)
-            if date.weekday() >= 5:  # Samedi = 5, Dimanche = 6
-                overtime_type = self.cleaned_data.get('overtime_type')
-                if overtime_type == 'planned':
-                    raise ValidationError('Les heures supplémentaires planifiées ne peuvent pas être demandées pour un weekend.')
-        return date
-
-    def clean_start_time(self):
-        start_time = self.cleaned_data.get('start_time')
-        if start_time:
-            # Vérifier que l'heure de début est dans une plage raisonnable
-            hour = start_time.hour
-            if hour < 6 or hour > 23:
-                raise ValidationError('L\'heure de début doit être entre 06:00 et 23:00.')
-        return start_time
-
-    def clean_end_time(self):
-        end_time = self.cleaned_data.get('end_time')
-        if end_time:
-            # Vérifier que l'heure de fin est dans une plage raisonnable
-            hour = end_time.hour
-            if hour < 7 or hour > 23:
-                raise ValidationError('L\'heure de fin doit être entre 07:00 et 23:00.')
-        return end_time
-
-    def clean_reason(self):
-        reason = self.cleaned_data.get('reason')
-        if reason:
-            # Vérifier que le motif n'est pas trop court
-            if len(reason.strip()) < 10:
-                raise ValidationError('Le motif doit contenir au moins 10 caractères.')
-        return reason
 
 
 class OvertimeApprovalForm(forms.Form):
     """
-    Formulaire pour la validation d'une demande d'heures supplémentaires.
+    Formulaire simple pour l'approbation/rejet d'un enregistrement.
     """
     
     DECISION_CHOICES = [
         ('approved', 'Approuver'),
         ('rejected', 'Rejeter'),
+        ('disputed', 'Contester'),
     ]
     
     decision = forms.ChoiceField(
         choices=DECISION_CHOICES,
-        widget=forms.RadioSelect(attrs={
-            'class': 'form-check-input'
-        }),
-        label="Décision",
-        help_text="Choisissez votre décision concernant cette demande"
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
     )
     
     comment = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 3,
-            'placeholder': 'Ajoutez un commentaire (optionnel)...'
+            'placeholder': 'Votre commentaire...'
         }),
-        label="Commentaire",
-        help_text="Commentaire ou motif de votre décision",
-        required=False
+        required=False,
+        help_text="Commentaire obligatoire pour un rejet ou une contestation"
     )
-
-    def clean_comment(self):
-        comment = self.cleaned_data.get('comment')
-        decision = self.cleaned_data.get('decision')
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        decision = cleaned_data.get('decision')
+        comment = cleaned_data.get('comment')
         
         # Si la décision est rejetée, un commentaire est fortement recommandé
-        if decision == 'rejected' and not comment:
+        if decision in ['rejected', 'disputed'] and not comment:
             raise ValidationError(
-                'Un commentaire est fortement recommandé lors du rejet d\'une demande.'
+                'Un commentaire est fortement recommandé lors du rejet ou de la contestation d\'un enregistrement.'
             )
         
-        return comment
+        return cleaned_data
 
 
 class OvertimeConfigurationForm(forms.ModelForm):
@@ -252,4 +222,3 @@ class OvertimeConfigurationForm(forms.ModelForm):
         if weekly_hours_limit is not None and (weekly_hours_limit < 0 or weekly_hours_limit > 168):
             raise ValidationError('La limite d\'heures hebdomadaires doit être entre 0 et 168 heures.')
         return weekly_hours_limit
-
