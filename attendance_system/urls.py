@@ -21,13 +21,16 @@ urlpatterns = [
     # Administration Django
     path('admin/', admin.site.urls),
     
-    # Interface utilisateur
-    path('', RedirectView.as_view(url='/dashboard/', permanent=False), name='home'),
-    path('accounts/', include('accounts.urls')),
-    path('attendance/', include('attendance.urls')),
-    path('leave/', include('leave.urls')),
-    path('reports/', include('reports.urls')),
-    path('dashboard/', include('accounts.dashboard_urls')),
+           # Interface utilisateur
+           path('', RedirectView.as_view(url='/dashboard/', permanent=False), name='home'),
+           path('accounts/', include('accounts.urls')),
+           path('attendance/', include('attendance.urls')),
+           path('leave/', include('leave.urls')),
+           path('reports/', include('reports.urls')),
+           path('dashboard/', include('accounts.dashboard_urls')),
+           
+           # Interface RH/DG
+           path('hr/', include('accounts.hr_urls')),
 ]
 
 # Configuration pour les fichiers statiques et médias en développement

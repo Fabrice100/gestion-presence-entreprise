@@ -596,15 +596,20 @@
                 Planifier formation
             </a>
             
-            <a href="#" class="tool-button">
+            <a href="{% url 'hr:manager_create' %}" class="tool-button">
+                <i class="bi bi-person-badge me-2"></i>
+                Nouveau manager
+            </a>
+            
+            <a href="{% url 'hr:employee_create' %}" class="tool-button">
                 <i class="bi bi-person-plus me-2"></i>
                 Nouvel employé
             </a>
             
-            <a href="#" class="tool-button">
+            <a href="{% url 'hr:hr_dashboard' %}" class="tool-button">
                 <i class="bi bi-gear me-2"></i>
-                Paramètres RH
-                            </a>
+                Interface RH/DG
+            </a>
                         </div>
                     </div>
     

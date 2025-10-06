@@ -87,6 +87,34 @@
                     {% endif %}
                 </div>
                 
+                <!-- RH/DG -->
+                {% if user.employee_profile.role == 'rh_dg' %}
+                <div class="nav-section">
+                    <div class="nav-section-title">RH/DG</div>
+                    
+                    <div class="nav-item">
+                        <a href="{% url 'hr:hr_dashboard' %}" class="nav-link {% if 'hr_dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="nav-icon bi bi-people"></i>
+                            <span>Gestion RH</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{% url 'hr:department_list' %}" class="nav-link {% if 'department' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="nav-icon bi bi-building"></i>
+                            <span>Départements</span>
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="{% url 'hr:user_list' %}" class="nav-link {% if 'user_list' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="nav-icon bi bi-person-lines-fill"></i>
+                            <span>Utilisateurs</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
                 <!-- Administration -->
                 {% if user.employee_profile.role == 'admin' %}
                 <div class="nav-section">
