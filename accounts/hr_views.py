@@ -67,7 +67,7 @@ class HRDashboardView(HRRequiredMixin, TemplateView):
         # Départements récents
         context['recent_departments'] = Department.objects.all().order_by('-created_at')[:5]
         
-        # Utilisateurs récents
+        # Employés récents
         context['recent_users'] = EmployeeProfile.objects.all().order_by('-created_at')[:5]
         
         return context

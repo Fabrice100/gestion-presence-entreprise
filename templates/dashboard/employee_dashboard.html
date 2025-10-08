@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
     .dashboard-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
         color: white;
         padding: 2rem;
         border-radius: 20px;
@@ -46,87 +46,6 @@
         z-index: 2;
     }
     
-    .quick-actions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .quick-action-card {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .quick-action-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    }
-    
-    .quick-action-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-    }
-    
-    .action-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-    
-    .action-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .action-description {
-        color: #718096;
-        margin-bottom: 1.5rem;
-        line-height: 1.5;
-    }
-    
-    .action-button {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 10px;
-        padding: 0.75rem 1.5rem;
-        color: white;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        transition: all 0.3s ease;
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .action-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        color: white;
-    }
-    
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -139,7 +58,7 @@
         border-radius: 16px;
         padding: 1.5rem;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #0d6efd;
         position: relative;
         overflow: hidden;
     }
@@ -175,7 +94,7 @@
         top: 1rem;
         right: 1rem;
         font-size: 1.5rem;
-        color: #667eea;
+        color: #0d6efd;
         opacity: 0.3;
     }
     
@@ -198,7 +117,7 @@
     
     .section-title i {
         margin-right: 0.75rem;
-        color: #667eea;
+        color: #0d6efd;
     }
     
     .activity-item {
@@ -284,9 +203,6 @@
             font-size: 2rem;
         }
         
-        .quick-actions-grid {
-            grid-template-columns: 1fr;
-        }
         
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -312,65 +228,6 @@
         <p class="dashboard-subtitle">
             Voici un aperçu de votre activité aujourd'hui
         </p>
-    </div>
-    
-    <!-- Actions rapides -->
-    <div class="quick-actions-grid">
-        <div class="quick-action-card">
-            <div class="action-icon">
-                <i class="bi bi-fingerprint"></i>
-            </div>
-            <h3 class="action-title">Pointage Rapide</h3>
-            <p class="action-description">
-                Enregistrez votre heure d'arrivée ou de départ en un clic avec géolocalisation.
-            </p>
-            <a href="{% url 'attendance:punch' %}" class="action-button">
-                <i class="bi bi-clock me-2"></i>
-                Pointer maintenant
-            </a>
-        </div>
-        
-        <div class="quick-action-card">
-            <div class="action-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">
-                <i class="bi bi-calendar-check"></i>
-            </div>
-            <h3 class="action-title">Mes Présences</h3>
-            <p class="action-description">
-                Consultez votre historique de pointage et vos statistiques de présence.
-            </p>
-            <a href="{% url 'attendance:my_attendance' %}" class="action-button" style="background: linear-gradient(135deg, #48bb78, #38a169);">
-                <i class="bi bi-list-ul me-2"></i>
-                Voir l'historique
-            </a>
-        </div>
-        
-        <div class="quick-action-card">
-            <div class="action-icon" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
-                <i class="bi bi-briefcase"></i>
-            </div>
-            <h3 class="action-title">Mes Demandes de Congés</h3>
-            <p class="action-description">
-                Gérez et suivez vos demandes de congés en temps réel.
-            </p>
-            <a href="{% url 'leave:leave_request_list' %}" class="action-button" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
-                <i class="bi bi-send me-2"></i>
-                Gérer les demandes
-            </a>
-        </div>
-        
-        <div class="quick-action-card">
-            <div class="action-icon" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
-                <i class="bi bi-wallet2"></i>
-            </div>
-            <h3 class="action-title">Solde de Congés</h3>
-            <p class="action-description">
-                Consultez votre solde de jours de congés restants pour cette année.
-            </p>
-            <a href="{% url 'leave:leave_balance_list' %}" class="action-button" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
-                <i class="bi bi-eye me-2"></i>
-                Voir le solde
-            </a>
-        </div>
     </div>
     
     <!-- Statistiques rapides -->
@@ -480,7 +337,7 @@
 <script>
     // Animation d'entrée pour les cartes
     document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.quick-action-card, .stat-card');
+        const cards = document.querySelectorAll('.stat-card');
         cards.forEach((card, index) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(30px)';

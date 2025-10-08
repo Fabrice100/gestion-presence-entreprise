@@ -1,344 +1,260 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Tableau de bord des rapports{% endblock %}
 
-{% block page_title %}Rapports et Analyses{% endblock %}
-
-{% block page_subtitle %}<p class="page-subtitle">Consultez les statistiques et générez des rapports détaillés</p>{% endblock %}
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 30s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-card.primary::before {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    }
+    
+    .stat-card.success::before {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+    
+    .stat-card.warning::before {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .stat-card.danger::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .stat-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+    }
+    
+    .stat-icon.primary {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    }
+    
+    .stat-icon.success {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+    
+    .stat-icon.warning {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .stat-icon.danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        line-height: 1;
+        min-height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 1rem;
+        font-weight: 600;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        line-height: 1.2;
+        min-height: 2.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    
+    .section-header {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-header i {
+        margin-right: 0.75rem;
+        color: #0d6efd;
+    }
+    
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<div class="mb-6">
-    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left me-2"></i>
-        Retour au tableau de bord
-    </a>
-</div>
-
-<!-- Statistiques globales -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-people text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">{{ total_employees|default:0 }}</h3>
-            <p class="text-gray-600 text-sm">Total employés</p>
-        </div>
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="page-header">
+        <h1 class="page-title">Rapports et Analyses</h1>
+        <p class="page-subtitle">Consultez les statistiques et générez des rapports détaillés</p>
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-check-circle text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">{{ present_today|default:0 }}</h3>
-            <p class="text-gray-600 text-sm">Présents aujourd'hui</p>
-        </div>
+    <!-- Statistiques globales -->
+    <div class="section-header">
+        <i class="bi bi-graph-up"></i>
+        Statistiques Globales
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-calendar-event text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">{{ pending_leave_requests|default:0 }}</h3>
-            <p class="text-gray-600 text-sm">Demandes en attente</p>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-error rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-exclamation-triangle text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">{{ anomalies_pending|default:0 }}</h3>
-            <p class="text-gray-600 text-sm">Anomalies en attente</p>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Graphique des présences -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-graph-up me-2"></i>
-                Tendance des présences (30 derniers jours)
-            </h3>
-        </div>
-        <div class="card-body">
-            <canvas id="attendanceChart" height="200"></canvas>
-        </div>
-    </div>
-    
-    <!-- Graphique des départements -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-pie-chart me-2"></i>
-                Répartition par département
-            </h3>
-        </div>
-        <div class="card-body">
-            <canvas id="departmentChart" height="200"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Rapports disponibles -->
-<div class="mt-6">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-file-earmark-text me-2"></i>
-                Rapports disponibles
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Rapport de présence -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex items-center mb-3">
-                        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center mr-3">
-                            <i class="bi bi-clock text-white"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Rapport de présence</h4>
-                            <p class="text-sm text-gray-600">Analyse détaillée des présences</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-700 mb-4">
-                        Consultez les statistiques de présence par employé, département ou période.
-                    </p>
-                    <a href="{% url 'reports:attendance_report' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-arrow-right me-1"></i>
-                        Consulter
-                    </a>
+    <div class="row mb-5">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card primary">
+                <div class="stat-icon primary">
+                    <i class="bi bi-people"></i>
                 </div>
-                
-                <!-- Rapport de congés -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex items-center mb-3">
-                        <div class="w-10 h-10 bg-success rounded-lg flex items-center justify-center mr-3">
-                            <i class="bi bi-calendar-event text-white"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Rapport de congés</h4>
-                            <p class="text-sm text-gray-600">Statistiques des congés</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-700 mb-4">
-                        Analyse des demandes de congés, approbations et tendances.
-                    </p>
-                    <a href="{% url 'reports:leave_report' %}" class="btn btn-success btn-sm">
-                        <i class="bi bi-arrow-right me-1"></i>
-                        Consulter
-                    </a>
+                <div class="stat-number">{{ total_employees|default:0 }}</div>
+                <div class="stat-label">Total Employés</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card success">
+                <div class="stat-icon success">
+                    <i class="bi bi-check-circle"></i>
                 </div>
-                
-                <!-- Rapport d'anomalies -->
-                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex items-center mb-3">
-                        <div class="w-10 h-10 bg-error rounded-lg flex items-center justify-center mr-3">
-                            <i class="bi bi-exclamation-triangle text-white"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Rapport d'anomalies</h4>
-                            <p class="text-sm text-gray-600">Analyse des anomalies</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-700 mb-4">
-                        Identification et suivi des anomalies de présence.
-                    </p>
-                    <a href="{% url 'reports:anomaly_report' %}" class="btn btn-error btn-sm">
-                        <i class="bi bi-arrow-right me-1"></i>
-                        Consulter
-                    </a>
+                <div class="stat-number">{{ present_today|default:0 }}</div>
+                <div class="stat-label">Présents Aujourd'hui</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card warning">
+                <div class="stat-icon warning">
+                    <i class="bi bi-calendar-event"></i>
                 </div>
+                <div class="stat-number">{{ pending_leave_requests|default:0 }}</div>
+                <div class="stat-label">Demandes en Attente</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card danger">
+                <div class="stat-icon danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-number">{{ anomalies_pending|default:0 }}</div>
+                <div class="stat-label">Anomalies en Attente</div>
             </div>
         </div>
     </div>
+    
+    
 </div>
+{% endblock %}
 
-<!-- Actions rapides -->
-<div class="mt-6">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-lightning me-2"></i>
-                Actions rapides
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="flex flex-wrap gap-3">
-                <button onclick="exportReport('attendance', 'pdf')" class="btn btn-outline">
-                    <i class="bi bi-file-earmark-pdf me-2"></i>
-                    Export Présence PDF
-                </button>
-                
-                <button onclick="exportReport('leave', 'excel')" class="btn btn-outline">
-                    <i class="bi bi-file-earmark-excel me-2"></i>
-                    Export Congés Excel
-                </button>
-                
-                <button onclick="exportReport('summary', 'pdf')" class="btn btn-outline">
-                    <i class="bi bi-file-earmark-text me-2"></i>
-                    Rapport Récapitulatif
-                </button>
-                
-                {% if user.employee_profile.role == 'rh_dg' %}
-                <a href="/admin/" class="btn btn-outline">
-                    <i class="bi bi-gear me-2"></i>
-                    Paramètres système
-                </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Scripts pour les graphiques -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block extra_js %}
 <script>
-// Données pour les graphiques
-const attendanceData = {{ attendance_trend|safe }};
-const departmentData = {{ department_stats|safe }};
-
-// Graphique des présences
-const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-new Chart(attendanceCtx, {
-    type: 'line',
-    data: {
-        labels: attendanceData.map(item => new Date(item.date).toLocaleDateString()),
-        datasets: [{
-            label: 'Présences',
-            data: attendanceData.map(item => item.count),
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-            tension: 0.4,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
-        }
-    }
-});
-
-// Graphique des départements
-const departmentCtx = document.getElementById('departmentChart').getContext('2d');
-new Chart(departmentCtx, {
-    type: 'doughnut',
-    data: {
-        labels: departmentData.map(item => item.name),
-        datasets: [{
-            data: departmentData.map(item => item.employee_count),
-            backgroundColor: [
-                '#667eea',
-                '#764ba2',
-                '#f093fb',
-                '#f5576c',
-                '#4facfe',
-                '#00f2fe'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
-    }
-});
-
-// Fonction d'export
-function exportReport(type, format) {
-    // Afficher un indicateur de chargement
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Génération...';
-    button.disabled = true;
-    
-    fetch(`/reports/api/export/?type=${type}&format=${format}`)
-        .then(response => {
-            if (response.ok) {
-                // Si c'est un fichier, le télécharger
-                if (response.headers.get('content-type').includes('application/pdf') || 
-                    response.headers.get('content-type').includes('spreadsheetml')) {
-                    
-                    const filename = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || `rapport_${type}.${format}`;
-                    
-                    return response.blob().then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                        
-                        // Afficher un message de succès
-                        showNotification(`Export ${type} en ${format.toUpperCase()} téléchargé avec succès !`, 'success');
-                    });
-                } else {
-                    // Si c'est du JSON (erreur), l'afficher
-                    return response.json().then(data => {
-                        showNotification(data.error || 'Erreur lors de l\'export', 'error');
-                    });
-                }
-            } else {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showNotification('Erreur lors de l\'export: ' + error.message, 'error');
-        })
-        .finally(() => {
-            // Restaurer le bouton
-            button.innerHTML = originalText;
-            button.disabled = false;
+    // Animation d'entrée pour les cartes
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.stat-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
         });
-}
-
-// Fonction pour afficher des notifications
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-supprimer après 5 secondes
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
+    });
 </script>
 {% endblock %}

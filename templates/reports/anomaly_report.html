@@ -1,4 +1,4 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Rapport d'anomalies{% endblock %}
@@ -25,90 +25,81 @@
         </h3>
     </div>
     <div class="card-body">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="form-group">
-                <label class="form-label">Date de début</label>
-                <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Date de fin</label>
-                <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Type d'anomalie</label>
-                <select name="anomaly_type" class="form-control">
-                    <option value="">Tous les types</option>
-                    <option value="late" {% if selected_anomaly_type == "late" %}selected{% endif %}>Retard</option>
-                    <option value="early" {% if selected_anomaly_type == "early" %}selected{% endif %}>Sortie anticipée</option>
-                    <option value="missing_out" {% if selected_anomaly_type == "missing_out" %}selected{% endif %}>Sortie oubliée</option>
-                    <option value="outside_zone" {% if selected_anomaly_type == "outside_zone" %}selected{% endif %}>Hors zone</option>
-                    <option value="low_accuracy" {% if selected_anomaly_type == "low_accuracy" %}selected{% endif %}>Précision faible</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-full">
-                    <i class="bi bi-search me-2"></i>
-                    Appliquer
-                </button>
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date de début</label>
+                    <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Date de fin</label>
+                    <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label">Type d'anomalie</label>
+                    <select name="anomaly_type" class="form-select">
+                        <option value="">Tous les types</option>
+                        <option value="late" {% if selected_anomaly_type == "late" %}selected{% endif %}>Retard</option>
+                        <option value="early" {% if selected_anomaly_type == "early" %}selected{% endif %}>Sortie anticipée</option>
+                        <option value="missing_out" {% if selected_anomaly_type == "missing_out" %}selected{% endif %}>Sortie oubliée</option>
+                        <option value="outside_zone" {% if selected_anomaly_type == "outside_zone" %}selected{% endif %}>Hors zone</option>
+                        <option value="low_accuracy" {% if selected_anomaly_type == "low_accuracy" %}selected{% endif %}>Précision faible</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-2"></i>
+                        Appliquer
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Statistiques du rapport -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-error rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-exclamation-triangle text-white text-xl"></i>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                </div>
+                <h3 class="fs-4 fw-bold mb-1">{{ total_anomalies }}</h3>
+                <p class="text-muted small">Total anomalies</p>
             </div>
-            <h3 class="text-lg font-semibold mb-1">{{ total_anomalies }}</h3>
-            <p class="text-gray-600 text-sm">Total anomalies</p>
         </div>
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-list-ul text-white text-xl"></i>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-list-ul fs-1 text-warning"></i>
+                </div>
+                <h3 class="fs-4 fw-bold mb-1">{{ anomaly_type_stats|length }}</h3>
+                <p class="text-muted small">Types d'anomalies</p>
             </div>
-            <h3 class="text-lg font-semibold mb-1">{{ anomaly_type_stats|length }}</h3>
-            <p class="text-gray-600 text-sm">Types d'anomalies</p>
         </div>
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-info rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-people text-white text-xl"></i>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-people fs-1 text-info"></i>
+                </div>
+                <h3 class="fs-4 fw-bold mb-1">{{ employee_anomaly_stats|length }}</h3>
+                <p class="text-muted small">Employés concernés</p>
             </div>
-            <h3 class="text-lg font-semibold mb-1">{{ employee_anomaly_stats|length }}</h3>
-            <p class="text-gray-600 text-sm">Employés concernés</p>
         </div>
     </div>
 </div>
 
-<!-- Actions d'export -->
-<div class="flex justify-end gap-2 mb-6">
-    <button onclick="exportReport('pdf')" class="btn btn-primary">
-        <i class="bi bi-file-earmark-pdf me-2"></i>
-        Export PDF
-    </button>
-    
-    <button onclick="exportReport('excel')" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel me-2"></i>
-        Export Excel
-    </button>
-    
-    <button onclick="window.print()" class="btn btn-outline">
-        <i class="bi bi-printer me-2"></i>
-        Imprimer
-    </button>
-</div>
 
 <!-- Statistiques par type d'anomalie -->
 <div class="card mb-6">

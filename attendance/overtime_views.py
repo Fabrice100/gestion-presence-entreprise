@@ -26,7 +26,6 @@ from decimal import Decimal
 from .models import OvertimeRecord, OvertimeConfiguration
 from .overtime_forms import OvertimeRecordForm, OvertimeApprovalForm
 from accounts.models import EmployeeProfile
-from notifications.services import NotificationService
 
 
 # Mixins pour les permissions
@@ -217,11 +216,7 @@ class OvertimeApprovalProcessView(LoginRequiredMixin, UpdateView):
                 
                 record.save()
                 
-                # Notification RH/DG
-                if decision in ['approved', 'rejected']:
-                    NotificationService.send_overtime_approval_notification(
-                        record, user, decision, comment
-                    )
+                # TODO: Notification RH/DG (à implémenter avec emails)
                 
                 messages.success(self.request, f"L'enregistrement a été {decision} par le manager.")
                 
@@ -240,10 +235,7 @@ class OvertimeApprovalProcessView(LoginRequiredMixin, UpdateView):
                 
                 record.save()
                 
-                # Notification employé
-                NotificationService.send_overtime_final_decision_notification(
-                    record, user, decision, comment
-                )
+                # TODO: Notification employé (à implémenter avec emails)
                 
                 messages.success(self.request, f"L'enregistrement a été {decision} par les RH/DG.")
         

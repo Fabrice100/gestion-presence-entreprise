@@ -57,7 +57,7 @@
                             {% if user.employee_profile %}
                                 {{ user.employee_profile.get_role_display }}
                             {% else %}
-                                Utilisateur
+                                Administrateur
                             {% endif %}
                         </div>
                     </div>
@@ -104,6 +104,30 @@
                     </li>
                     {% endif %}
                     
+                    
+                    {% if user.employee_profile.role == 'rh_dg' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'hr:hr_dashboard' %}">
+                            <i class="bi bi-briefcase"></i>
+                            <span>Gestion RH</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'hr:user_list' %}">
+                            <i class="bi bi-people"></i>
+                            <span>Employés</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'hr:department_list' %}">
+                            <i class="bi bi-building"></i>
+                            <span>Départements</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
                     {% if user.employee_profile.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'reports:reports_dashboard' %}">
@@ -121,26 +145,6 @@
                     {% endif %}
                 </ul>
                 
-                <!-- Séparateur -->
-                <hr class="sidebar-divider">
-                
-                <!-- Actions rapides -->
-                <div class="quick-actions">
-                    <h6 class="sidebar-title">Actions rapides</h6>
-                    <div class="action-buttons">
-                        {% if user.employee_profile.can_punch %}
-                        <a href="{% url 'attendance:punch' %}" class="btn btn-primary btn-sm w-100 mb-2">
-                            <i class="bi bi-fingerprint me-1"></i>
-                            Pointer maintenant
-                        </a>
-                        {% endif %}
-                        
-                        <a href="{% url 'leave:leave_request_create' %}" class="btn btn-outline-primary btn-sm w-100">
-                            <i class="bi bi-plus-circle me-1"></i>
-                            Demander congé
-                        </a>
-                    </div>
-                </div>
             </div>
         </nav>
         
@@ -156,17 +160,18 @@
                     <div class="topbar-actions">
                         <!-- Notifications -->
                         <div class="dropdown">
-                            <button class="btn btn-link position-relative" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-link" type="button" data-bs-toggle="dropdown" title="Notifications - Bientôt disponible">
                                 <i class="bi bi-bell"></i>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    3
-                                </span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><h6 class="dropdown-header">Notifications</h6></li>
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-clock me-2"></i>Pointage en retard</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-calendar me-2"></i>Demande de congé approuvée</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-exclamation-triangle me-2"></i>Anomalie détectée</a></li>
+                                <li><div class="dropdown-item-text text-muted">
+                                    <i class="bi bi-tools me-2"></i>
+                                    Fonctionnalité en développement
+                                </div></li>
+                                <li><div class="dropdown-item-text small text-muted">
+                                    Les notifications par email seront disponibles prochainement
+                                </div></li>
                             </ul>
                         </div>
                         
@@ -180,7 +185,7 @@
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mon profil</a></li>
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Paramètres</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:exit' %}"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
                             </ul>
                         </div>
                     </div>

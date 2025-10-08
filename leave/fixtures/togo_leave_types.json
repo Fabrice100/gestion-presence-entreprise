@@ -1,0 +1,87 @@
+[
+  {
+    "model": "leave.leavetype",
+    "pk": 1,
+    "fields": {
+      "name": "Congés payés",
+      "description": "Congés annuels légaux - 24 jours ouvrables par an (Code du Travail togolais)",
+      "code": "CP",
+      "unit": "days",
+      "allocation_type": "annual",
+      "allocation_amount": "24.00",
+      "max_consecutive_days": 24,
+      "requires_justification": false,
+      "requires_medical_certificate": false,
+      "advance_notice_days": 30,
+      "is_paid": true,
+      "is_active": true,
+      "color": "#4CAF50",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "leave.leavetype",
+    "pk": 2,
+    "fields": {
+      "name": "Congé maladie",
+      "description": "Absence pour raison de santé avec certificat médical obligatoire",
+      "code": "MAL",
+      "unit": "days",
+      "allocation_type": "on_demand",
+      "allocation_amount": "180.00",
+      "max_consecutive_days": 180,
+      "requires_justification": true,
+      "requires_medical_certificate": true,
+      "advance_notice_days": 0,
+      "is_paid": true,
+      "is_active": true,
+      "color": "#FF9800",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "leave.leavetype",
+    "pk": 3,
+    "fields": {
+      "name": "Événements familiaux",
+      "description": "Congés pour mariage, naissance, décès (selon Code du Travail togolais)",
+      "code": "EVT",
+      "unit": "days",
+      "allocation_type": "on_demand",
+      "allocation_amount": "15.00",
+      "max_consecutive_days": 5,
+      "requires_justification": true,
+      "requires_medical_certificate": false,
+      "advance_notice_days": 3,
+      "is_paid": true,
+      "is_active": true,
+      "color": "#2196F3",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "leave.leavetype",
+    "pk": 4,
+    "fields": {
+      "name": "Congé sans solde",
+      "description": "Absence non rémunérée sur demande et accord de l'employeur",
+      "code": "CSS",
+      "unit": "days",
+      "allocation_type": "on_demand",
+      "allocation_amount": "0.00",
+      "max_consecutive_days": 90,
+      "requires_justification": true,
+      "requires_medical_certificate": false,
+      "advance_notice_days": 15,
+      "is_paid": false,
+      "is_active": true,
+      "color": "#9E9E9E",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]
+

@@ -164,14 +164,10 @@
     font-size: 1.1rem;
 }
 
-/* Actions rapides */
+/* Séparateurs sidebar */
 .sidebar-divider {
     margin: 1.5rem 1rem;
     border-color: var(--gray-300);
-}
-
-.quick-actions {
-    padding: 0 1rem;
 }
 
 .sidebar-title {

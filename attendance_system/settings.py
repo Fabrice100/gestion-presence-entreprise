@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'attendance',    # Système de pointage avec géolocalisation
     'leave',         # Gestion des congés et validations
     'reports',       # Rapports et exports
-    'notifications', # Système de notifications et emails
 ]
 
 # Configuration pour crispy-forms (formulaires Bootstrap)

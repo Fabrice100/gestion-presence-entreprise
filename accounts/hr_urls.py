@@ -37,3 +37,4 @@ urlpatterns = [
     # API
     path('api/managers/', hr_views.get_managers_by_department, name='api_managers'),
 ]
+

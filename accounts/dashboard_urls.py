@@ -29,3 +29,4 @@ urlpatterns = [
     path('admin/', dashboard_views.AdminDashboardView.as_view(), name='admin_dashboard'),
 ]
 
+

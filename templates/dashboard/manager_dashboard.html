@@ -6,8 +6,8 @@
 {% block extra_css %}
 <style>
     .dashboard-header {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
-        color: #2d3748;
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
@@ -70,7 +70,7 @@
     }
     
     .stat-card.team {
-        border-left-color: #ff9a9e;
+        border-left-color: #0d6efd;
     }
     
     .stat-card.present {
@@ -109,9 +109,7 @@
     }
     
     .team-overview {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 2rem;
+        display: block;
         margin-bottom: 2rem;
     }
     
@@ -136,14 +134,14 @@
     .team-member:hover {
         background: #e9ecef;
         transform: translateX(5px);
-        border-left-color: #ff9a9e;
+        border-left-color: #0d6efd;
     }
     
     .member-avatar {
         width: 45px;
         height: 45px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -179,43 +177,6 @@
         color: #ed8936;
     }
     
-    .quick-actions {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .action-button {
-        display: block;
-        width: 100%;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #ff9a9e, #fecfef);
-        border: none;
-        border-radius: 12px;
-        color: #2d3748;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-    
-    .action-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(255, 154, 158, 0.3);
-        color: #2d3748;
-    }
-    
-    .action-button.secondary {
-        background: linear-gradient(135deg, #48bb78, #38a169);
-        color: white;
-    }
-    
-    .action-button.secondary:hover {
-        box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
-        color: white;
-    }
     
     .pending-requests {
         background: white;
@@ -250,7 +211,7 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -322,13 +283,10 @@
     
     .section-title i {
         margin-right: 0.75rem;
-        color: #ff9a9e;
+        color: #0d6efd;
     }
     
     @media (max-width: 768px) {
-        .team-overview {
-            grid-template-columns: 1fr;
-        }
         
         .dashboard-header {
             padding: 1.5rem;
@@ -369,7 +327,7 @@
         <div class="stat-card team">
             <div class="stat-number">{{ team_stats.total_employees|default:4 }}</div>
             <div class="stat-label">Membres de l'équipe</div>
-            <i class="bi bi-people stat-icon" style="color: #ff9a9e;"></i>
+            <i class="bi bi-people stat-icon" style="color: #0d6efd;"></i>
         </div>
         
         <div class="stat-card present">
@@ -444,32 +402,6 @@
             </div>
         </div>
         
-        <div class="quick-actions">
-            <h2 class="section-title">
-                <i class="bi bi-lightning"></i>
-                Actions rapides
-            </h2>
-            
-            <a href="{% url 'leave:leave_approval_list' %}" class="action-button">
-                <i class="bi bi-check-circle me-2"></i>
-                Valider les congés
-            </a>
-            
-            <a href="{% url 'attendance:punch' %}" class="action-button secondary">
-                <i class="bi bi-fingerprint me-2"></i>
-                Pointer maintenant
-            </a>
-            
-            <a href="{% url 'reports:attendance_report' %}" class="action-button">
-                <i class="bi bi-graph-up me-2"></i>
-                Rapport d'équipe
-            </a>
-            
-            <a href="#" class="action-button">
-                <i class="bi bi-calendar-event me-2"></i>
-                Planifier réunion
-            </a>
-        </div>
     </div>
     
     <!-- Demandes en attente -->

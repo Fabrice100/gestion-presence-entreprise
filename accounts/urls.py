@@ -14,6 +14,7 @@ Version: 1.0
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from .logout_view import logout_view
 
 app_name = 'accounts'
 
@@ -21,9 +22,8 @@ urlpatterns = [
     # Authentification
     path('login/', views.CustomLoginView.as_view(), name='login'),
     
-    path('logout/', auth_views.LogoutView.as_view(
-        next_page='/accounts/login/'
-    ), name='logout'),
+    path('logout/', logout_view, name='logout'),
+    path('exit/', logout_view, name='exit'),
     
     # Gestion des mots de passe (templates créés)
     path('password-change/', auth_views.PasswordChangeView.as_view(

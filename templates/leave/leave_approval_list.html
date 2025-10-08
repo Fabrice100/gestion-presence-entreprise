@@ -1,267 +1,512 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Validation des congés{% endblock %}
 
-{% block page_title %}Validation des congés{% endblock %}
-
-{% block page_subtitle %}
-    <p class="page-subtitle">
-        {% if user.employee_profile.role == 'manager' %}
-            Validez les demandes de congés de votre équipe
-        {% elif user.employee_profile.role == 'rh_dg' %}
-            Validation finale des demandes de congés
-        {% endif %}
-    </p>
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 30s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .action-buttons {
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-card.pending::before {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+    
+    .stat-card.departments::before {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    
+    .stat-card.urgent::before {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .stat-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+    }
+    
+    .stat-icon.pending {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+    
+    .stat-icon.departments {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    
+    .stat-icon.urgent {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        line-height: 1;
+        min-height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-label {
+        color: #718096;
+        font-size: 1rem;
+        font-weight: 600;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        line-height: 1.2;
+        min-height: 2.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .requests-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .requests-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        padding: 1.5rem 2rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    .request-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        background: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .request-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        border-radius: 16px 0 0 16px;
+    }
+    
+    .request-card.urgent::before {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .request-card.normal::before {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    
+    .request-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        border-color: #0d6efd;
+    }
+    
+    .employee-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .employee-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-right: 1rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .employee-details h4 {
+        margin: 0;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.1rem;
+    }
+    
+    .employee-details p {
+        margin: 0;
+        color: #718096;
+        font-size: 0.9rem;
+    }
+    
+    .request-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-item {
+        text-align: center;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+    
+    .priority-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+    
+    .priority-badge.urgent {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: white;
+    }
+    
+    .priority-badge.normal {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+    }
+    
+    .request-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-modern {
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: white;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #a8edea, #fed6e3);
+        color: #4a5568;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #718096;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .request-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .employee-info {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .employee-avatar {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .request-actions {
+            flex-direction: column;
+        }
+        
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<div class="mb-6">
-    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left me-2"></i>
-        Retour au tableau de bord
-    </a>
-</div>
-
-<!-- Statistiques rapides -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-hourglass-split text-white text-xl"></i>
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="page-header">
+        <h1 class="page-title">Validation des Congés</h1>
+        <p class="page-subtitle">
+            {% if user.employee_profile.role == 'manager' %}
+                Validez les demandes de congés de votre équipe
+            {% elif user.employee_profile.role == 'rh_dg' %}
+                Validation finale des demandes de congés
+            {% endif %}
+        </p>
+    </div>
+    
+    
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="stat-card pending">
+                <div class="stat-icon pending">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-number">{{ leave_requests|length }}</div>
+                <div class="stat-label">Demandes en attente</div>
             </div>
-            <h3 class="text-lg font-semibold mb-1">{{ leave_requests|length }}</h3>
-            <p class="text-gray-600 text-sm">Demandes en attente</p>
+        </div>
+        
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="stat-card departments">
+                <div class="stat-icon departments">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-number">
+                    {% regroup leave_requests by employee.employee_profile.department.name as departments %}
+                    {{ departments|length|default:0 }}
+                </div>
+                <div class="stat-label">Départements concernés</div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="stat-card urgent">
+                <div class="stat-icon urgent">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Demandes urgentes</div>
+            </div>
         </div>
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-info rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-people text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">
-                {% for request in leave_requests %}
-                    {% if request.employee.employee_profile.department %}{{ request.employee.employee_profile.department.name }}{% endif %}
-                {% endfor %}
-            </h3>
-            <p class="text-gray-600 text-sm">Départements concernés</p>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center mx-auto mb-3">
-                <i class="bi bi-check-circle text-white text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-1">0</h3>
-            <p class="text-gray-600 text-sm">Validées aujourd'hui</p>
-        </div>
-    </div>
-</div>
-
-<!-- Liste des demandes à valider -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">
+    <!-- Liste des demandes -->
+    <div class="requests-container">
+        <div class="requests-header">
             <i class="bi bi-list-check me-2"></i>
             Demandes à valider
-        </h3>
-    </div>
-    <div class="card-body p-0">
-        {% if leave_requests %}
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Employé</th>
-                            <th>Type de congé</th>
-                            <th>Période</th>
-                            <th>Durée</th>
-                            <th>Motif</th>
-                            <th>Priorité</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in leave_requests %}
-                        <tr class="{% if request.leave_type.name|lower == 'urgent' or request.start_date <= 'today'|date:'Y-m-d' %}bg-red-50{% endif %}">
-                            <td>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                                        <i class="bi bi-person text-white"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-medium">{{ request.employee.get_full_name|default:request.employee.username }}</h4>
-                                        <p class="text-gray-600 text-sm">{{ request.employee.email }}</p>
-                                        {% if request.employee.employee_profile.department %}
-                                            <p class="text-gray-500 text-xs">
-                                                <i class="bi bi-building me-1"></i>
-                                                {{ request.employee.employee_profile.department.name }}
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 bg-info rounded-lg flex items-center justify-center">
-                                        <i class="bi bi-calendar-event text-white text-sm"></i>
-                                    </div>
-                                    <span class="font-medium">{{ request.leave_type.name }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div>
-                                    <p class="font-medium">{{ request.start_date|date:"d/m/Y" }}</p>
-                                    <p class="text-gray-600 text-sm">{{ request.end_date|date:"d/m/Y" }}</p>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="font-medium">
-                                    {% with duration=request.end_date|timeuntil:request.start_date %}
-                                        {{ duration|add:1 }} jour{{ duration|add:1|pluralize }}
-                                    {% endwith %}
-                                </span>
-                            </td>
-                            <td>
-                                <p class="text-sm text-gray-600 max-w-xs truncate">{{ request.reason }}</p>
-                            </td>
-                            <td>
-                                {% if request.start_date <= 'today'|date:'Y-m-d' %}
-                                    <span class="badge badge-error">Urgent</span>
-                                {% elif request.leave_type.name|lower == 'urgent' %}
-                                    <span class="badge badge-warning">Élevée</span>
-                                {% else %}
-                                    <span class="badge badge-success">Normale</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <a href="{% url 'leave:leave_approval_detail' request.pk %}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye me-1"></i>
-                                        Examiner
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            {% if is_paginated %}
-                <div class="card-footer">
-                    <div class="flex justify-between items-center">
-                        <div class="text-sm text-gray-600">
-                            Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        </div>
+        
+        <div class="p-4">
+            {% if leave_requests %}
+                {% for request in leave_requests %}
+                <div class="request-card {% if request.is_urgent %}urgent{% else %}normal{% endif %}">
+                    <div class="priority-badge {% if request.is_urgent %}urgent{% else %}normal{% endif %}">
+                        {% if request.is_urgent %}Urgent{% else %}Normal{% endif %}
+                    </div>
+                    
+                    <div class="employee-info">
+                        <div class="employee-avatar">
+                            {{ request.employee.first_name.0|default:request.employee.username.0|upper }}
                         </div>
-                        <div class="flex gap-2">
-                            {% if page_obj.has_previous %}
-                                <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-secondary">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            {% endif %}
-                            
-                            {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                    <span class="btn btn-sm btn-primary">{{ num }}</span>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                    <a href="?page={{ num }}" class="btn btn-sm btn-secondary">{{ num }}</a>
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if page_obj.has_next %}
-                                <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-secondary">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            {% endif %}
+                        <div class="employee-details">
+                            <h4>{{ request.employee.get_full_name|default:request.employee.username }}</h4>
+                            <p>{{ request.employee.employee_profile.department.name|default:"Aucun département" }}</p>
                         </div>
                     </div>
-                </div>
-            {% endif %}
-        {% else %}
-            <div class="p-8 text-center">
-                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="bi bi-check-circle text-2xl text-gray-400"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune demande en attente</h3>
-                <p class="text-gray-600 mb-4">
-                    {% if user.employee_profile.role == 'manager' %}
-                        Toutes les demandes de votre équipe sont à jour
-                    {% elif user.employee_profile.role == 'rh_dg' %}
-                        Toutes les demandes sont traitées
+                    
+                    <div class="request-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Type de congé</div>
+                            <div class="detail-value">{{ request.leave_type.name }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Date de début</div>
+                            <div class="detail-value">{{ request.start_date|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Date de fin</div>
+                            <div class="detail-value">{{ request.end_date|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Durée</div>
+                            <div class="detail-value">{{ request.duration }} jour{{ request.duration|pluralize }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if request.reason %}
+                    <div class="mb-3">
+                        <strong>Motif :</strong>
+                        <p class="mt-1 text-muted">{{ request.reason }}</p>
+                    </div>
                     {% endif %}
-                </p>
-                <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
-                    <i class="bi bi-house me-2"></i>
-                    Retour au tableau de bord
-                </a>
+                    
+                    <div class="request-actions">
+                        <a href="{% url 'leave:leave_approval_detail' request.id %}?action=approve" class="btn btn-approve btn-modern">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Approuver
+                        </a>
+                        <a href="{% url 'leave:leave_approval_detail' request.id %}?action=reject" class="btn btn-reject btn-modern">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Rejeter
+                        </a>
+                        <a href="{% url 'leave:leave_approval_detail' request.id %}" class="btn btn-secondary-modern btn-modern">
+                            <i class="bi bi-eye me-2"></i>
+                            Voir détails
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3>Aucune demande en attente</h3>
+                <p>Toutes les demandes ont été traitées.</p>
             </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Instructions -->
-<div class="mt-6">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-info-circle me-2"></i>
-                Instructions de validation
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="space-y-3">
-                {% if user.employee_profile.role == 'manager' %}
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-1-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Examinez la demande</h4>
-                            <p class="text-sm text-gray-600">Vérifiez la période, le motif et l'impact sur l'équipe</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-2-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Consultez le planning</h4>
-                            <p class="text-sm text-gray-600">Assurez-vous qu'il n'y a pas de conflit avec d'autres absences</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-3-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Prenez une décision</h4>
-                            <p class="text-sm text-gray-600">Approuvez ou rejetez avec un commentaire explicatif</p>
-                        </div>
-                    </div>
-                {% elif user.employee_profile.role == 'rh_dg' %}
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-1-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Validation finale</h4>
-                            <p class="text-sm text-gray-600">Examinez la demande déjà approuvée par le manager</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-2-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Vérifiez les soldes</h4>
-                            <p class="text-sm text-gray-600">Confirmez que l'employé a suffisamment de jours disponibles</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <i class="bi bi-3-circle text-primary mt-1"></i>
-                        <div>
-                            <h4 class="font-medium">Finalisez l'approbation</h4>
-                            <p class="text-sm text-gray-600">Approuvez définitivement ou rejetez avec justification</p>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+    // Animation d'entrée pour les cartes
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.stat-card, .request-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
 {% endblock %}

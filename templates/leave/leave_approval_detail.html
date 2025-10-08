@@ -1,230 +1,426 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Validation de congé{% endblock %}
 
-{% block page_title %}Validation de demande de congé{% endblock %}
-
-{% block page_subtitle %}<p class="page-subtitle">Examinez et validez cette demande de congé</p>{% endblock %}
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 30s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        padding: 1.5rem 2rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+    
+    .employee-profile {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        border-radius: 16px;
+    }
+    
+    .employee-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-right: 1.5rem;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .employee-info h3 {
+        margin: 0 0 0.5rem 0;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.3rem;
+    }
+    
+    .employee-info p {
+        margin: 0;
+        color: #718096;
+        font-size: 1rem;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .detail-item {
+        text-align: center;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .detail-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-color: #0d6efd;
+    }
+    
+    .detail-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1rem;
+        color: white;
+    }
+    
+    .detail-icon.type {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+    
+    .detail-icon.start {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    
+    .detail-icon.end {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+    
+    .detail-icon.duration {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+    
+    .reason-section {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .reason-section h4 {
+        color: #2d3748;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .reason-text {
+        color: #4a5568;
+        line-height: 1.6;
+        font-style: italic;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        border-left: 4px solid #0d6efd;
+    }
+    
+    .approval-form {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        padding: 1.5rem 2rem;
+        text-align: center;
+    }
+    
+    .form-header h3 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 2rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 1rem;
+    }
+    
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        width: 100%;
+    }
+    
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        background: white;
+        outline: none;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-modern {
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        font-size: 1rem;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: white;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #a8edea, #fed6e3);
+        color: #4a5568;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+    
+    .status-badge.pending {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+    }
+    
+    .status-badge.approved {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+        color: white;
+    }
+    
+    .status-badge.rejected {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .employee-profile {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .employee-avatar {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<div class="mb-6">
-    <a href="{% url 'leave:leave_approval_list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left me-2"></i>
-        Retour à la liste
-    </a>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Informations de la demande -->
-    <div class="space-y-6">
-        <!-- Détails de l'employé -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-person me-2"></i>
-                    Informations employé
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                        <i class="bi bi-person text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-lg font-semibold">{{ leave_request.employee.get_full_name|default:leave_request.employee.username }}</h4>
-                        <p class="text-gray-600">{{ leave_request.employee.email }}</p>
-                        {% if leave_request.employee.employee_profile.department %}
-                            <p class="text-sm text-gray-500">
-                                <i class="bi bi-building me-1"></i>
-                                {{ leave_request.employee.employee_profile.department.name }}
-                            </p>
-                        {% endif %}
-                        {% if leave_request.employee.employee_profile.manager %}
-                            <p class="text-sm text-gray-500">
-                                <i class="bi bi-person-badge me-1"></i>
-                                Manager: {{ leave_request.employee.employee_profile.manager.get_full_name|default:leave_request.employee.employee_profile.manager.username }}
-                            </p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Détails de la demande -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-calendar-event me-2"></i>
-                    Détails de la demande
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Type de congé</span>
-                        <span class="font-medium">{{ leave_request.leave_type.name }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Date de début</span>
-                        <span class="font-medium">{{ leave_request.start_date|date:"d/m/Y" }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Date de fin</span>
-                        <span class="font-medium">{{ leave_request.end_date|date:"d/m/Y" }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Durée</span>
-                        <span class="font-medium">
-                            {% with duration=leave_request.end_date|timeuntil:leave_request.start_date %}
-                                {{ duration|add:1 }} jour{{ duration|add:1|pluralize }}
-                            {% endwith %}
-                        </span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Statut</span>
-                        {% if leave_request.status == 'pending' %}
-                            <span class="badge badge-warning">En attente</span>
-                        {% elif leave_request.status == 'approved' %}
-                            <span class="badge badge-success">Approuvé</span>
-                        {% elif leave_request.status == 'rejected' %}
-                            <span class="badge badge-error">Rejeté</span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Demandé le</span>
-                        <span class="font-medium">{{ leave_request.created_at|date:"d/m/Y H:i" }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Motif -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-chat-text me-2"></i>
-                    Motif
-                </h3>
-            </div>
-            <div class="card-body">
-                <p class="text-gray-700">{{ leave_request.reason|default:"Aucun motif fourni" }}</p>
-            </div>
-        </div>
-        
-        <!-- Contact d'urgence -->
-        {% if leave_request.emergency_contact %}
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-telephone me-2"></i>
-                    Contact d'urgence
-                </h3>
-            </div>
-            <div class="card-body">
-                <p class="text-gray-700">{{ leave_request.emergency_contact }}</p>
-            </div>
-        </div>
-        {% endif %}
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="page-header">
+        <h1 class="page-title">Validation de Demande de Congé</h1>
+        <p class="page-subtitle">Examinez et validez cette demande de congé</p>
     </div>
     
-    <!-- Actions de validation -->
-    <div class="space-y-6">
-        <!-- État des validations -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-list-check me-2"></i>
-                    État des validations
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-4">
-                    <!-- Validation Manager -->
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            <i class="bi bi-person-badge text-lg"></i>
-                            <div>
-                                <h4 class="font-medium">Validation Manager</h4>
-                                {% if leave_request.manager_approved_by %}
-                                    <p class="text-sm text-gray-600">
-                                        Par {{ leave_request.manager_approved_by.get_full_name|default:leave_request.manager_approved_by.username }}
-                                    </p>
-                                {% endif %}
-                            </div>
+    
+    <div class="row">
+        <!-- Informations de la demande -->
+        <div class="col-lg-8 mb-4">
+            <div class="info-card">
+                <div class="card-header">
+                    <i class="bi bi-person me-2"></i>
+                    Informations de la demande
+                </div>
+                <div class="card-body">
+                    <!-- Profil employé -->
+                    <div class="employee-profile">
+                        <div class="employee-avatar">
+                            {{ leave_request.employee.first_name.0|default:leave_request.employee.username.0|upper }}
                         </div>
-                        <div>
-                            {% if leave_request.manager_approval == 'pending' %}
-                                <span class="badge badge-warning">En attente</span>
-                            {% elif leave_request.manager_approval == 'approved' %}
-                                <span class="badge badge-success">Approuvé</span>
-                            {% elif leave_request.manager_approval == 'rejected' %}
-                                <span class="badge badge-error">Rejeté</span>
-                            {% endif %}
+                        <div class="employee-info">
+                            <h3>{{ leave_request.employee.get_full_name|default:leave_request.employee.username }}</h3>
+                            <p>{{ leave_request.employee.employee_profile.department.name|default:"Aucun département" }}</p>
                         </div>
                     </div>
                     
-                    <!-- Validation RH/DG -->
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            <i class="bi bi-shield-check text-lg"></i>
-                            <div>
-                                <h4 class="font-medium">Validation RH/DG</h4>
-                                {% if leave_request.rh_approved_by %}
-                                    <p class="text-sm text-gray-600">
-                                        Par {{ leave_request.rh_approved_by.get_full_name|default:leave_request.rh_approved_by.username }}
-                                    </p>
-                                {% endif %}
+                    <!-- Détails de la demande -->
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-icon type">
+                                <i class="bi bi-tag"></i>
                             </div>
+                            <div class="detail-label">Type de congé</div>
+                            <div class="detail-value">{{ leave_request.leave_type.name }}</div>
                         </div>
-                        <div>
-                            {% if leave_request.rh_approval == 'pending' %}
-                                <span class="badge badge-warning">En attente</span>
-                            {% elif leave_request.rh_approval == 'approved' %}
-                                <span class="badge badge-success">Approuvé</span>
-                            {% elif leave_request.rh_approval == 'rejected' %}
-                                <span class="badge badge-error">Rejeté</span>
-                            {% endif %}
+                        
+                        <div class="detail-item">
+                            <div class="detail-icon start">
+                                <i class="bi bi-calendar-event"></i>
+                            </div>
+                            <div class="detail-label">Date de début</div>
+                            <div class="detail-value">{{ leave_request.start_date|date:"d/m/Y" }}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-icon end">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <div class="detail-label">Date de fin</div>
+                            <div class="detail-value">{{ leave_request.end_date|date:"d/m/Y" }}</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-icon duration">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div class="detail-label">Durée</div>
+                            <div class="detail-value">{{ leave_request.duration }} jour{{ leave_request.duration|pluralize }}</div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Solde de congés -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-pie-chart me-2"></i>
-                    Solde de congés
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Jours alloués</span>
-                        <span class="font-medium">{{ leave_request.leave_type.allocation_amount }}</span>
+                    
+                    <!-- Motif -->
+                    {% if leave_request.reason %}
+                    <div class="reason-section">
+                        <h4>
+                            <i class="bi bi-chat-text me-2"></i>
+                            Motif de la demande
+                        </h4>
+                        <div class="reason-text">{{ leave_request.reason }}</div>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Jours utilisés</span>
-                        <span class="font-medium">0</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Jours disponibles</span>
-                        <span class="font-medium text-success">{{ leave_request.leave_type.allocation_amount }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Demandé</span>
-                        <span class="font-medium">
-                            {% with duration=leave_request.end_date|timeuntil:leave_request.start_date %}
-                                {{ duration|add:1 }} jour{{ duration|add:1|pluralize }}
-                            {% endwith %}
+                    {% endif %}
+                    
+                    <!-- Statut actuel -->
+                    <div class="mt-3">
+                        <strong>Statut actuel :</strong>
+                        <span class="status-badge {{ leave_request.status }}">
+                            {{ leave_request.get_status_display }}
                         </span>
                     </div>
                 </div>
@@ -232,71 +428,114 @@
         </div>
         
         <!-- Formulaire de validation -->
-        {% if leave_request.status == 'pending' and user.employee_profile.role in 'manager,rh_dg' %}
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-check-circle me-2"></i>
-                    Validation
-                </h3>
-            </div>
-            <div class="card-body">
-                <form method="post" class="space-y-4">
-                    {% csrf_token %}
-                    
-                    <div class="form-group">
-                        <label class="form-label">Décision</label>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <input type="radio" name="action" value="approve" id="approve" class="form-check-input" checked>
-                                <label for="approve" class="form-label mb-0">
-                                    <i class="bi bi-check-circle me-1 text-success"></i>
-                                    Approuver
-                                </label>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="radio" name="action" value="reject" id="reject" class="form-check-input">
-                                <label for="reject" class="form-label mb-0">
-                                    <i class="bi bi-x-circle me-1 text-error"></i>
-                                    Rejeter
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="{{ approval_form.comment.id_for_label }}" class="form-label">
-                            <i class="bi bi-chat-dots me-2"></i>
-                            Commentaire
-                        </label>
-                        {{ approval_form.comment }}
-                        {% if approval_form.comment.errors %}
-                            <div class="form-error">
-                                {% for error in approval_form.comment.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
+        <div class="col-lg-4">
+            <div class="approval-form">
+                <div class="form-header">
+                    <h3>
+                        <i class="bi bi-check-circle me-2"></i>
+                        Décision de validation
+                    </h3>
+                </div>
+                
+                <div class="form-body">
+                    {% if leave_request.status == 'pending' and leave_request.employee != user %}
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if approval_form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                {% for error in approval_form.non_field_errors %}
+                                    {{ error }}
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-help">
-                            Expliquez votre décision (obligatoire pour un rejet)
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send me-2"></i>
-                            Valider la décision
-                        </button>
                         
-                        <a href="{% url 'leave:leave_approval_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-x me-2"></i>
-                            Annuler
-                        </a>
+                        {% if approval_form.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Erreurs:</strong>
+                                <ul class="mb-0">
+                                    {% for field, errors in approval_form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ field }}: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        <input type="hidden" name="action" id="action-input" value="">
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="bi bi-chat-text me-2"></i>
+                                Commentaire
+                            </label>
+                            <textarea name="comment" class="form-control" rows="4" placeholder="Ajoutez un commentaire pour votre décision..." required></textarea>
+                            <small class="text-muted">Le commentaire est obligatoire pour un rejet</small>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" onclick="submitApproval('approve')" class="btn btn-approve btn-modern">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Approuver
+                            </button>
+                            <button type="button" onclick="submitApproval('reject')" class="btn btn-reject btn-modern">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Rejeter
+                            </button>
+                        </div>
+                        
+                        <script>
+                        function submitApproval(action) {
+                            document.getElementById('action-input').value = action;
+                            
+                            // Vérifier le commentaire pour les rejets
+                            var comment = document.querySelector('textarea[name="comment"]').value.trim();
+                            if (action === 'reject' && !comment) {
+                                alert('Un commentaire est obligatoire pour rejeter une demande.');
+                                return false;
+                            }
+                            
+                            // Soumettre le formulaire
+                            event.target.closest('form').submit();
+                        }
+                        </script>
+                    </form>
+                    {% else %}
+                    <div class="text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle-fill" style="font-size: 3rem; color: #43e97b;"></i>
+                        </div>
+                        <h4>Demande déjà traitée</h4>
+                        <p class="text-muted">Cette demande a déjà été validée.</p>
+                        <span class="status-badge {{ leave_request.status }}">
+                            {{ leave_request.get_status_display }}
+                        </span>
                     </div>
-                </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation d'entrée
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.info-card, .approval-form');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+    });
+</script>
 {% endblock %}

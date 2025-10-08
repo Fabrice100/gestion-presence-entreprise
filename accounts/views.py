@@ -16,13 +16,45 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.models import User
+from django.contrib.auth import logout
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, DetailView, UpdateView
 from django.urls import reverse_lazy
 from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from .models import EmployeeProfile, Department
+
+
+@require_http_methods(["GET", "POST"])
+@csrf_exempt
+def simple_logout(request):
+    """
+    Fonction de déconnexion simple qui accepte GET et POST.
+    """
+    if request.user.is_authenticated:
+        logout(request)
+    return redirect('/accounts/login/')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class CustomLogoutView(View):
+    """
+    Vue de déconnexion personnalisée qui accepte GET et POST.
+    """
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            logout(request)
+        return HttpResponseRedirect('/accounts/login/')
+    
+    def post(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            logout(request)
+        return HttpResponseRedirect('/accounts/login/')
 
 
 class CustomLoginView(LoginView):

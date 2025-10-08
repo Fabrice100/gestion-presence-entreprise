@@ -1,260 +1,311 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Créer un employé{% endblock %}
+{% block title %}{% if form.instance.pk %}Modifier{% else %}Créer{% endif %} un employé{% endblock %}
 
-{% block page_title %}Nouvel employé{% endblock %}
-
-{% block page_subtitle %}<p class="page-subtitle">Créez un compte employé pour votre équipe</p>{% endblock %}
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .form-header h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .form-body {
+        padding: 3rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2.5rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .form-section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-section-title i {
+        color: #0d6efd;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+    
+    .btn-modern {
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<div class="mb-6">
-    <a href="{% url 'hr:user_list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left me-2"></i>
-        Retour à la liste
-    </a>
-</div>
-
-<!-- Formulaire -->
-<div class="max-w-2xl">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-person-plus me-2"></i>
-                Créer un employé
-            </h3>
-        </div>
-        <div class="card-body">
-            <form method="post" class="space-y-6">
-                {% csrf_token %}
-                
-                <!-- Informations personnelles -->
-                <div class="border-b border-gray-200 pb-6">
-                    <h4 class="text-lg font-medium mb-4">
-                        <i class="bi bi-person me-2"></i>
-                        Informations personnelles
-                    </h4>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Prénom -->
-                        <div class="form-group">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
-                                Prénom *
-                            </label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                                <div class="form-error">
-                                    {% for error in form.first_name.errors %}
-                                        <span class="text-error text-sm">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Nom -->
-                        <div class="form-group">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
-                                Nom *
-                            </label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                                <div class="form-error">
-                                    {% for error in form.last_name.errors %}
-                                        <span class="text-error text-sm">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Email -->
-                    <div class="form-group">
-                        <label for="{{ form.email.id_for_label }}" class="form-label">
-                            <i class="bi bi-envelope me-2"></i>
-                            Email *
-                        </label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="form-error">
-                                {% for error in form.email.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Nom d'utilisateur -->
-                    <div class="form-group">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">
-                            <i class="bi bi-person me-2"></i>
-                            Nom d'utilisateur *
-                        </label>
-                        {{ form.username }}
-                        {% if form.username.errors %}
-                            <div class="form-error">
-                                {% for error in form.username.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="form-help">
-                            Utilisé pour la connexion au système
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Informations professionnelles -->
-                <div class="border-b border-gray-200 pb-6">
-                    <h4 class="text-lg font-medium mb-4">
-                        <i class="bi bi-briefcase me-2"></i>
-                        Informations professionnelles
-                    </h4>
-                    
-                    <!-- Département -->
-                    <div class="form-group">
-                        <label for="{{ form.department.id_for_label }}" class="form-label">
-                            <i class="bi bi-building me-2"></i>
-                            Département *
-                        </label>
-                        {{ form.department }}
-                        {% if form.department.errors %}
-                            <div class="form-error">
-                                {% for error in form.department.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Manager -->
-                    <div class="form-group">
-                        <label for="{{ form.manager.id_for_label }}" class="form-label">
-                            <i class="bi bi-person-badge me-2"></i>
-                            Manager
-                        </label>
-                        {{ form.manager }}
-                        {% if form.manager.errors %}
-                            <div class="form-error">
-                                {% for error in form.manager.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="form-help">
-                            Sélectionnez le manager de cet employé (optionnel)
-                        </div>
-                    </div>
-                    
-                    <!-- Téléphone -->
-                    <div class="form-group">
-                        <label for="{{ form.phone.id_for_label }}" class="form-label">
-                            <i class="bi bi-telephone me-2"></i>
-                            Téléphone
-                        </label>
-                        {{ form.phone }}
-                        {% if form.phone.errors %}
-                            <div class="form-error">
-                                {% for error in form.phone.errors %}
-                                    <span class="text-error text-sm">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- Mot de passe -->
-                <div class="pb-6">
-                    <h4 class="text-lg font-medium mb-4">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        Mot de passe
-                    </h4>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Mot de passe -->
-                        <div class="form-group">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label">
-                                Mot de passe *
-                            </label>
-                            {{ form.password1 }}
-                            {% if form.password1.errors %}
-                                <div class="form-error">
-                                    {% for error in form.password1.errors %}
-                                        <span class="text-error text-sm">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Confirmation -->
-                        <div class="form-group">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label">
-                                Confirmation *
-                            </label>
-                            {{ form.password2 }}
-                            {% if form.password2.errors %}
-                                <div class="form-error">
-                                    {% for error in form.password2.errors %}
-                                        <span class="text-error text-sm">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="form-help">
-                        Le mot de passe doit contenir au moins 8 caractères et être sécurisé.
-                    </div>
-                </div>
-                
-                <!-- Actions -->
-                <div class="flex gap-4 pt-6 border-t border-gray-200">
-                    <button type="submit" class="btn btn-info">
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="page-header">
+        <h1 class="page-title">{% if form.instance.pk %}Modifier{% else %}Créer{% endif %} un Employé</h1>
+        <p class="page-subtitle">Créez un compte employé pour votre équipe</p>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="mb-4">
+        <a href="{% url 'hr:user_list' %}" class="btn btn-secondary-modern btn-modern">
+            <i class="bi bi-arrow-left me-2"></i>
+            Retour à la liste
+        </a>
+    </div>
+    
+    <!-- Formulaire -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-container">
+                <div class="form-header">
+                    <h3>
                         <i class="bi bi-person-plus me-2"></i>
-                        Créer l'employé
-                    </button>
-                    
-                    <a href="{% url 'hr:user_list' %}" class="btn btn-secondary">
-                        <i class="bi bi-x me-2"></i>
-                        Annuler
-                    </a>
+                        Formulaire employé
+                    </h3>
                 </div>
-            </form>
+                
+                <div class="form-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Erreurs dans le formulaire :</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field }} : {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Section 1: Informations personnelles -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">
+                                <i class="bi bi-person"></i>
+                                Informations personnelles
+                            </h4>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom *</label>
+                                    {{ form.first_name }}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom *</label>
+                                    {{ form.last_name }}
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        <i class="bi bi-envelope me-2"></i>
+                                        Email *
+                                    </label>
+                                    {{ form.email }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 2: Informations de connexion -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">
+                                <i class="bi bi-key"></i>
+                                Informations de connexion
+                            </h4>
+                            
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">Nom d'utilisateur *</label>
+                                    {{ form.username }}
+                                    <small class="text-muted">Utilisé pour se connecter au système</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label">Mot de passe *</label>
+                                    {{ form.password1 }}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label">Confirmer le mot de passe *</label>
+                                    {{ form.password2 }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 3: Informations professionnelles -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">
+                                <i class="bi bi-briefcase"></i>
+                                Informations professionnelles
+                            </h4>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label">
+                                        <i class="bi bi-building me-2"></i>
+                                        Département *
+                                    </label>
+                                    {{ form.department }}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.manager.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person-badge me-2"></i>
+                                        Manager
+                                    </label>
+                                    {{ form.manager }}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.employee_id.id_for_label }}" class="form-label">ID Employé</label>
+                                    {{ form.employee_id }}
+                                    <small class="text-muted">Laissez vide pour génération automatique</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                        <i class="bi bi-telephone me-2"></i>
+                                        Téléphone
+                                    </label>
+                                    {{ form.phone }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary-modern btn-modern">
+                                <i class="bi bi-check-circle me-2"></i>
+                                {% if form.instance.pk %}Mettre à jour{% else %}Créer l'employé{% endif %}
+                            </button>
+                            <a href="{% url 'hr:user_list' %}" class="btn btn-secondary-modern btn-modern">
+                                <i class="bi bi-x me-2"></i>
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-// Mise à jour dynamique des managers selon le département sélectionné
-document.addEventListener('DOMContentLoaded', function() {
-    const departmentSelect = document.getElementById('id_department');
-    const managerSelect = document.getElementById('id_manager');
-    
-    if (departmentSelect && managerSelect) {
-        departmentSelect.addEventListener('change', function() {
-            const departmentId = this.value;
-            
-            // Réinitialiser la liste des managers
-            managerSelect.innerHTML = '<option value="">Aucun manager</option>';
-            
-            if (departmentId) {
-                // Faire une requête AJAX pour récupérer les managers du département
-                fetch(`{% url 'hr:api_managers' %}?department_id=${departmentId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.managers.forEach(manager => {
-                            const option = document.createElement('option');
-                            option.value = manager.id;
-                            option.textContent = `${manager.first_name} ${manager.last_name}`.trim() || manager.username;
-                            managerSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Erreur lors du chargement des managers:', error);
-                    });
+    // Animation d'entrée
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.querySelector('.form-container');
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            container.style.transition = 'all 0.6s ease';
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 200);
+        
+        // Appliquer les classes Bootstrap aux champs
+        document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"], select, textarea').forEach(field => {
+            if (!field.classList.contains('form-control') && !field.classList.contains('form-select')) {
+                if (field.tagName === 'SELECT') {
+                    field.classList.add('form-select');
+                } else {
+                    field.classList.add('form-control');
+                }
             }
         });
-    }
-});
+    });
 </script>
 {% endblock %}

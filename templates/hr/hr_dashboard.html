@@ -1,213 +1,161 @@
-{% extends 'base_clean.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de bord RH/DG{% endblock %}
+{% block title %}Dashboard RH/DG{% endblock %}
 
-{% block page_title %}Gestion des Ressources Humaines{% endblock %}
-
-{% block page_subtitle %}<p class="page-subtitle">Interface de gestion des départements et des utilisateurs</p>{% endblock %}
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 30s linear infinite;
+    }
+    
+    @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #718096;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+    }
+    
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Statistiques générales -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-6">
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-                <i class="bi bi-building text-white text-xl"></i>
-            </div>
-            <h3 class="card-title text-lg font-semibold mb-2">{{ total_departments }}</h3>
-            <p class="text-gray-600 text-sm mb-4">Départements</p>
-            <a href="{% url 'hr:department_list' %}" class="btn btn-primary btn-sm">
-                <i class="bi bi-eye me-2"></i>
-                Voir tous
-            </a>
-        </div>
+<div class="container-fluid">
+    <!-- En-tête du dashboard -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Tableau de Bord RH/DG</h1>
+        <p class="dashboard-subtitle">Vue d'ensemble de la gestion des ressources humaines</p>
     </div>
     
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center mx-auto mb-4">
-                <i class="bi bi-person-badge text-white text-xl"></i>
+    <!-- Statistiques globales RH -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-number">{{ total_departments|default:3 }}</div>
+                <div class="stat-label">Départements</div>
+                <a href="{% url 'hr:department_list' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-eye me-2"></i>
+                    Gérer
+                </a>
             </div>
-            <h3 class="card-title text-lg font-semibold mb-2">{{ total_managers }}</h3>
-            <p class="text-gray-600 text-sm mb-4">Managers</p>
-            <a href="{% url 'hr:manager_create' %}" class="btn btn-success btn-sm">
-                <i class="bi bi-plus me-2"></i>
-                Ajouter
-            </a>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #48bb78, #38a169);">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-number">{{ total_users|default:6 }}</div>
+                <div class="stat-label">Total utilisateurs</div>
+                <a href="{% url 'hr:user_list' %}" class="btn btn-success btn-sm">
+                    <i class="bi bi-eye me-2"></i>
+                    Gérer
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <div class="stat-number">{{ total_managers|default:2 }}</div>
+                <div class="stat-label">Managers</div>
+                <a href="{% url 'hr:user_list' %}?role=manager" class="btn btn-info btn-sm">
+                    <i class="bi bi-eye me-2"></i>
+                    Voir
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
+                    <i class="bi bi-person"></i>
+                </div>
+                <div class="stat-number">{{ total_employees|default:4 }}</div>
+                <div class="stat-label">Employés</div>
+                <a href="{% url 'hr:user_list' %}?role=employee" class="btn btn-warning btn-sm">
+                    <i class="bi bi-eye me-2"></i>
+                    Voir
+                </a>
+            </div>
         </div>
     </div>
-    
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-info rounded-lg flex items-center justify-center mx-auto mb-4">
-                <i class="bi bi-people text-white text-xl"></i>
-            </div>
-            <h3 class="card-title text-lg font-semibold mb-2">{{ total_employees }}</h3>
-            <p class="text-gray-600 text-sm mb-4">Employés</p>
-            <a href="{% url 'hr:employee_create' %}" class="btn btn-info btn-sm">
-                <i class="bi bi-plus me-2"></i>
-                Ajouter
-            </a>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body text-center">
-            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center mx-auto mb-4">
-                <i class="bi bi-person-check text-white text-xl"></i>
-            </div>
-            <h3 class="card-title text-lg font-semibold mb-2">{{ total_users }}</h3>
-            <p class="text-gray-600 text-sm mb-4">Total utilisateurs</p>
-            <a href="{% url 'hr:user_list' %}" class="btn btn-warning btn-sm">
-                <i class="bi bi-list me-2"></i>
-                Voir tous
-            </a>
-        </div>
-    </div>
-</div>
 
-<!-- Actions rapides -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-lightning me-2"></i>
-                Actions rapides
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="space-y-3">
-                <a href="{% url 'hr:department_create' %}" class="btn btn-primary w-full">
-                    <i class="bi bi-building-add me-2"></i>
-                    Créer un département
-                </a>
-                
-                <a href="{% url 'hr:manager_create' %}" class="btn btn-success w-full">
-                    <i class="bi bi-person-badge-fill me-2"></i>
-                    Créer un manager
-                </a>
-                
-                <a href="{% url 'hr:employee_create' %}" class="btn btn-info w-full">
-                    <i class="bi bi-person-plus me-2"></i>
-                    Créer un employé
-                </a>
-                
-                <a href="{% url 'hr:user_list' %}" class="btn btn-secondary w-full">
-                    <i class="bi bi-list-ul me-2"></i>
-                    Gérer les utilisateurs
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-graph-up me-2"></i>
-                Statistiques
-            </h3>
-        </div>
-        <div class="card-body">
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Départements actifs</span>
-                    <span class="font-semibold text-primary">{{ active_departments }}/{{ total_departments }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Employés actifs</span>
-                    <span class="font-semibold text-success">{{ active_employees }}/{{ total_employees }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Managers</span>
-                    <span class="font-semibold text-info">{{ total_managers }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Employés</span>
-                    <span class="font-semibold text-warning">{{ total_employees }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Activité récente -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-building me-2"></i>
-                Départements récents
-            </h3>
-        </div>
-        <div class="card-body p-0">
-            {% if recent_departments %}
-                <div class="space-y-0">
-                    {% for department in recent_departments %}
-                    <div class="flex items-center justify-between p-4 border-b border-gray-200">
-                        <div>
-                            <h4 class="font-medium text-sm">{{ department.name }}</h4>
-                            <p class="text-xs text-gray-600">{{ department.created_at|date:"d/m/Y H:i" }}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            {% if department.is_active %}
-                                <span class="badge badge-success">Actif</span>
-                            {% else %}
-                                <span class="badge badge-gray">Inactif</span>
-                            {% endif %}
-                            <a href="{% url 'hr:department_edit' department.pk %}" class="btn btn-sm btn-secondary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="p-4 text-center text-gray-500">
-                    <i class="bi bi-building text-2xl mb-2"></i>
-                    <p>Aucun département créé</p>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-people me-2"></i>
-                Utilisateurs récents
-            </h3>
-        </div>
-        <div class="card-body p-0">
-            {% if recent_users %}
-                <div class="space-y-0">
-                    {% for profile in recent_users %}
-                    <div class="flex items-center justify-between p-4 border-b border-gray-200">
-                        <div>
-                            <h4 class="font-medium text-sm">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
-                            <p class="text-xs text-gray-600">{{ profile.get_role_display }} - {{ profile.created_at|date:"d/m/Y H:i" }}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="badge badge-{% if profile.role == 'admin' %}error{% elif profile.role == 'manager' %}success{% elif profile.role == 'rh_dg' %}warning{% else %}primary{% endif %}">
-                                {{ profile.get_role_display }}
-                            </span>
-                            <a href="{% url 'hr:user_edit' profile.pk %}" class="btn btn-sm btn-secondary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="p-4 text-center text-gray-500">
-                    <i class="bi bi-people text-2xl mb-2"></i>
-                    <p>Aucun utilisateur créé</p>
-                </div>
-            {% endif %}
-        </div>
-    </div>
 </div>
 {% endblock %}

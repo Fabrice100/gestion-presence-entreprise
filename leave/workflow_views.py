@@ -22,7 +22,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q, Count
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from datetime import date, timedelta
 from django.db import transaction
@@ -46,6 +46,19 @@ class LeaveRequestListView(LoginRequiredMixin, ListView):
         return LeaveRequest.objects.filter(
             employee=user
         ).select_related('leave_type').order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Utiliser get_queryset() au lieu du queryset paginé
+        all_requests = LeaveRequest.objects.filter(employee=self.request.user)
+        
+        # Compter les différents statuts
+        context['pending_count'] = all_requests.filter(status='pending').count()
+        context['approved_count'] = all_requests.filter(status__in=['approved_manager', 'approved_rh']).count()
+        context['rejected_count'] = all_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count()
+        
+        return context
 
 
 class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
@@ -57,7 +70,18 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
     template_name = 'leave/leave_request_create.html'
     success_url = reverse_lazy('leave:leave_request_list')
     
+    def get_form_kwargs(self):
+        """Passe l'utilisateur au formulaire."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
     def form_valid(self, form):
+        # Vérifier que l'utilisateur a un profil
+        if not hasattr(self.request.user, 'employee_profile'):
+            form.add_error(None, 'Erreur: Votre compte n\'a pas de profil employé. Contactez l\'administrateur.')
+            return self.form_invalid(form)
+        
         # Vérifier le solde de congés
         leave_type = form.cleaned_data['leave_type']
         start_date = form.cleaned_data['start_date']
@@ -81,7 +105,7 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         # Vérifier les chevauchements
         overlapping_requests = LeaveRequest.objects.filter(
             employee=self.request.user,
-            status__in=['pending', 'approved'],
+            status__in=['pending', 'approved_manager', 'approved_rh'],
             start_date__lte=end_date,
             end_date__gte=start_date
         )
@@ -96,7 +120,6 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         leave_request.status = 'pending'
         
         # Calculer la durée
-        days_requested = (end_date - start_date).days + 1
         leave_request.duration_days = days_requested
         
         # Déterminer le niveau de validation nécessaire
@@ -113,12 +136,12 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             leave_request.status = 'approved_rh'
         
         leave_request.save()
+        self.object = leave_request  # Important pour get_success_url()
         
         # Déclencher les notifications (sera géré par les signaux)
-        pass
         
-        messages.success(self.request, 'Demande de congé créée avec succès.')
-        return redirect(self.get_success_url())
+        messages.success(self.request, f'Demande de congé créée avec succès ! ({days_requested} jours)')
+        return HttpResponseRedirect(reverse('leave:leave_request_list'))
 
 
 class LeaveApprovalListView(LoginRequiredMixin, ListView):
@@ -168,17 +191,30 @@ class LeaveApprovalDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class LeaveApprovalUpdateView(LoginRequiredMixin, UpdateView):
+class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
     """
     Traitement d'une demande de congé (approbation/rejet).
     """
     model = LeaveRequest
-    form_class = LeaveApprovalForm
     template_name = 'leave/leave_approval_detail.html'
     
-    def form_valid(self, form):
-        leave_request = form.save(commit=False)
+    def post(self, request, *args, **kwargs):
+        leave_request = self.get_object()
+        form = LeaveApprovalForm(request.POST)
+        
+        if form.is_valid():
+            return self.process_approval(leave_request, form)
+        else:
+            return self.form_invalid(leave_request, form)
+    
+    def process_approval(self, leave_request, form):
         user = self.request.user
+        
+        # Vérifier que l'utilisateur a un profil
+        if not hasattr(user, 'employee_profile'):
+            messages.error(self.request, 'Erreur: Votre compte n\'a pas de profil employé.')
+            return redirect('leave:leave_approval_list')
+        
         profile = user.employee_profile
         action = form.cleaned_data['action']
         comment = form.cleaned_data.get('comment', '')
@@ -216,9 +252,7 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, UpdateView):
             
             leave_request.save()
         
-        # Déclencher les notifications
-        from notifications.services import NotificationService
-        NotificationService.send_leave_notifications(leave_request, action)
+        # TODO: Déclencher les notifications (à implémenter avec emails)
         
         # Messages de succès
         if action == 'approve':
@@ -227,6 +261,12 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, UpdateView):
             messages.success(self.request, 'Demande de congé rejetée.')
         
         return redirect('leave:leave_approval_list')
+    
+    def form_invalid(self, leave_request, form):
+        """Gère les erreurs de formulaire."""
+        context = self.get_context_data(object=leave_request)
+        context['approval_form'] = form
+        return render(self.request, self.template_name, context)
     
     def _needs_rh_approval(self, leave_request):
         """Détermine si une validation RH/DG est nécessaire."""

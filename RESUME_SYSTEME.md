@@ -171,3 +171,4 @@ Toutes les fonctionnalités demandées ont été implémentées avec succès :
 - ✅ Gestion des permissions
 
 **Le projet est prêt pour la soutenance et le déploiement en production !** 🎉
+

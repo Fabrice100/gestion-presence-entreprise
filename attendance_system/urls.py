@@ -32,8 +32,6 @@ urlpatterns = [
     # Interface RH/DG
     path('hr/', include('accounts.hr_urls')),
 
-    # Notifications
-    path('notifications/', include('notifications.urls')),
 ]
 
 # Configuration pour les fichiers statiques et médias en développement

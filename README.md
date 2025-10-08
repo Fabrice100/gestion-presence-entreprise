@@ -196,3 +196,4 @@ Pour toute question ou problème, contactez l'administrateur système.
 
 **Version** : 1.0.0  
 **Dernière mise à jour** : Septembre 2025
+
