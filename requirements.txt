@@ -1,0 +1,27 @@
+# Django et extensions
+Django==4.2.7
+django-crispy-forms==2.0
+crispy-bootstrap5==0.7
+
+# Base de données
+psycopg2-binary==2.9.7
+
+# Environnement et configuration
+python-decouple==3.8
+
+# Développement et tests
+django-debug-toolbar==4.2.0
+pytest==7.4.3
+pytest-django==4.7.0
+coverage==7.3.2
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Utilitaires
+python-dateutil==2.8.2
+
+# Export PDF et Excel
+reportlab==4.0.7
+openpyxl==3.1.2
