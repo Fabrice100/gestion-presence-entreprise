@@ -26,9 +26,7 @@ urlpatterns = [
     path('exit/', logout_view, name='exit'),
     
     # Gestion des mots de passe (templates créés)
-    path('password-change/', auth_views.PasswordChangeView.as_view(
-        template_name='accounts/password_change.html'
-    ), name='password_change'),
+    path('password-change/', views.CustomPasswordChangeView.as_view(), name='password_change'),
     
     path('password-change/done/', auth_views.PasswordChangeDoneView.as_view(
         template_name='accounts/password_change_done.html'

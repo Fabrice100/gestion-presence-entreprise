@@ -14,7 +14,7 @@ Version: 1.0
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView as DjangoPasswordChangeView
 from django.contrib.auth.models import User
 from django.contrib.auth import logout
 from django.contrib import messages
@@ -243,3 +243,31 @@ class DepartmentDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['employees'] = self.object.employees.filter(is_active=True).select_related('user')
         return context
+
+
+class CustomPasswordChangeView(DjangoPasswordChangeView):
+    """
+    Vue personnalisée pour le changement de mot de passe.
+    Désactive le flag force_password_change après un changement réussi.
+    """
+    template_name = 'accounts/password_change.html'
+    success_url = reverse_lazy('accounts:password_change_done')
+    
+    def form_valid(self, form):
+        """
+        Désactive le flag force_password_change après un changement réussi.
+        """
+        response = super().form_valid(form)
+        
+        # Désactiver le flag si l'utilisateur a un profil
+        if hasattr(self.request.user, 'employee_profile'):
+            profile = self.request.user.employee_profile
+            if profile.force_password_change:
+                profile.force_password_change = False
+                profile.save()
+                messages.success(
+                    self.request,
+                    'Mot de passe changé avec succès ! Vous pouvez maintenant accéder au système.'
+                )
+        
+        return response

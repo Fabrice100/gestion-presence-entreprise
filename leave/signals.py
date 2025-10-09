@@ -44,7 +44,7 @@ def create_default_leave_balances(sender, instance, created, **kwargs):
                 }
             )
             
-            print(f"✓ Solde de congés créé pour {instance.user.username}: {conges_payes.allocation_amount} jours")
+            print(f"[OK] Solde de conges cree pour {instance.user.username}: {conges_payes.allocation_amount} jours")
             
         except LeaveType.DoesNotExist:
             # Si le type de congés payés n'existe pas encore, on ne fait rien

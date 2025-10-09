@@ -25,7 +25,8 @@ from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 
 from .models import EmployeeProfile, Department
-from .forms import DepartmentForm, UserCreateForm, EmployeeProfileForm
+from .forms import DepartmentForm, UserCreateForm, EmployeeProfileForm, EmployeeCreateFormSimple
+from .user_services import UserService
 
 
 class HRRequiredMixin:
@@ -157,29 +158,51 @@ class ManagerCreateView(HRRequiredMixin, CreateView):
     Création d'un manager.
     """
     template_name = 'hr/manager_form.html'
-    form_class = UserCreateForm
+    form_class = EmployeeCreateFormSimple
     
     def get_success_url(self):
         return reverse('hr:user_list')
     
     def form_valid(self, form):
-        # Créer l'utilisateur
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data['password'])
-        user.save()
+        # Préparer les données
+        user_data = {
+            'email': form.cleaned_data['email'],
+            'first_name': form.cleaned_data.get('first_name', ''),
+            'last_name': form.cleaned_data.get('last_name', ''),
+        }
         
-        # Créer le profil employé
-        profile = EmployeeProfile.objects.create(
-            user=user,
-            employee_id=f"MGR{EmployeeProfile.objects.filter(role='manager').count() + 1:03d}",
-            role='manager',
-            department=form.cleaned_data['department'],
-            phone=form.cleaned_data.get('phone', ''),
-            is_active=True,
-            can_punch=True,  # Les managers pointent
+        profile_data = {
+            'department': form.cleaned_data.get('department'),
+            'manager': None,  # Les managers n'ont pas de manager
+            'role': 'manager',
+            'phone': form.cleaned_data.get('phone', ''),
+        }
+        
+        # Créer le manager avec génération automatique des credentials
+        user, employee_id, temporary_password = UserService.create_employee_with_credentials(
+            user_data, profile_data
         )
         
-        messages.success(self.request, f'Manager "{user.username}" créé avec succès.')
+        if user:
+            # Envoyer l'email de bienvenue
+            email_sent = UserService.send_welcome_email(user, employee_id, temporary_password)
+            
+            if email_sent:
+                messages.success(
+                    self.request,
+                    f'Manager "{user.username}" créé avec succès ! '
+                    f'Un email avec les identifiants a été envoyé à {user.email}.'
+                )
+            else:
+                messages.warning(
+                    self.request,
+                    f'Manager "{user.username}" créé avec succès ! '
+                    f'ID: {employee_id} | Mot de passe: {temporary_password} '
+                    f'(Email non envoyé - communiquez ces informations manuellement)'
+                )
+        else:
+            messages.error(self.request, 'Erreur lors de la création du manager.')
+        
         return redirect(self.get_success_url())
     
     def get_context_data(self, **kwargs):
@@ -193,30 +216,51 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
     Création d'un employé.
     """
     template_name = 'hr/employee_form.html'
-    form_class = UserCreateForm
+    form_class = EmployeeCreateFormSimple
     
     def get_success_url(self):
         return reverse('hr:user_list')
     
     def form_valid(self, form):
-        # Créer l'utilisateur
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data['password'])
-        user.save()
+        # Préparer les données
+        user_data = {
+            'email': form.cleaned_data['email'],
+            'first_name': form.cleaned_data.get('first_name', ''),
+            'last_name': form.cleaned_data.get('last_name', ''),
+        }
         
-        # Créer le profil employé
-        profile = EmployeeProfile.objects.create(
-            user=user,
-            employee_id=f"EMP{EmployeeProfile.objects.filter(role='employee').count() + 1:03d}",
-            role='employee',
-            department=form.cleaned_data['department'],
-            manager=form.cleaned_data.get('manager'),
-            phone=form.cleaned_data.get('phone', ''),
-            is_active=True,
-            can_punch=True,  # Les employés pointent
+        profile_data = {
+            'department': form.cleaned_data.get('department'),
+            'manager': form.cleaned_data.get('manager'),
+            'role': 'employee',
+            'phone': form.cleaned_data.get('phone', ''),
+        }
+        
+        # Créer l'employé avec génération automatique des credentials
+        user, employee_id, temporary_password = UserService.create_employee_with_credentials(
+            user_data, profile_data
         )
         
-        messages.success(self.request, f'Employé "{user.username}" créé avec succès.')
+        if user:
+            # Envoyer l'email de bienvenue
+            email_sent = UserService.send_welcome_email(user, employee_id, temporary_password)
+            
+            if email_sent:
+                messages.success(
+                    self.request,
+                    f'Employé "{user.username}" créé avec succès ! '
+                    f'Un email avec les identifiants a été envoyé à {user.email}.'
+                )
+            else:
+                messages.warning(
+                    self.request,
+                    f'Employé "{user.username}" créé avec succès ! '
+                    f'ID: {employee_id} | Mot de passe: {temporary_password} '
+                    f'(Email non envoyé - communiquez ces informations manuellement)'
+                )
+        else:
+            messages.error(self.request, 'Erreur lors de la création de l\'employé.')
+        
         return redirect(self.get_success_url())
     
     def get_context_data(self, **kwargs):

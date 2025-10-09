@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue - Système de Gestion de Présence</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            background: #ffffff;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .credentials-box {
+            background: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .credential-item {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .credential-label {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .credential-value {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bienvenue dans le systeme !</h1>
+        <p>Votre compte a ete cree avec succes</p>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+        
+        <p>Votre compte a été créé dans le système de gestion de présence. Voici vos identifiants de connexion :</p>
+        
+        <div class="credentials-box">
+            <div class="credential-item">
+                <span class="credential-label">ID Employe (pour se connecter) :</span>
+                <span class="credential-value">{{ employee_id }}</span>
+            </div>
+            <div class="credential-item">
+                <span class="credential-label">Mot de passe temporaire :</span>
+                <span class="credential-value">{{ temporary_password }}</span>
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <strong>IMPORTANT :</strong> Ce mot de passe est temporaire. Vous devrez le changer lors de votre premiere connexion pour des raisons de securite.
+        </div>
+        
+        <p style="text-align: center;">
+            <a href="{{ login_url }}" class="button">
+                Se connecter maintenant
+            </a>
+        </p>
+        
+        <h3>Prochaines etapes :</h3>
+        <ol>
+            <li>Cliquez sur le bouton ci-dessus ou allez sur : <a href="{{ login_url }}">{{ login_url }}</a></li>
+            <li>Connectez-vous avec votre ID Employe ({{ employee_id }}) et le mot de passe temporaire</li>
+            <li>Changez votre mot de passe (obligatoire)</li>
+            <li>Completez votre profil si necessaire</li>
+            <li>Commencez a utiliser le systeme !</li>
+        </ol>
+        
+        <h3>Conseils pour votre mot de passe :</h3>
+        <ul>
+            <li>Utilisez au moins 8 caractères</li>
+            <li>Mélangez majuscules, minuscules, chiffres et symboles</li>
+            <li>Ne réutilisez pas un ancien mot de passe</li>
+            <li>Ne partagez jamais votre mot de passe</li>
+        </ul>
+        
+        <p>Si vous rencontrez des difficultés, contactez le service RH.</p>
+        
+        <p>Cordialement,<br>
+        <strong>L'équipe Système de Gestion de Présence</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Cet email a été envoyé automatiquement. Merci de ne pas y répondre.</p>
+        <p>© 2025 Système de Gestion de Présence - Tous droits réservés</p>
+    </div>
+</body>
+</html>

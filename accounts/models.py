@@ -215,6 +215,12 @@ class EmployeeProfile(models.Model):
         help_text="L'employé peut-il pointer (false pour DG/Admin)"
     )
     
+    force_password_change = models.BooleanField(
+        default=False,
+        verbose_name="Changement de mot de passe requis",
+        help_text="L'employé doit changer son mot de passe à la prochaine connexion"
+    )
+    
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Date de création"

@@ -54,6 +54,13 @@ INSTALLED_APPS = [
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
+# Backend d'authentification personnalisé
+# Permet la connexion avec l'ID Employé (EMP001, MGR001, etc.)
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backend.EmployeeIDBackend',  # Backend personnalisé (ID Employé)
+    'django.contrib.auth.backends.ModelBackend',  # Backend par défaut (fallback)
+]
+
 # Middleware configuration
 # Ordre important : les middlewares s'exécutent dans l'ordre de la liste
 MIDDLEWARE = [
@@ -64,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'accounts.middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire
 ]
 
 ROOT_URLCONF = 'attendance_system.urls'
@@ -169,8 +177,8 @@ MESSAGE_TAGS = {
 # Configuration des emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Pour le développement
 DEFAULT_FROM_EMAIL = 'noreply@attendance-system.local'
+SITE_URL = 'http://localhost:8000'  # URL du site pour les emails
 SITE_NAME = 'Système de Gestion de Présence'
-SITE_URL = 'http://localhost:8000'
 
 # Configuration du logging pour voir les erreurs
 LOGGING = {

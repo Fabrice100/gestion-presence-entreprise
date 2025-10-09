@@ -147,6 +147,85 @@ class UserCreateForm(UserCreationForm):
         return email
 
 
+class EmployeeCreateFormSimple(forms.ModelForm):
+    """
+    Formulaire simplifié pour la création d'un employé (sans mot de passe).
+    Le mot de passe sera généré automatiquement et envoyé par email.
+    """
+    
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Email professionnel'
+        }),
+        help_text='Un email avec les identifiants sera envoyé à cette adresse'
+    )
+    
+    first_name = forms.CharField(
+        required=True,
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Prénom'
+        })
+    )
+    
+    last_name = forms.CharField(
+        required=True,
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nom'
+        })
+    )
+    
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(is_active=True),
+        empty_label="Sélectionner un département",
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
+    
+    manager = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+        empty_label="Aucun manager",
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
+    
+    phone = forms.CharField(
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+228 XX XX XX XX'
+        })
+    )
+    
+    class Meta:
+        model = User
+        fields = ['email', 'first_name', 'last_name']
+        # Le username sera généré automatiquement
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrer les managers actifs pour le champ manager
+        self.fields['manager'].queryset = User.objects.filter(
+            employee_profile__role='manager',
+            employee_profile__is_active=True
+        )
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise ValidationError('Cet email est déjà utilisé.')
+        return email
+
+
 class EmployeeProfileForm(forms.ModelForm):
     """
     Formulaire pour la modification d'un profil employé.
