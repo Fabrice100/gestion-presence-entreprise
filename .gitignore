@@ -54,3 +54,12 @@ analyze_*.py
 check_*.py
 init_*.py
 verify_*.py
+
+# Documentation temporaire
+CONFIGURATION_*.md
+COULEURS_*.md
+RESUME_*.md
+
+# Dossiers vides
+notifications/
+logs/
