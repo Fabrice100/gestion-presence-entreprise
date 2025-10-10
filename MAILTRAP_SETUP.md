@@ -33,8 +33,8 @@ Parfait pour les démonstrations et le développement.
 ```python
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST_USER = '1a2b3c4d5e6f7g'  # ← COPIEZ CETTE VALEUR
-EMAIL_HOST_PASSWORD = '9z8y7x6w5v4u3t'  # ← COPIEZ CETTE VALEUR
+EMAIL_HOST_USER = '1a7b198de7ad5e'  # ← COPIEZ CETTE VALEUR
+EMAIL_HOST_PASSWORD = '5932cf0f1347df'  # ← COPIEZ CETTE VALEUR
 EMAIL_PORT = '2525'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
