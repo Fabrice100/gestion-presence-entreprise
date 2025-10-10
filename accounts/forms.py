@@ -157,7 +157,8 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         required=True,
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Email professionnel'
+            'placeholder': 'Email professionnel',
+            'required': 'required'
         }),
         help_text='Un email avec les identifiants sera envoyé à cette adresse'
     )
@@ -165,26 +166,36 @@ class EmployeeCreateFormSimple(forms.ModelForm):
     first_name = forms.CharField(
         required=True,
         max_length=30,
+        min_length=2,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Prénom'
+            'placeholder': 'Prénom',
+            'required': 'required',
+            'pattern': '[A-Za-zÀ-ÿ\s\-]+',
+            'title': 'Le prénom ne doit contenir que des lettres (minimum 2 caractères)'
         })
     )
     
     last_name = forms.CharField(
         required=True,
         max_length=30,
+        min_length=2,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nom'
+            'placeholder': 'Nom',
+            'required': 'required',
+            'pattern': '[A-Za-zÀ-ÿ\s\-]+',
+            'title': 'Le nom ne doit contenir que des lettres (minimum 2 caractères)'
         })
     )
     
     department = forms.ModelChoiceField(
         queryset=Department.objects.filter(is_active=True),
         empty_label="Sélectionner un département",
+        required=True,
         widget=forms.Select(attrs={
-            'class': 'form-control'
+            'class': 'form-control',
+            'required': 'required'
         })
     )
     
@@ -202,7 +213,9 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         max_length=20,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '+228 XX XX XX XX'
+            'placeholder': '+228 XX XX XX XX',
+            'pattern': '[\+]?[0-9\s\-\(\)]+',
+            'title': 'Format valide: +228 XX XX XX XX ou 00228XXXXXXXX'
         })
     )
     
@@ -224,6 +237,48 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise ValidationError('Cet email est déjà utilisé.')
         return email
+    
+    def clean_first_name(self):
+        """Valide que le prénom ne contient que des lettres."""
+        import re
+        first_name = self.cleaned_data.get('first_name', '').strip()
+        
+        if not first_name:
+            raise ValidationError('Le prénom est obligatoire.')
+        
+        if len(first_name) < 2:
+            raise ValidationError('Le prénom doit contenir au moins 2 caractères.')
+        
+        # Vérifier que le prénom ne contient que des lettres, espaces et tirets
+        if not re.match(r'^[A-Za-zÀ-ÿ\s\-]+$', first_name):
+            raise ValidationError('Le prénom ne doit contenir que des lettres.')
+        
+        # Vérifier qu'il n'y a pas que des chiffres
+        if first_name.isdigit():
+            raise ValidationError('Le prénom ne peut pas être composé uniquement de chiffres.')
+        
+        return first_name.title()  # Capitaliser la première lettre
+    
+    def clean_last_name(self):
+        """Valide que le nom ne contient que des lettres."""
+        import re
+        last_name = self.cleaned_data.get('last_name', '').strip()
+        
+        if not last_name:
+            raise ValidationError('Le nom est obligatoire.')
+        
+        if len(last_name) < 2:
+            raise ValidationError('Le nom doit contenir au moins 2 caractères.')
+        
+        # Vérifier que le nom ne contient que des lettres, espaces et tirets
+        if not re.match(r'^[A-Za-zÀ-ÿ\s\-]+$', last_name):
+            raise ValidationError('Le nom ne doit contenir que des lettres.')
+        
+        # Vérifier qu'il n'y a pas que des chiffres
+        if last_name.isdigit():
+            raise ValidationError('Le nom ne peut pas être composé uniquement de chiffres.')
+        
+        return last_name.upper()  # Mettre en majuscules
 
 
 class EmployeeProfileForm(forms.ModelForm):

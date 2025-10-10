@@ -439,7 +439,7 @@
                 
                 <div class="form-body">
                     {% if leave_request.status == 'pending' and leave_request.employee != user %}
-                    <form method="post">
+                    <form method="post" action="{% url 'leave:leave_approval_process' leave_request.pk %}">
                         {% csrf_token %}
                         
                         {% if approval_form.non_field_errors %}

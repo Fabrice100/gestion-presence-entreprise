@@ -107,13 +107,6 @@
                     
                     {% if user.employee_profile.role == 'rh_dg' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'hr:hr_dashboard' %}">
-                            <i class="bi bi-briefcase"></i>
-                            <span>Gestion RH</span>
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'hr:user_list' %}">
                             <i class="bi bi-people"></i>
                             <span>Employés</span>

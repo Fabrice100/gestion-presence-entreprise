@@ -18,9 +18,6 @@ from . import hr_views
 app_name = 'hr'
 
 urlpatterns = [
-    # Tableau de bord RH/DG
-    path('', hr_views.HRDashboardView.as_view(), name='hr_dashboard'),
-    
     # Gestion des départements
     path('departments/', hr_views.DepartmentListView.as_view(), name='department_list'),
     path('departments/create/', hr_views.DepartmentCreateView.as_view(), name='department_create'),

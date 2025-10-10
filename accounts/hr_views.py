@@ -45,35 +45,6 @@ class HRRequiredMixin:
         return super().dispatch(*args, **kwargs)
 
 
-class HRDashboardView(HRRequiredMixin, TemplateView):
-    """
-    Tableau de bord RH/DG avec gestion des utilisateurs.
-    """
-    template_name = 'hr/hr_dashboard.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        
-        # Statistiques générales
-        context.update({
-            'total_departments': Department.objects.count(),
-            'total_managers': EmployeeProfile.objects.filter(role='manager').count(),
-            'total_employees': EmployeeProfile.objects.filter(role='employee').count(),
-            'total_users': User.objects.count(),
-            'active_departments': Department.objects.filter(is_active=True).count(),
-            'active_employees': EmployeeProfile.objects.filter(is_active=True).count(),
-        })
-        
-        # Départements récents
-        context['recent_departments'] = Department.objects.all().order_by('-created_at')[:5]
-        
-        # Employés récents
-        context['recent_users'] = EmployeeProfile.objects.all().order_by('-created_at')[:5]
-        
-        return context
-
-
 class DepartmentListView(HRRequiredMixin, ListView):
     """
     Liste des départements.
