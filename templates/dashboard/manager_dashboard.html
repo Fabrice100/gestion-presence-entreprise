@@ -1,561 +1,193 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de Bord - Manager{% endblock %}
+{% block title %}Tableau de bord - Manager{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 <style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-        animation: rotate 25s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .dashboard-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.8;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .manager-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
     .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        position: relative;
-        overflow: hidden;
-        border-left: 4px solid;
-        transition: all 0.3s ease;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: transform var(--transition-base);
     }
     
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    }
-    
-    .stat-card.team {
-        border-left-color: #0d6efd;
-    }
-    
-    .stat-card.present {
-        border-left-color: #48bb78;
-    }
-    
-    .stat-card.requests {
-        border-left-color: #ed8936;
-    }
-    
-    .stat-card.anomalies {
-        border-left-color: #f56565;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        color: #718096;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
     
     .stat-icon {
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        font-size: 2rem;
-        opacity: 0.3;
-    }
-    
-    .team-overview {
-        display: block;
-        margin-bottom: 2rem;
-    }
-    
-    .team-members {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .team-member {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-    }
-    
-    .team-member:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-        border-left-color: #0d6efd;
-    }
-    
-    .member-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        width: 56px;
+        height: 56px;
+        border-radius: var(--border-radius);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 600;
-        margin-right: 1rem;
-    }
-    
-    .member-info {
-        flex: 1;
-    }
-    
-    .member-name {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-    
-    .member-status {
-        font-size: 0.875rem;
-        color: #718096;
-    }
-    
-    .member-status.present {
-        color: #48bb78;
-    }
-    
-    .member-status.absent {
-        color: #f56565;
-    }
-    
-    .member-status.late {
-        color: #ed8936;
-    }
-    
-    
-    .pending-requests {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-    }
-    
-    .request-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-    }
-    
-    .request-item:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-    }
-    
-    .request-info {
-        display: flex;
-        align-items: center;
-    }
-    
-    .request-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        margin-right: 1rem;
-    }
-    
-    .request-details {
-        flex: 1;
-    }
-    
-    .request-employee {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-    
-    .request-type {
-        font-size: 0.875rem;
-        color: #718096;
-    }
-    
-    .request-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-approve {
-        background: #48bb78;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-approve:hover {
-        background: #38a169;
-        transform: translateY(-1px);
-    }
-    
-    .btn-reject {
-        background: #f56565;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-reject:hover {
-        background: #e53e3e;
-        transform: translateY(-1px);
-    }
-    
-    .section-title {
+        margin: 0 auto var(--spacing-sm);
         font-size: 1.5rem;
+        color: var(--white);
+    }
+    
+    .stat-icon.primary { background-color: var(--primary); }
+    .stat-icon.success { background-color: var(--success); }
+    .stat-icon.warning { background-color: var(--warning); }
+    .stat-icon.info { background-color: var(--info); }
+    
+    .stat-value {
+        font-size: var(--font-size-3xl);
         font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
     }
     
-    .section-title i {
-        margin-right: 0.75rem;
-        color: #0d6efd;
-    }
-    
-    @media (max-width: 768px) {
-        
-        .dashboard-header {
-            padding: 1.5rem;
-        }
-        
-        .dashboard-title {
-            font-size: 2rem;
-        }
-        
-        .manager-stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .manager-stats {
-            grid-template-columns: 1fr;
-        }
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--gray-600);
+        font-weight: 500;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête du dashboard -->
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="bi bi-person-badge me-3"></i>
-            Dashboard Manager
-        </h1>
-        <p class="dashboard-subtitle">
-            Gestion de votre équipe et supervision des activités
-        </p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Bienvenue, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="ds-text-muted">Tableau de bord manager</p>
     </div>
     
-    <!-- Statistiques de l'équipe -->
-    <div class="manager-stats">
-        <div class="stat-card team">
-            <div class="stat-number">{{ team_stats.total_employees|default:4 }}</div>
-            <div class="stat-label">Membres de l'équipe</div>
-            <i class="bi bi-people stat-icon" style="color: #0d6efd;"></i>
-        </div>
-        
-        <div class="stat-card present">
-            <div class="stat-number">{{ team_stats.present_today|default:3 }}</div>
-            <div class="stat-label">Présents aujourd'hui</div>
-            <i class="bi bi-check-circle stat-icon" style="color: #48bb78;"></i>
-        </div>
-        
-        <div class="stat-card requests">
-            <div class="stat-number">{{ team_stats.pending_requests|default:2 }}</div>
-            <div class="stat-label">Demandes en attente</div>
-            <i class="bi bi-clock stat-icon" style="color: #ed8936;"></i>
-        </div>
-        
-        <div class="stat-card anomalies">
-            <div class="stat-number">{{ team_stats.pending_anomalies|default:0 }}</div>
-            <div class="stat-label">Anomalies à traiter</div>
-            <i class="bi bi-exclamation-triangle stat-icon" style="color: #f56565;"></i>
-        </div>
-    </div>
-    
-    <!-- Vue d'ensemble de l'équipe -->
-    <div class="team-overview">
-        <div class="team-members">
-            <h2 class="section-title">
-                <i class="bi bi-people"></i>
-                Membres de l'équipe
-            </h2>
-            
-            <div class="team-member">
-                <div class="member-avatar">JD</div>
-                <div class="member-info">
-                    <div class="member-name">Jean DOSSOU</div>
-                    <div class="member-status present">
-                        <i class="bi bi-check-circle me-1"></i>
-                        Présent depuis 08:15
-                    </div>
+    <!-- Statistiques -->
+    <div class="ds-row ds-mb-4">
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-people"></i>
                 </div>
-            </div>
-            
-            <div class="team-member">
-                <div class="member-avatar">MK</div>
-                <div class="member-info">
-                    <div class="member-name">Marie KOUMASSI</div>
-                    <div class="member-status present">
-                        <i class="bi bi-check-circle me-1"></i>
-                        Présent depuis 08:05
-                    </div>
-                </div>
-            </div>
-            
-            <div class="team-member">
-                <div class="member-avatar">PA</div>
-                <div class="member-info">
-                    <div class="member-name">Pierre ADJOVI</div>
-                    <div class="member-status late">
-                        <i class="bi bi-clock me-1"></i>
-                        En retard (08:25)
-                    </div>
-                </div>
-            </div>
-            
-            <div class="team-member">
-                <div class="member-avatar">FS</div>
-                <div class="member-info">
-                    <div class="member-name">Fatou SOW</div>
-                    <div class="member-status absent">
-                        <i class="bi bi-x-circle me-1"></i>
-                        Absent aujourd'hui
-                    </div>
-                </div>
+                <div class="stat-value">{{ team_size|default:0 }}</div>
+                <div class="stat-label">Membres de l'équipe</div>
             </div>
         </div>
         
-    </div>
-    
-    <!-- Demandes en attente -->
-    <div class="pending-requests">
-        <h2 class="section-title">
-            <i class="bi bi-hourglass-split"></i>
-            Demandes en attente de validation
-        </h2>
-        
-        <div class="request-item">
-            <div class="request-info">
-                <div class="request-avatar">JD</div>
-                <div class="request-details">
-                    <div class="request-employee">Jean DOSSOU</div>
-                    <div class="request-type">Congés payés - 3 jours (15-17 Nov)</div>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-calendar-check"></i>
                 </div>
-            </div>
-            <div class="request-actions">
-                <button class="btn-approve">
-                    <i class="bi bi-check me-1"></i>
-                    Approuver
-                </button>
-                <button class="btn-reject">
-                    <i class="bi bi-x me-1"></i>
-                    Refuser
-                </button>
+                <div class="stat-value">{{ present_today|default:0 }}</div>
+                <div class="stat-label">Présents aujourd'hui</div>
             </div>
         </div>
         
-        <div class="request-item">
-            <div class="request-info">
-                <div class="request-avatar">MK</div>
-                <div class="request-details">
-                    <div class="request-employee">Marie KOUMASSI</div>
-                    <div class="request-type">Congé maladie - 2 jours</div>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-clock-history"></i>
                 </div>
-            </div>
-            <div class="request-actions">
-                <button class="btn-approve">
-                    <i class="bi bi-check me-1"></i>
-                    Approuver
-                </button>
-                <button class="btn-reject">
-                    <i class="bi bi-x me-1"></i>
-                    Refuser
-                </button>
+                <div class="stat-value">{{ pending_validations|default:0 }}</div>
+                <div class="stat-label">Validations en attente</div>
             </div>
         </div>
         
-        <div class="request-item">
-            <div class="request-info">
-                <div class="request-avatar">FS</div>
-                <div class="request-details">
-                    <div class="request-employee">Fatou SOW</div>
-                    <div class="request-type">Télétravail - 1 jour</div>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-exclamation-triangle"></i>
                 </div>
-            </div>
-            <div class="request-actions">
-                <button class="btn-approve">
-                    <i class="bi bi-check me-1"></i>
-                    Approuver
-                </button>
-                <button class="btn-reject">
-                    <i class="bi bi-x me-1"></i>
-                    Refuser
-                </button>
+                <div class="stat-value">{{ anomalies_count|default:0 }}</div>
+                <div class="stat-label">Anomalies ce mois</div>
             </div>
         </div>
     </div>
     
-    <!-- Anomalies détectées -->
-    <div class="pending-requests">
-        <h2 class="section-title">
-            <i class="bi bi-exclamation-triangle"></i>
-            Anomalies détectées
-        </h2>
-        
-        <div class="request-item">
-            <div class="request-info">
-                <div class="request-avatar">PA</div>
-                <div class="request-details">
-                    <div class="request-employee">Pierre ADJOVI</div>
-                    <div class="request-type">Retard répété - 3 fois cette semaine</div>
+    <!-- Actions rapides -->
+    <div class="ds-row ds-mb-4">
+        <div class="ds-col-6">
+            <div class="ds-card">
+                <div class="ds-card-header">
+                    <h3 class="ds-card-title">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Demandes de congés à valider
+                    </h3>
                 </div>
-            </div>
-            <div class="request-actions">
-                <button class="btn-approve">
-                    <i class="bi bi-check me-1"></i>
-                    Ignorer
-                </button>
-                <button class="btn-reject">
-                    <i class="bi bi-chat me-1"></i>
-                    Contacter
-                </button>
+                <div class="ds-card-body">
+                    {% if pending_leave_requests %}
+                    <div class="list-group">
+                        {% for request in pending_leave_requests|slice:":5" %}
+                        <a href="{% url 'leave:leave_approval_detail' request.pk %}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ request.employee.get_full_name }}</strong>
+                                    <br>
+                                    <small class="ds-text-muted">
+                                        {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
+                                        ({{ request.duration }} jour{{ request.duration|pluralize }})
+                                    </small>
+                                </div>
+                                <span class="ds-badge ds-badge-warning">En attente</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <div class="ds-text-center ds-mt-3">
+                        <a href="{% url 'leave:leave_approval_list' %}" class="ds-btn ds-btn-primary ds-btn-sm">
+                            Voir toutes les demandes
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="ds-text-center ds-p-3">
+                        <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--success);"></i>
+                        <p class="ds-text-muted ds-mt-2">Aucune demande en attente</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         
-        <div class="request-item">
-            <div class="request-info">
-                <div class="request-avatar">FS</div>
-                <div class="request-details">
-                    <div class="request-employee">Fatou SOW</div>
-                    <div class="request-type">Pointage depuis un lieu inhabituel</div>
+        <div class="ds-col-6">
+            <div class="ds-card">
+                <div class="ds-card-header">
+                    <h3 class="ds-card-title">
+                        <i class="bi bi-people me-2"></i>
+                        Mon équipe
+                    </h3>
                 </div>
-            </div>
-            <div class="request-actions">
-                <button class="btn-approve">
-                    <i class="bi bi-check me-1"></i>
-                    Valider
-                </button>
-                <button class="btn-reject">
-                    <i class="bi bi-x me-1"></i>
-                    Rejeter
-                </button>
+                <div class="ds-card-body">
+                    {% if team_members %}
+                    <div class="list-group">
+                        {% for member in team_members|slice:":5" %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ member.get_full_name }}</strong>
+                                    <br>
+                                    <small class="ds-text-muted">
+                                        <i class="bi bi-building me-1"></i>
+                                        {{ member.employee_profile.department.name|default:"Aucun département" }}
+                                    </small>
+                                </div>
+                                {% if member.employee_profile.is_active %}
+                                    <span class="ds-badge ds-badge-success">Actif</span>
+                                {% else %}
+                                    <span class="ds-badge ds-badge-secondary">Inactif</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="ds-text-center ds-p-3">
+                        <i class="bi bi-people" style="font-size: 2rem; color: var(--gray-400);"></i>
+                        <p class="ds-text-muted ds-mt-2">Aucun membre dans votre équipe</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée pour les cartes
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.stat-card, .team-member, .request-item');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-    
-    // Animation des boutons d'action
-    document.querySelectorAll('.btn-approve, .btn-reject').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const originalText = this.innerHTML;
-            this.innerHTML = '<i class="bi bi-check me-1"></i>Traité';
-            this.style.background = '#48bb78';
-            
-            setTimeout(() => {
-                this.parentElement.parentElement.style.opacity = '0.5';
-                this.parentElement.parentElement.style.transform = 'translateX(-100px)';
-                
-                setTimeout(() => {
-                    this.parentElement.parentElement.remove();
-                }, 500);
-            }, 1000);
-        });
-    });
-</script>
 {% endblock %}

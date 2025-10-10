@@ -1,322 +1,158 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Pointage - {{ user.get_full_name|default:user.username }}{% endblock %}
+{% block title %}Pointage{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
+<style>
+    .punch-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .time-display {
+        background: var(--primary);
+        color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-lg);
+        text-align: center;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .time-display .time {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .time-display .date {
+        font-size: var(--font-size-lg);
+        opacity: 0.9;
+    }
+    
+    .punch-btn {
+        width: 100%;
+        padding: var(--spacing-lg);
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        border-radius: var(--border-radius-lg);
+    }
+    
+    .last-punch {
+        background: var(--gray-50);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-md);
+        text-align: center;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="ds-container">
+    <div class="punch-container">
         <!-- En-tête -->
-        <div class="card mb-4">
-            <div class="card-body text-center">
-                <h1 class="card-title">
-                    <i class="bi bi-geo-alt text-primary"></i>
-                    Pointage
-                </h1>
-                <p class="card-text text-muted">
-                    {{ today|date:"l d F Y" }} - {{ today|time:"H:i" }}
-                </p>
-            </div>
+        <div class="ds-mb-4 ds-text-center">
+            <h1 class="ds-mb-2">Pointage</h1>
+            <p class="ds-text-muted">Enregistrez votre présence</p>
         </div>
-
-        <!-- Statut de géolocalisation -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h6 class="mb-1">Géolocalisation</h6>
-                        <p class="text-muted mb-0">Vérification de votre position</p>
-                    </div>
-                    <div id="location-status" class="location-status loading">
-                        <i class="bi bi-geo-alt"></i>
-                        <span>Recherche...</span>
-                    </div>
-                </div>
-            </div>
+        
+        <!-- Horloge -->
+        <div class="time-display">
+            <div class="time" id="current-time">--:--:--</div>
+            <div class="date" id="current-date">--</div>
         </div>
-
+        
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="ds-alert ds-alert-{{ message.tags }}">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        
         <!-- Boutons de pointage -->
-        <div class="row mb-4">
-            {% if next_punch_type == 'in' %}
-            <div class="col-md-6 mb-3">
-                <div class="card punch-card" onclick="punch('in')">
-                    <div class="card-body text-center">
-                        <div class="punch-icon">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                        </div>
-                        <h4 class="card-title">Pointage d'entrée</h4>
-                        <p class="card-text">Marquer votre arrivée</p>
-                    </div>
+        <div class="ds-card">
+            <form method="post" id="punch-form">
+                {% csrf_token %}
+                <input type="hidden" name="punch_type" id="punch-type" value="">
+                <input type="hidden" name="latitude" id="latitude" value="">
+                <input type="hidden" name="longitude" id="longitude" value="">
+                <input type="hidden" name="accuracy" id="accuracy" value="">
+                
+                <div class="ds-d-flex ds-gap-2" style="flex-direction: column;">
+                    <button type="button" onclick="punch('in')" class="ds-btn ds-btn-success punch-btn">
+                        <i class="bi bi-arrow-right-circle me-2"></i>
+                        Pointer l'entrée
+                    </button>
+                    
+                    <button type="button" onclick="punch('out')" class="ds-btn ds-btn-danger punch-btn">
+                        <i class="bi bi-arrow-left-circle me-2"></i>
+                        Pointer la sortie
+                    </button>
                 </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card bg-light">
-                    <div class="card-body text-center">
-                        <div class="punch-icon text-muted">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </div>
-                        <h4 class="card-title text-muted">Pointage de sortie</h4>
-                        <p class="card-text text-muted">Disponible après l'entrée</p>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="col-md-6 mb-3">
-                <div class="card bg-light">
-                    <div class="card-body text-center">
-                        <div class="punch-icon text-muted">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                        </div>
-                        <h4 class="card-title text-muted">Pointage d'entrée</h4>
-                        <p class="card-text text-muted">Déjà effectué</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card punch-card" onclick="punch('out')">
-                    <div class="card-body text-center">
-                        <div class="punch-icon">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </div>
-                        <h4 class="card-title">Pointage de sortie</h4>
-                        <p class="card-text">Marquer votre départ</p>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+            </form>
         </div>
-
-        <!-- Pointages du jour -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-clock-history"></i>
-                    Pointages du jour
-                </h5>
+        
+        <!-- Dernier pointage -->
+        {% if last_attendance %}
+        <div class="last-punch ds-mt-3">
+            <div class="ds-text-muted ds-mb-2" style="font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 0.5px;">
+                Dernier pointage
             </div>
-            <div class="card-body">
-                {% if today_attendance %}
-                    <div class="timeline">
-                        {% for attendance in today_attendance %}
-                        <div class="timeline-item">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">
-                                        {% if attendance.punch_type == 'in' %}
-                                            <i class="bi bi-box-arrow-in-right text-success"></i>
-                                            Entrée
-                                        {% else %}
-                                            <i class="bi bi-box-arrow-right text-danger"></i>
-                                            Sortie
-                                        {% endif %}
-                                    </h6>
-                                    <p class="text-muted mb-1">{{ attendance.time|time:"H:i:s" }}</p>
-                                    {% if attendance.notes %}
-                                        <small class="text-muted">{{ attendance.notes }}</small>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    {% if attendance.status == 'normal' %}
-                                        <span class="badge bg-success">Normal</span>
-                                    {% elif attendance.status == 'late' %}
-                                        <span class="badge bg-warning">Retard</span>
-                                    {% elif attendance.status == 'early' %}
-                                        <span class="badge bg-warning">Sortie anticipée</span>
-                                    {% elif attendance.status == 'outside_zone' %}
-                                        <span class="badge bg-danger">Hors zone</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ attendance.get_status_display }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-clock-history fs-4"></i>
-                        <p class="mt-2 mb-0">Aucun pointage enregistré aujourd'hui</p>
-                    </div>
-                {% endif %}
+            <div>
+                <strong>
+                    {% if last_attendance.punch_type == 'in' %}
+                        <i class="bi bi-arrow-right-circle ds-text-success me-1"></i>
+                        Entrée
+                    {% else %}
+                        <i class="bi bi-arrow-left-circle ds-text-danger me-1"></i>
+                        Sortie
+                    {% endif %}
+                </strong>
+                <br>
+                <span class="ds-text-muted">
+                    {{ last_attendance.date|date:"d/m/Y" }} à {{ last_attendance.time|time:"H:i" }}
+                </span>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Modal de confirmation -->
-<div class="modal fade" id="punchModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmation de pointage</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="punch-confirmation-content">
-                    <!-- Contenu dynamique -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" id="confirm-punch">Confirmer</button>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-let currentPosition = null;
-let punchType = null;
-
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-    getCurrentLocation();
-});
-
-// Récupération de la géolocalisation
-function getCurrentLocation() {
-    const statusElement = document.getElementById('location-status');
-    
-    if (!navigator.geolocation) {
-        statusElement.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i><span>Géolocalisation non supportée</span>';
-        return;
+    // Horloge en temps réel
+    function updateTime() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const date = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        document.getElementById('current-time').textContent = time;
+        document.getElementById('current-date').textContent = date;
     }
     
-    statusElement.innerHTML = '<i class="bi bi-geo-alt"></i><span>Recherche...</span>';
+    updateTime();
+    setInterval(updateTime, 1000);
     
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            currentPosition = position;
-            const accuracy = position.coords.accuracy;
-            
-            if (accuracy <= 50) {
-                statusElement.className = 'location-status accurate';
-                statusElement.innerHTML = '<i class="bi bi-geo-alt-fill"></i><span>Position précise (' + Math.round(accuracy) + 'm)</span>';
-            } else {
-                statusElement.className = 'location-status inaccurate';
-                statusElement.innerHTML = '<i class="bi bi-geo-alt"></i><span>Position approximative (' + Math.round(accuracy) + 'm)</span>';
-            }
-        },
-        function(error) {
-            statusElement.className = 'location-status inaccurate';
-            statusElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i><span>Position non disponible</span>';
-            console.error('Erreur de géolocalisation:', error);
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-        }
-    );
-}
-
-// Fonction de pointage
-function punch(type) {
-    punchType = type;
-    
-    if (!currentPosition) {
-        alert('Géolocalisation requise pour le pointage. Veuillez autoriser l\'accès à votre position.');
-        getCurrentLocation();
-        return;
-    }
-    
-    // Préparer le contenu de confirmation
-    const confirmationContent = document.getElementById('punch-confirmation-content');
-    const typeText = type === 'in' ? 'entrée' : 'sortie';
-    const typeIcon = type === 'in' ? 'box-arrow-in-right' : 'box-arrow-right';
-    const typeColor = type === 'in' ? 'success' : 'danger';
-    
-    confirmationContent.innerHTML = `
-        <div class="text-center">
-            <i class="bi bi-${typeIcon} text-${typeColor} fs-1"></i>
-            <h5 class="mt-3">Pointage d'${typeText}</h5>
-            <p class="text-muted">Êtes-vous sûr de vouloir pointer votre ${typeText} ?</p>
-            <div class="alert alert-info">
-                <small>
-                    <i class="bi bi-geo-alt"></i>
-                    Position: ${currentPosition.coords.latitude.toFixed(6)}, ${currentPosition.coords.longitude.toFixed(6)}<br>
-                    <i class="bi bi-clock"></i>
-                    Heure: ${new Date().toLocaleTimeString('fr-FR')}
-                </small>
-            </div>
-        </div>
-    `;
-    
-    // Afficher le modal
-    const modal = new bootstrap.Modal(document.getElementById('punchModal'));
-    modal.show();
-}
-
-// Confirmation du pointage
-document.getElementById('confirm-punch').addEventListener('click', function() {
-    if (!currentPosition || !punchType) return;
-    
-    const button = this;
-    const originalText = button.innerHTML;
-    
-    // Désactiver le bouton et afficher le loading
-    button.disabled = true;
-    button.innerHTML = '<span class="loading"></span> Enregistrement...';
-    
-    // Préparer les données
-    const data = {
-        punch_type: punchType,
-        latitude: currentPosition.coords.latitude,
-        longitude: currentPosition.coords.longitude,
-        accuracy: currentPosition.coords.accuracy
-    };
-    
-    // Envoyer la requête
-    fetch('{% url "attendance:punch_api" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Succès
-            const modal = bootstrap.Modal.getInstance(document.getElementById('punchModal'));
-            modal.hide();
-            
-            // Afficher un message de succès
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show';
-            alert.innerHTML = `
-                <i class="bi bi-check-circle"></i>
-                ${data.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').firstChild);
-            
-            // Recharger la page après 2 secondes
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
+    // Fonction de pointage
+    function punch(type) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('punch-type').value = type;
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                document.getElementById('accuracy').value = position.coords.accuracy;
+                document.getElementById('punch-form').submit();
+            }, function(error) {
+                alert('Erreur de géolocalisation. Veuillez activer le GPS.');
+            });
         } else {
-            // Erreur
-            alert('Erreur: ' + data.error);
-            button.disabled = false;
-            button.innerHTML = originalText;
+            alert('La géolocalisation n\'est pas supportée par votre navigateur.');
         }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur de communication avec le serveur');
-        button.disabled = false;
-        button.innerHTML = originalText;
-    });
-});
-
-// Actualisation de la géolocalisation toutes les 30 secondes
-setInterval(getCurrentLocation, 30000);
+    }
 </script>
 {% endblock %}
-
-

@@ -1,635 +1,188 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de Bord - RH/DG{% endblock %}
+{% block title %}Tableau de bord - RH/DG{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 <style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 30s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .dashboard-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .rh-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
     .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        position: relative;
-        overflow: hidden;
-        border-left: 4px solid;
-        transition: all 0.3s ease;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: transform var(--transition-base);
     }
     
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    }
-    
-    .stat-card.employees {
-        border-left-color: #0d6efd;
-    }
-    
-    .stat-card.approvals {
-        border-left-color: #ed8936;
-    }
-    
-    .stat-card.attendance {
-        border-left-color: #48bb78;
-    }
-    
-    .stat-card.anomalies {
-        border-left-color: #f56565;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        color: #718096;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
     
     .stat-icon {
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        font-size: 2rem;
-        opacity: 0.3;
-    }
-    
-    .management-overview {
-        display: block;
-        margin-bottom: 2rem;
-    }
-    
-    .approval-requests {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .request-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-    }
-    
-    .request-item:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-        border-left-color: #0d6efd;
-    }
-    
-    .request-item.urgent {
-        border-left-color: #f56565;
-        background: linear-gradient(135deg, #fed7d7, #f8f9fa);
-    }
-    
-    .request-item.pending {
-        border-left-color: #ed8936;
-        background: linear-gradient(135deg, #feebc8, #f8f9fa);
-    }
-    
-    .request-item.approved {
-        border-left-color: #48bb78;
-        background: linear-gradient(135deg, #c6f6d5, #f8f9fa);
-    }
-    
-    .request-info {
-        display: flex;
-        align-items: center;
-        flex: 1;
-    }
-    
-    .request-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        width: 56px;
+        height: 56px;
+        border-radius: var(--border-radius);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 600;
-        margin-right: 1rem;
-        font-size: 1.1rem;
+        margin: 0 auto var(--spacing-sm);
+        font-size: 1.5rem;
+        color: var(--white);
     }
     
-    .request-details {
-        flex: 1;
+    .stat-icon.primary { background-color: var(--primary); }
+    .stat-icon.success { background-color: var(--success); }
+    .stat-icon.warning { background-color: var(--warning); }
+    .stat-icon.info { background-color: var(--info); }
+    
+    .stat-value {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
     }
     
-    .request-employee {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-        font-size: 1.1rem;
-    }
-    
-    .request-type {
-        font-size: 0.875rem;
-        color: #718096;
-        margin-bottom: 0.25rem;
-    }
-    
-    .request-dates {
-        font-size: 0.75rem;
-        color: #a0aec0;
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--gray-600);
         font-weight: 500;
-    }
-    
-    .request-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-approve {
-        background: #48bb78;
-        color: white;
-        border: none;
-        padding: 0.75rem 1.25rem;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-    }
-    
-    .btn-approve:hover {
-        background: #38a169;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
-    }
-    
-    .btn-reject {
-        background: #f56565;
-        color: white;
-        border: none;
-        padding: 0.75rem 1.25rem;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-    }
-    
-    .btn-reject:hover {
-        background: #e53e3e;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
-    }
-    
-    .management-tools {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    
-    .department-overview {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-    }
-    
-    .department-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-    }
-    
-    .department-card:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-    }
-    
-    .department-info {
-        display: flex;
-        align-items: center;
-    }
-    
-    .department-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.25rem;
-        margin-right: 1rem;
-    }
-    
-    .department-details h4 {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-    
-    .department-stats {
-        font-size: 0.875rem;
-        color: #718096;
-    }
-    
-    .department-metrics {
-        text-align: right;
-    }
-    
-    .metric-number {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2d3748;
-    }
-    
-    .metric-label {
-        font-size: 0.75rem;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-    }
-    
-    .section-title i {
-        margin-right: 0.75rem;
-        color: #0d6efd;
-    }
-    
-    .priority-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .priority-urgent {
-        background: #fed7d7;
-        color: #c53030;
-    }
-    
-    .priority-high {
-        background: #feebc8;
-        color: #c05621;
-    }
-    
-    .priority-normal {
-        background: #bee3f8;
-        color: #2b6cb0;
-    }
-    
-    @media (max-width: 768px) {
-        
-        .dashboard-header {
-            padding: 1.5rem;
-        }
-        
-        .dashboard-title {
-            font-size: 2rem;
-        }
-        
-        .rh-stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .request-item {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        
-        .request-actions {
-            margin-top: 1rem;
-            justify-content: center;
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .rh-stats {
-            grid-template-columns: 1fr;
-        }
-        
-        .request-actions {
-            flex-direction: column;
-        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête du dashboard -->
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="bi bi-shield-check me-3"></i>
-            Dashboard RH/DG
-                </h1>
-        <p class="dashboard-subtitle">
-            Gestion des ressources humaines et supervision générale
-                </p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Bienvenue, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="ds-text-muted">Tableau de bord RH/DG</p>
     </div>
-
-    <!-- Statistiques RH -->
-    <div class="rh-stats">
-        <div class="stat-card employees">
-            <div class="stat-number">{{ total_employees|default:6 }}</div>
-            <div class="stat-label">Total Employés</div>
-            <i class="bi bi-people stat-icon" style="color: #0d6efd;"></i>
-                    </div>
-        
-        <div class="stat-card approvals">
-            <div class="stat-number">{{ pending_approvals|default:5 }}</div>
-            <div class="stat-label">Validations en attente</div>
-            <i class="bi bi-clock stat-icon" style="color: #ed8936;"></i>
-                    </div>
-        
-        <div class="stat-card attendance">
-            <div class="stat-number">{{ global_attendance_today|default:85 }}%</div>
-            <div class="stat-label">Taux de présence</div>
-            <i class="bi bi-check-circle stat-icon" style="color: #48bb78;"></i>
-                </div>
-        
-        <div class="stat-card anomalies">
-            <div class="stat-number">{{ global_anomalies|default:3 }}</div>
-            <div class="stat-label">Anomalies détectées</div>
-            <i class="bi bi-exclamation-triangle stat-icon" style="color: #f56565;"></i>
-        </div>
-    </div>
-
-    <!-- Vue d'ensemble de la gestion -->
-    <div class="management-overview">
-        <div class="approval-requests">
-            <h2 class="section-title">
-                <i class="bi bi-hourglass-split"></i>
-                Demandes en attente de validation finale
-            </h2>
-            
-            <div class="request-item urgent">
-                <div class="request-info">
-                    <div class="request-avatar">JD</div>
-                    <div class="request-details">
-                        <div class="priority-badge priority-urgent">Urgent</div>
-                        <div class="request-employee">Jean DOSSOU</div>
-                        <div class="request-type">Congés payés - 15 jours</div>
-                        <div class="request-dates">Du 20 Nov au 10 Déc 2024</div>
-                    </div>
-                </div>
-                <div class="request-actions">
-                    <button class="btn-approve">
-                        <i class="bi bi-check me-1"></i>
-                        Approuver
-                    </button>
-                    <button class="btn-reject">
-                        <i class="bi bi-x me-1"></i>
-                        Refuser
-                    </button>
-        </div>
-    </div>
-
-            <div class="request-item pending">
-                <div class="request-info">
-                    <div class="request-avatar">MK</div>
-                    <div class="request-details">
-                        <div class="priority-badge priority-high">Élevé</div>
-                        <div class="request-employee">Marie KOUMASSI</div>
-                        <div class="request-type">Congé maternité</div>
-                        <div class="request-dates">Du 1er Jan au 15 Fév 2025</div>
-                    </div>
-                </div>
-                <div class="request-actions">
-                    <button class="btn-approve">
-                        <i class="bi bi-check me-1"></i>
-                        Approuver
-                    </button>
-                    <button class="btn-reject">
-                        <i class="bi bi-x me-1"></i>
-                        Refuser
-                    </button>
-        </div>
-    </div>
-
-            <div class="request-item pending">
-                <div class="request-info">
-                    <div class="request-avatar">PA</div>
-                    <div class="request-details">
-                        <div class="priority-badge priority-normal">Normal</div>
-                        <div class="request-employee">Pierre ADJOVI</div>
-                        <div class="request-type">Formation professionnelle</div>
-                        <div class="request-dates">2 jours - 25-26 Nov 2024</div>
-                    </div>
-                </div>
-                <div class="request-actions">
-                    <button class="btn-approve">
-                        <i class="bi bi-check me-1"></i>
-                        Approuver
-                    </button>
-                    <button class="btn-reject">
-                        <i class="bi bi-x me-1"></i>
-                        Refuser
-                    </button>
-                </div>
-            </div>
-            
-            <div class="request-item approved">
-                <div class="request-info">
-                    <div class="request-avatar">FS</div>
-                    <div class="request-details">
-                        <div class="priority-badge priority-normal">Approuvé</div>
-                        <div class="request-employee">Fatou SOW</div>
-                        <div class="request-type">Congés payés - 3 jours</div>
-                        <div class="request-dates">Du 18 au 20 Nov 2024</div>
-        </div>
-    </div>
-                <div class="request-actions">
-                    <button class="btn-approve" style="background: #48bb78; cursor: default;">
-                        <i class="bi bi-check me-1"></i>
-                        Approuvé
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-                    </div>
     
-    <!-- Vue d'ensemble des départements -->
-    <div class="department-overview">
-        <h2 class="section-title">
-            <i class="bi bi-building"></i>
-            Vue d'ensemble des départements
-        </h2>
-        
-        <div class="department-card">
-            <div class="department-info">
-                <div class="department-icon">
-                    <i class="bi bi-laptop"></i>
-                        </div>
-                <div class="department-details">
-                    <h4>Informatique</h4>
-                    <div class="department-stats">3 employés • Manager: Koffi AGBEGNENOU</div>
-                </div>
-            </div>
-            <div class="department-metrics">
-                <div class="metric-number">100%</div>
-                <div class="metric-label">Présence</div>
-            </div>
-                            </div>
-        
-        <div class="department-card">
-            <div class="department-info">
-                <div class="department-icon">
-                    <i class="bi bi-graph-up"></i>
-                        </div>
-                <div class="department-details">
-                    <h4>Commercial</h4>
-                    <div class="department-stats">2 employés • Sans manager</div>
-                            </div>
-                        </div>
-            <div class="department-metrics">
-                <div class="metric-number">75%</div>
-                <div class="metric-label">Présence</div>
-                            </div>
-                        </div>
-        
-        <div class="department-card">
-            <div class="department-info">
-                <div class="department-icon">
+    <!-- Statistiques -->
+    <div class="ds-row ds-mb-4">
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
                     <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">{{ total_employees|default:0 }}</div>
+                <div class="stat-label">Employés actifs</div>
+            </div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-value">{{ total_departments|default:0 }}</div>
+                <div class="stat-label">Départements</div>
+            </div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">{{ pending_validations|default:0 }}</div>
+                <div class="stat-label">Validations en attente</div>
+            </div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-value">{{ total_leave_requests|default:0 }}</div>
+                <div class="stat-label">Demandes ce mois</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="ds-row">
+        <div class="ds-col-6">
+            <div class="ds-card">
+                <div class="ds-card-header">
+                    <h3 class="ds-card-title">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Demandes de congés à valider
+                    </h3>
+                </div>
+                <div class="ds-card-body">
+                    {% if pending_leave_requests %}
+                    <div class="list-group">
+                        {% for request in pending_leave_requests|slice:":5" %}
+                        <a href="{% url 'leave:leave_approval_detail' request.pk %}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ request.employee.get_full_name }}</strong>
+                                    <br>
+                                    <small class="ds-text-muted">
+                                        {{ request.leave_type.name }} - {{ request.duration }} jour{{ request.duration|pluralize }}
+                                    </small>
+                                </div>
+                                <span class="ds-badge ds-badge-warning">En attente</span>
+                            </div>
+                        </a>
+                        {% endfor %}
                     </div>
-                <div class="department-details">
-                    <h4>Ressources Humaines</h4>
-                    <div class="department-stats">1 employé • Manager: Aminata TRAORE</div>
+                    <div class="ds-text-center ds-mt-3">
+                        <a href="{% url 'leave:leave_approval_list' %}" class="ds-btn ds-btn-primary ds-btn-sm">
+                            Voir toutes les demandes
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="ds-text-center ds-p-3">
+                        <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--success);"></i>
+                        <p class="ds-text-muted ds-mt-2">Aucune demande en attente</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            <div class="department-metrics">
-                <div class="metric-number">100%</div>
-                <div class="metric-label">Présence</div>
+        </div>
+        
+        <div class="ds-col-6">
+            <div class="ds-card">
+                <div class="ds-card-header">
+                    <h3 class="ds-card-title">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Employés récents
+                    </h3>
+                </div>
+                <div class="ds-card-body">
+                    {% if recent_employees %}
+                    <div class="list-group">
+                        {% for employee in recent_employees|slice:":5" %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ employee.user.get_full_name }}</strong>
+                                    <br>
+                                    <small class="ds-text-muted">
+                                        <i class="bi bi-card-text me-1"></i>
+                                        {{ employee.employee_id }}
+                                    </small>
+                                </div>
+                                <span class="ds-badge ds-badge-success">Actif</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="ds-text-center ds-p-3">
+                        <i class="bi bi-people" style="font-size: 2rem; color: var(--gray-400);"></i>
+                        <p class="ds-text-muted ds-mt-2">Aucun employé récent</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée pour les cartes
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.stat-card, .request-item, .department-card');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-    
-    // Animation des boutons d'action
-    document.querySelectorAll('.btn-approve, .btn-reject').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const originalText = this.innerHTML;
-            const isApprove = this.classList.contains('btn-approve');
-            
-            this.innerHTML = isApprove ? 
-                '<i class="bi bi-check me-1"></i>Approuvé' : 
-                '<i class="bi bi-x me-1"></i>Refusé';
-            
-            this.style.background = isApprove ? '#48bb78' : '#f56565';
-            this.style.cursor = 'default';
-            
-            // Marquer l'élément parent comme traité
-            const requestItem = this.closest('.request-item');
-            requestItem.classList.remove('urgent', 'pending');
-            requestItem.classList.add('approved');
-            
-            setTimeout(() => {
-                requestItem.style.opacity = '0.7';
-                requestItem.style.transform = 'scale(0.98)';
-            }, 1000);
-        });
-    });
-    
-</script>
 {% endblock %}

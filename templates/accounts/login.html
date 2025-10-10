@@ -4,305 +4,123 @@
 {% block title %}Connexion - Système de Gestion de Présence{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 <style>
-    .login-background {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        min-height: 100vh;
-        position: relative;
-        overflow: hidden;
+    body {
+        background-color: var(--gray-100);
     }
     
-    .login-background::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-        opacity: 0.3;
-    }
-    
-    .login-container {
-        position: relative;
-        z-index: 2;
+    .login-page {
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 2rem;
+        padding: var(--spacing-md);
+    }
+    
+    .login-container {
+        width: 100%;
+        max-width: 420px;
     }
     
     .login-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        padding: 3rem;
-        width: 100%;
-        max-width: 450px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        animation: slideInUp 0.8s ease-out;
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(50px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: var(--spacing-xl);
     }
     
     .login-header {
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: var(--spacing-lg);
     }
     
     .login-logo {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        border-radius: 20px;
+        width: 64px;
+        height: 64px;
+        background-color: var(--primary);
+        border-radius: var(--border-radius-lg);
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 1.5rem;
-        color: white;
+        margin: 0 auto var(--spacing-md);
+        color: var(--white);
         font-size: 2rem;
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
     }
     
     .login-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
+        font-size: var(--font-size-2xl);
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
     }
     
     .login-subtitle {
-        color: #718096;
-        font-size: 1rem;
-        margin-bottom: 0;
+        color: var(--gray-600);
+        font-size: var(--font-size-sm);
     }
     
-    .form-group {
-        margin-bottom: 1.5rem;
-        position: relative;
-    }
-    
-    .form-label {
-        font-weight: 600;
-        color: #4a5568;
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 1rem 1rem 1rem 3rem;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.8);
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        background: white;
-    }
-    
-    .input-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #a0aec0;
-        font-size: 1.1rem;
-        z-index: 3;
-    }
-    
-    .btn-login {
-        width: 100%;
-        padding: 1rem;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        border: none;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-    
-    .btn-login:active {
-        transform: translateY(0);
-    }
-    
-    .btn-login::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-    }
-    
-    .btn-login:hover::before {
-        left: 100%;
-    }
-    
-    .login-footer {
-        text-align: center;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid #e2e8f0;
-    }
-    
-    .login-footer p {
-        color: #718096;
-        margin-bottom: 0;
-        font-size: 0.875rem;
-    }
-    
-    .floating-shapes {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        z-index: 1;
-    }
-    
-    .shape {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        animation: float 6s ease-in-out infinite;
-    }
-    
-    .shape:nth-child(1) {
-        width: 80px;
-        height: 80px;
-        top: 20%;
-        left: 10%;
-        animation-delay: 0s;
-    }
-    
-    .shape:nth-child(2) {
-        width: 120px;
-        height: 120px;
-        top: 60%;
-        right: 10%;
-        animation-delay: 2s;
-    }
-    
-    .shape:nth-child(3) {
-        width: 60px;
-        height: 60px;
-        top: 80%;
-        left: 20%;
-        animation-delay: 4s;
-    }
-    
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0px);
-        }
-        50% {
-            transform: translateY(-20px);
-        }
-    }
-    
-    .demo-accounts {
-        background: rgba(102, 126, 234, 0.1);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-top: 2rem;
-        border: 1px solid rgba(102, 126, 234, 0.2);
+    .demo-section {
+        background-color: var(--gray-50);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
     
     .demo-title {
+        font-size: var(--font-size-xs);
         font-weight: 600;
-        color: #4a5568;
-        margin-bottom: 1rem;
-        font-size: 0.875rem;
+        color: var(--gray-700);
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: var(--spacing-sm);
     }
     
-    .demo-account {
+    .demo-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.75rem;
-        background: white;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: var(--white);
+        border-radius: var(--border-radius-sm);
+        margin-bottom: var(--spacing-xs);
         cursor: pointer;
-        transition: all 0.3s ease;
-        border: 1px solid #e2e8f0;
+        transition: background-color var(--transition-base);
+        border: 1px solid var(--gray-200);
     }
     
-    .demo-account:hover {
-        background: #f7fafc;
-        transform: translateX(5px);
+    .demo-item:hover {
+        background-color: var(--gray-50);
     }
     
-    .demo-account:last-child {
+    .demo-item:last-child {
         margin-bottom: 0;
     }
     
     .demo-role {
-        font-weight: 600;
-        color: #2d3748;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        color: var(--gray-900);
     }
     
-    .demo-credentials {
-        font-size: 0.75rem;
-        color: #718096;
+    .demo-id {
+        font-size: var(--font-size-xs);
+        color: var(--gray-600);
     }
     
-    @media (max-width: 576px) {
-        .login-container {
-            padding: 1rem;
-        }
-        
-        .login-card {
-            padding: 2rem;
-        }
-        
-        .login-title {
-            font-size: 1.5rem;
-        }
+    .login-footer {
+        text-align: center;
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-lg);
+        border-top: 1px solid var(--gray-200);
+        font-size: var(--font-size-sm);
+        color: var(--gray-600);
     }
 </style>
 {% endblock %}
 
 {% block login_content %}
-<div class="login-background">
-    <div class="floating-shapes">
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
-    
+<div class="login-page">
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
@@ -314,79 +132,84 @@
             </div>
             
             {% if form.errors %}
-                <div class="alert alert-danger" role="alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    ID Employé ou mot de passe incorrect.
-                </div>
+            <div class="ds-alert ds-alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                ID Employé ou mot de passe incorrect.
+            </div>
             {% endif %}
             
             <form method="post">
                 {% csrf_token %}
                 
-                <div class="form-group">
-                    <label for="{{ form.username.id_for_label }}" class="form-label">
-                        <i class="bi bi-card-text me-1"></i>ID Employé
+                <div class="ds-form-group">
+                    <label for="{{ form.username.id_for_label }}" class="ds-form-label ds-form-label-required">
+                        ID Employé
                     </label>
-                    <div class="position-relative">
-                        <i class="bi bi-card-text input-icon"></i>
-                        {{ form.username }}
-                    </div>
+                    <input type="text" 
+                           name="{{ form.username.name }}" 
+                           id="{{ form.username.id_for_label }}"
+                           class="ds-form-control" 
+                           placeholder="EMP001"
+                           required
+                           autofocus>
                 </div>
                 
-                <div class="form-group">
-                    <label for="{{ form.password.id_for_label }}" class="form-label">
-                        <i class="bi bi-lock me-1"></i>Mot de passe
+                <div class="ds-form-group">
+                    <label for="{{ form.password.id_for_label }}" class="ds-form-label ds-form-label-required">
+                        Mot de passe
                     </label>
-                    <div class="position-relative">
-                        <i class="bi bi-lock input-icon"></i>
-                        {{ form.password }}
-                    </div>
+                    <input type="password" 
+                           name="{{ form.password.name }}" 
+                           id="{{ form.password.id_for_label }}"
+                           class="ds-form-control" 
+                           placeholder="••••••••"
+                           required>
                 </div>
                 
-                <button type="submit" class="btn-login">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                <button type="submit" class="ds-btn ds-btn-primary" style="width: 100%;">
+                    <i class="bi bi-box-arrow-in-right"></i>
                     Se connecter
                 </button>
             </form>
             
-            <div class="demo-accounts">
+            <div class="demo-section">
                 <div class="demo-title">Comptes de démonstration</div>
                 
-                <div class="demo-account" onclick="fillCredentials('admin', 'admin123')">
+                <div class="demo-item" onclick="fillCredentials('EMP007', 'admin123')">
                     <div>
                         <div class="demo-role">Administrateur</div>
-                        <div class="demo-credentials">admin / admin123</div>
+                        <div class="demo-id">EMP007 / admin123</div>
                     </div>
-                    <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right text-muted"></i>
                 </div>
                 
-                <div class="demo-account" onclick="fillCredentials('manager.it', 'password123')">
-                    <div>
-                        <div class="demo-role">Manager IT</div>
-                        <div class="demo-credentials">manager.it / password123</div>
-                    </div>
-                    <i class="bi bi-arrow-right"></i>
-                </div>
-                
-                <div class="demo-account" onclick="fillCredentials('rh.dg', 'password123')">
+                <div class="demo-item" onclick="fillCredentials('EMP009', 'password123')">
                     <div>
                         <div class="demo-role">RH/DG</div>
-                        <div class="demo-credentials">rh.dg / password123</div>
+                        <div class="demo-id">EMP009 / password123</div>
                     </div>
-                    <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right text-muted"></i>
                 </div>
                 
-                <div class="demo-account" onclick="fillCredentials('dev1', 'password123')">
+                <div class="demo-item" onclick="fillCredentials('EMP008', 'password123')">
+                    <div>
+                        <div class="demo-role">Manager</div>
+                        <div class="demo-id">EMP008 / password123</div>
+                    </div>
+                    <i class="bi bi-arrow-right text-muted"></i>
+                </div>
+                
+                <div class="demo-item" onclick="fillCredentials('EMP001', 'password123')">
                     <div>
                         <div class="demo-role">Employé</div>
-                        <div class="demo-credentials">dev1 / password123</div>
+                        <div class="demo-id">EMP001 / password123</div>
                     </div>
-                    <i class="bi bi-arrow-right"></i>
+                    <i class="bi bi-arrow-right text-muted"></i>
                 </div>
             </div>
             
             <div class="login-footer">
-                <p>Système de Gestion de Présence Professionnel</p>
+                Système de Gestion de Présence Professionnel
             </div>
         </div>
     </div>
@@ -398,30 +221,6 @@
     function fillCredentials(username, password) {
         document.getElementById('{{ form.username.id_for_label }}').value = username;
         document.getElementById('{{ form.password.id_for_label }}').value = password;
-        
-        // Animation de confirmation
-        const button = document.querySelector('.btn-login');
-        button.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
-        button.innerHTML = '<i class="bi bi-check me-2"></i>Prêt à se connecter';
-        
-        setTimeout(() => {
-            button.style.background = 'linear-gradient(135deg, #0d6efd, #0b5ed7)';
-            button.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Se connecter';
-        }, 2000);
     }
-    
-    // Animation d'entrée pour les éléments
-    document.addEventListener('DOMContentLoaded', function() {
-        const elements = document.querySelectorAll('.form-group, .demo-account');
-        elements.forEach((element, index) => {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                element.style.transition = 'all 0.6s ease';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
-            }, 300 + (index * 100));
-        });
-    });
 </script>
 {% endblock %}

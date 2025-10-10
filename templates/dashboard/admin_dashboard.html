@@ -1,535 +1,142 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de Bord - Administrateur{% endblock %}
+{% block title %}Tableau de bord - Administrateur{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 <style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 35s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .dashboard-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .admin-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
     .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        position: relative;
-        overflow: hidden;
-        border-left: 4px solid;
-        transition: all 0.3s ease;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: transform var(--transition-base);
     }
     
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    }
-    
-    .stat-card.users {
-        border-left-color: #0d6efd;
-    }
-    
-    .stat-card.departments {
-        border-left-color: #0d6efd;
-    }
-    
-    .stat-card.attendance {
-        border-left-color: #48bb78;
-    }
-    
-    .stat-card.anomalies {
-        border-left-color: #f39c12;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        color: #718096;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
     
     .stat-icon {
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        font-size: 2rem;
-        opacity: 0.3;
-    }
-    
-    .admin-controls {
-        display: block;
-        margin-bottom: 2rem;
-    }
-    
-    .system-overview {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .system-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-    }
-    
-    .system-item:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-        border-left-color: #0d6efd;
-    }
-    
-    .system-info {
-        display: flex;
-        align-items: center;
-    }
-    
-    .system-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        width: 56px;
+        height: 56px;
+        border-radius: var(--border-radius);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        margin-right: 1rem;
-        font-size: 1.1rem;
-    }
-    
-    .system-details h4 {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-    
-    .system-status {
-        font-size: 0.875rem;
-        color: #718096;
-    }
-    
-    .system-metric {
-        text-align: right;
-    }
-    
-    .metric-value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #2d3748;
-    }
-    
-    .metric-label {
-        font-size: 0.75rem;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .admin-tools {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    
-    .recent-activity {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-    }
-    
-    .activity-timeline {
-        position: relative;
-        padding-left: 2rem;
-    }
-    
-    .activity-timeline::before {
-        content: '';
-        position: absolute;
-        left: 1rem;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: linear-gradient(to bottom, #0d6efd, #0b5ed7);
-    }
-    
-    .timeline-item {
-        position: relative;
-        margin-bottom: 2rem;
-        padding-left: 2rem;
-    }
-    
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -1.5rem;
-        top: 0.5rem;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #0d6efd;
-        border: 3px solid white;
-        box-shadow: 0 0 0 3px #0d6efd;
-    }
-    
-    .timeline-content {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 12px;
-        border-left: 4px solid #0d6efd;
-    }
-    
-    .timeline-title {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .timeline-description {
-        color: #718096;
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .timeline-time {
-        color: #a0aec0;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    
-    .section-title {
+        margin: 0 auto var(--spacing-sm);
         font-size: 1.5rem;
+        color: var(--white);
+    }
+    
+    .stat-icon.primary { background-color: var(--primary); }
+    .stat-icon.success { background-color: var(--success); }
+    .stat-icon.warning { background-color: var(--warning); }
+    .stat-icon.danger { background-color: var(--danger); }
+    
+    .stat-value {
+        font-size: var(--font-size-3xl);
         font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
     }
     
-    .section-title i {
-        margin-right: 0.75rem;
-        color: #0d6efd;
-    }
-    
-    .status-indicator {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .status-online {
-        background: #c6f6d5;
-        color: #22543d;
-    }
-    
-    .status-warning {
-        background: #feebc8;
-        color: #c05621;
-    }
-    
-    .status-error {
-        background: #fed7d7;
-        color: #c53030;
-    }
-    
-    @media (max-width: 768px) {
-        
-        .dashboard-header {
-            padding: 1.5rem;
-        }
-        
-        .dashboard-title {
-            font-size: 2rem;
-        }
-        
-        .admin-stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .tool-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .admin-stats {
-            grid-template-columns: 1fr;
-        }
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--gray-600);
+        font-weight: 500;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête du dashboard -->
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="bi bi-gear-fill me-3"></i>
-            Dashboard Administrateur
-        </h1>
-        <p class="dashboard-subtitle">
-            Administration complète du système de gestion de présence
-        </p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Bienvenue, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="ds-text-muted">Tableau de bord administrateur</p>
     </div>
     
-    <!-- Statistiques système -->
-    <div class="admin-stats">
-        <div class="stat-card users">
-            <div class="stat-number">{{ total_users|default:7 }}</div>
-            <div class="stat-label">Employés actifs</div>
-            <i class="bi bi-people stat-icon" style="color: #0d6efd;"></i>
+    <!-- Statistiques globales -->
+    <div class="ds-row ds-mb-4">
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-value">{{ total_users|default:0 }}</div>
+                <div class="stat-label">Utilisateurs totaux</div>
+            </div>
         </div>
         
-        <div class="stat-card departments">
-            <div class="stat-number">{{ total_departments|default:3 }}</div>
-            <div class="stat-label">Départements</div>
-            <i class="bi bi-building stat-icon" style="color: #0d6efd;"></i>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-value">{{ total_departments|default:0 }}</div>
+                <div class="stat-label">Départements</div>
+            </div>
         </div>
         
-        <div class="stat-card attendance">
-            <div class="stat-number">{{ today_present|default:5 }}</div>
-            <div class="stat-label">Présents aujourd'hui</div>
-            <i class="bi bi-check-circle stat-icon" style="color: #48bb78;"></i>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-value">{{ total_attendance|default:0 }}</div>
+                <div class="stat-label">Pointages ce mois</div>
+            </div>
         </div>
         
-        <div class="stat-card anomalies">
-            <div class="stat-number">{{ pending_anomalies|default:2 }}</div>
-            <div class="stat-label">Anomalies système</div>
-            <i class="bi bi-exclamation-triangle stat-icon" style="color: #f39c12;"></i>
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value">{{ total_anomalies|default:0 }}</div>
+                <div class="stat-label">Anomalies</div>
+            </div>
         </div>
     </div>
     
-    <!-- Contrôles d'administration -->
-    <div class="admin-controls">
-        <div class="system-overview">
-            <h2 class="section-title">
-                <i class="bi bi-cpu"></i>
-                État du système
-            </h2>
-            
-            <div class="system-item">
-                <div class="system-info">
-                    <div class="system-icon">
-                        <i class="bi bi-database"></i>
-                    </div>
-                    <div class="system-details">
-                        <h4>Base de données</h4>
-                        <div class="system-status">SQLite - Opérationnel</div>
-                    </div>
-                </div>
-                <div class="system-metric">
-                    <div class="metric-value">
-                        <span class="status-indicator status-online">En ligne</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="system-item">
-                <div class="system-info">
-                    <div class="system-icon">
-                        <i class="bi bi-cloud"></i>
-                    </div>
-                    <div class="system-details">
-                        <h4>Serveur web</h4>
-                        <div class="system-status">Django - Développement</div>
-                    </div>
-                </div>
-                <div class="system-metric">
-                    <div class="metric-value">
-                        <span class="status-indicator status-online">Actif</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="system-item">
-                <div class="system-info">
-                    <div class="system-icon">
-                        <i class="bi bi-shield-check"></i>
-                    </div>
-                    <div class="system-details">
-                        <h4>Sécurité</h4>
-                        <div class="system-status">Authentification active</div>
-                    </div>
-                </div>
-                <div class="system-metric">
-                    <div class="metric-value">
-                        <span class="status-indicator status-online">Sécurisé</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="system-item">
-                <div class="system-info">
-                    <div class="system-icon">
-                        <i class="bi bi-geo-alt"></i>
-                    </div>
-                    <div class="system-details">
-                        <h4>Géolocalisation</h4>
-                        <div class="system-status">GPS - Fonctionnel</div>
-                    </div>
-                </div>
-                <div class="system-metric">
-                    <div class="metric-value">
-                        <span class="status-indicator status-warning">Attention</span>
-                    </div>
-                </div>
+    <!-- Accès rapides -->
+    <div class="ds-row">
+        <div class="ds-col-4">
+            <div class="ds-card ds-text-center">
+                <i class="bi bi-graph-up" style="font-size: 3rem; color: var(--primary);"></i>
+                <h3 class="ds-mt-2">Rapports</h3>
+                <p class="ds-text-muted">Consultez les rapports et statistiques</p>
+                <a href="{% url 'reports:reports_dashboard' %}" class="ds-btn ds-btn-primary ds-mt-2">
+                    Accéder aux rapports
+                </a>
             </div>
         </div>
         
-    </div>
-    
-    <!-- Activité récente -->
-    <div class="recent-activity">
-        <h2 class="section-title">
-            <i class="bi bi-activity"></i>
-            Activité système récente
-        </h2>
+        <div class="ds-col-4">
+            <div class="ds-card ds-text-center">
+                <i class="bi bi-gear" style="font-size: 3rem; color: var(--secondary);"></i>
+                <h3 class="ds-mt-2">Administration</h3>
+                <p class="ds-text-muted">Configuration système Django</p>
+                <a href="/admin/" class="ds-btn ds-btn-secondary ds-mt-2">
+                    Accéder à l'admin
+                </a>
+            </div>
+        </div>
         
-        <div class="activity-timeline">
-            <div class="timeline-item">
-                <div class="timeline-content">
-                    <div class="timeline-title">Connexion utilisateur</div>
-                    <div class="timeline-description">L'utilisateur 'manager.it' s'est connecté avec succès</div>
-                    <div class="timeline-time">Il y a 5 minutes</div>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-content">
-                    <div class="timeline-title">Pointage géolocalisé</div>
-                    <div class="timeline-description">Pointage d'arrivée enregistré pour 'dev1' à Lomé, Togo</div>
-                    <div class="timeline-time">Il y a 15 minutes</div>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-content">
-                    <div class="timeline-title">Validation de congé</div>
-                    <div class="timeline-description">Demande de congé approuvée pour 'com1' par 'rh.dg'</div>
-                    <div class="timeline-time">Il y a 1 heure</div>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-content">
-                    <div class="timeline-title">Anomalie détectée</div>
-                    <div class="timeline-description">Retard détecté pour 'dev2' - 25 minutes de retard</div>
-                    <div class="timeline-time">Il y a 2 heures</div>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-content">
-                    <div class="timeline-title">Sauvegarde automatique</div>
-                    <div class="timeline-description">Sauvegarde de la base de données effectuée avec succès</div>
-                    <div class="timeline-time">Il y a 3 heures</div>
-                </div>
+        <div class="ds-col-4">
+            <div class="ds-card ds-text-center">
+                <i class="bi bi-calendar-event" style="font-size: 3rem; color: var(--success);"></i>
+                <h3 class="ds-mt-2">Congés</h3>
+                <p class="ds-text-muted">Gérez les types de congés et jours fériés</p>
+                <a href="{% url 'leave:leave_type_list' %}" class="ds-btn ds-btn-success ds-mt-2">
+                    Gérer les congés
+                </a>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée pour les cartes
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.stat-card, .system-item, .timeline-item');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-    
-    
-    // Animation de la timeline
-    const timelineItems = document.querySelectorAll('.timeline-item');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateX(0)';
-            }
-        });
-    });
-    
-    timelineItems.forEach(item => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateX(-50px)';
-        item.style.transition = 'all 0.6s ease';
-        observer.observe(item);
-    });
-</script>
 {% endblock %}

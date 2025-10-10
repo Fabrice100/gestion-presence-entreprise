@@ -1,364 +1,172 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de Bord - Employé{% endblock %}
+{% block title %}Tableau de bord - Employé{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 <style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 20s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .dashboard-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
     .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border-left: 4px solid #0d6efd;
-        position: relative;
-        overflow: hidden;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: transform var(--transition-base);
     }
     
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle, rgba(102, 126, 234, 0.05), transparent);
-        border-radius: 50%;
-    }
-    
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        color: #718096;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
     
     .stat-icon {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
+        width: 56px;
+        height: 56px;
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto var(--spacing-sm);
         font-size: 1.5rem;
-        color: #0d6efd;
-        opacity: 0.3;
+        color: var(--white);
     }
     
-    .recent-activity {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 2rem;
-    }
+    .stat-icon.primary { background-color: var(--primary); }
+    .stat-icon.success { background-color: var(--success); }
+    .stat-icon.warning { background-color: var(--warning); }
+    .stat-icon.info { background-color: var(--info); }
     
-    .section-title {
-        font-size: 1.5rem;
+    .stat-value {
+        font-size: var(--font-size-3xl);
         font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
     }
     
-    .section-title i {
-        margin-right: 0.75rem;
-        color: #0d6efd;
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--gray-600);
+        font-weight: 500;
     }
     
-    .activity-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 0.75rem;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-    }
-    
-    .activity-item:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-    }
-    
-    .activity-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1rem;
-        font-size: 1rem;
-        color: white;
-    }
-    
-    .activity-icon.success {
-        background: linear-gradient(135deg, #48bb78, #38a169);
-    }
-    
-    .activity-icon.warning {
-        background: linear-gradient(135deg, #ed8936, #dd6b20);
-    }
-    
-    .activity-icon.info {
-        background: linear-gradient(135deg, #4299e1, #3182ce);
-    }
-    
-    .activity-content {
-        flex: 1;
-    }
-    
-    .activity-title {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
-    }
-    
-    .activity-time {
-        color: #718096;
-        font-size: 0.875rem;
-    }
-    
-    .punch-status {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        background: linear-gradient(135deg, #48bb78, #38a169);
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-    
-    .punch-status.warning {
-        background: linear-gradient(135deg, #ed8936, #dd6b20);
-    }
-    
-    .punch-status.danger {
-        background: linear-gradient(135deg, #f56565, #e53e3e);
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1.5rem;
-        }
-        
-        .dashboard-title {
-            font-size: 2rem;
-        }
-        
-        
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête du dashboard -->
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="bi bi-house-door me-3"></i>
-            Bonjour, {{ user.get_full_name|default:user.username }} !
-        </h1>
-        <p class="dashboard-subtitle">
-            Voici un aperçu de votre activité aujourd'hui
-        </p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Bienvenue, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="ds-text-muted">Tableau de bord employé</p>
     </div>
     
-    <!-- Statistiques rapides -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-number">8h 30</div>
-            <div class="stat-label">Temps de travail</div>
-            <i class="bi bi-clock stat-icon"></i>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-number">22</div>
-            <div class="stat-label">Jours de congés restants</div>
-            <i class="bi bi-calendar-minus stat-icon"></i>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-number">95%</div>
-            <div class="stat-label">Taux de présence</div>
-            <i class="bi bi-check-circle stat-icon"></i>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-number">2</div>
-            <div class="stat-label">Demandes en cours</div>
-            <i class="bi bi-hourglass-split stat-icon"></i>
-        </div>
-    </div>
-    
-    <!-- Statut de pointage actuel -->
-    <div class="punch-status">
-        <i class="bi bi-check-circle me-2"></i>
-        <span>Vous avez pointé ce matin à 08:15</span>
-    </div>
-    
-    <!-- Activité récente -->
-    <div class="recent-activity">
-        <h2 class="section-title">
-            <i class="bi bi-activity"></i>
-            Activité récente
-        </h2>
-        
-        <div class="activity-item">
-            <div class="activity-icon success">
-                <i class="bi bi-fingerprint"></i>
-            </div>
-            <div class="activity-content">
-                <div class="activity-title">Pointage d'arrivée</div>
-                <div class="activity-time">Aujourd'hui à 08:15</div>
-            </div>
-        </div>
-        
-        <div class="activity-item">
-            <div class="activity-icon info">
-                <i class="bi bi-briefcase"></i>
-            </div>
-            <div class="activity-content">
-                <div class="activity-title">Demande de congé approuvée</div>
-                <div class="activity-time">Hier à 14:30</div>
-            </div>
-        </div>
-        
-        <div class="activity-item">
-            <div class="activity-icon warning">
-                <i class="bi bi-clock"></i>
-            </div>
-            <div class="activity-content">
-                <div class="activity-title">Retard de 5 minutes</div>
-                <div class="activity-time">Lundi à 08:20</div>
-            </div>
-        </div>
-        
-        <div class="activity-item">
-            <div class="activity-icon success">
-                <div class="activity-icon success">
+    <!-- Statistiques -->
+    <div class="ds-row ds-mb-4">
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
                     <i class="bi bi-calendar-check"></i>
                 </div>
+                <div class="stat-value">{{ total_attendance|default:0 }}</div>
+                <div class="stat-label">Présences ce mois</div>
             </div>
-            <div class="activity-content">
-                <div class="activity-title">Présence complète</div>
-                <div class="activity-time">Vendredi dernier</div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+                <div class="stat-value">{{ available_leave_days|default:0 }}</div>
+                <div class="stat-label">Jours de congé</div>
+            </div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-value">{{ pending_requests|default:0 }}</div>
+                <div class="stat-label">Demandes en attente</div>
+            </div>
+        </div>
+        
+        <div class="ds-col-3">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-value">{{ approved_requests|default:0 }}</div>
+                <div class="stat-label">Demandes approuvées</div>
             </div>
         </div>
     </div>
     
-    <!-- Annonces -->
-    <div class="recent-activity">
-        <h2 class="section-title">
-            <i class="bi bi-megaphone"></i>
-            Annonces importantes
-        </h2>
-        
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Rappel :</strong> Les demandes de congés doivent être soumises au moins 48h à l'avance.
+    <!-- Dernières présences -->
+    <div class="ds-card">
+        <div class="ds-card-header">
+            <h3 class="ds-card-title">
+                <i class="bi bi-clock-history me-2"></i>
+                Dernières présences
+            </h3>
         </div>
-        
-        <div class="alert alert-success" role="alert">
-            <i class="bi bi-check-circle me-2"></i>
-            <strong>Bonne nouvelle :</strong> Le système de pointage a été mis à jour avec de nouvelles fonctionnalités.
+        <div class="ds-card-body">
+            {% if recent_attendance %}
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Entrée</th>
+                        <th>Sortie</th>
+                        <th>Durée</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance in recent_attendance %}
+                    <tr>
+                        <td>{{ attendance.date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if attendance.check_in %}
+                                <i class="bi bi-arrow-right-circle me-1 ds-text-success"></i>
+                                {{ attendance.check_in|time:"H:i" }}
+                            {% else %}
+                                <span class="ds-text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_out %}
+                                <i class="bi bi-arrow-left-circle me-1 ds-text-danger"></i>
+                                {{ attendance.check_out|time:"H:i" }}
+                            {% else %}
+                                <span class="ds-text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.total_hours %}
+                                {{ attendance.total_hours }}h
+                            {% else %}
+                                <span class="ds-text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="ds-badge ds-badge-{{ attendance.status|default:'secondary' }}">
+                                {{ attendance.get_status_display|default:"Normal" }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="ds-text-center ds-p-3">
+                <i class="bi bi-inbox" style="font-size: 2rem; color: var(--gray-400);"></i>
+                <p class="ds-text-muted ds-mt-2">Aucune présence enregistrée</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée pour les cartes
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.stat-card');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-    
-    // Animation du statut de pointage
-    const punchStatus = document.querySelector('.punch-status');
-    if (punchStatus) {
-        punchStatus.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.02)';
-        });
-        
-        punchStatus.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1)';
-        });
-    }
-</script>
 {% endblock %}

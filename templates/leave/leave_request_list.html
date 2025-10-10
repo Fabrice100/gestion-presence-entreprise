@@ -1,421 +1,158 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Mes demandes de congé{% endblock %}
+{% block title %}Mes demandes de congés{% endblock %}
 
 {% block extra_css %}
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 30s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .page-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .action-buttons {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        position: relative;
-        overflow: hidden;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 6px;
-        border-radius: 20px 20px 0 0;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    }
-    
-    .stat-card.total::before {
-        background: linear-gradient(135deg, #f093fb, #f5576c);
-    }
-    
-    .stat-card.pending::before {
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-    }
-    
-    .stat-card.approved::before {
-        background: linear-gradient(135deg, #43e97b, #38f9d7);
-    }
-    
-    .stat-card.rejected::before {
-        background: linear-gradient(135deg, #fa709a, #fee140);
-    }
-    
-    .stat-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        margin: 0 auto 1.5rem;
-        color: white;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        flex-shrink: 0;
-    }
-    
-    .stat-icon.total {
-        background: linear-gradient(135deg, #f093fb, #f5576c);
-    }
-    
-    .stat-icon.pending {
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-    }
-    
-    .stat-icon.approved {
-        background: linear-gradient(135deg, #43e97b, #38f9d7);
-    }
-    
-    .stat-icon.rejected {
-        background: linear-gradient(135deg, #fa709a, #fee140);
-    }
-    
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-        text-align: center;
-        line-height: 1;
-        min-height: 3.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .stat-label {
-        color: #718096;
-        font-size: 1rem;
-        font-weight: 600;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        line-height: 1.2;
-        min-height: 2.4rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .requests-table {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .table-header {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: white;
-        padding: 1.5rem 2rem;
-        font-weight: 600;
-        font-size: 1.2rem;
-    }
-    
-    .table {
-        margin-bottom: 0;
-    }
-    
-    .table th {
-        border-top: none;
-        border-bottom: 2px solid #e2e8f0;
-        font-weight: 600;
-        color: #4a5568;
-        padding: 1rem 1.5rem;
-        background: #f8fafc;
-    }
-    
-    .table td {
-        padding: 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-        vertical-align: middle;
-    }
-    
-    .status-badge {
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .status-badge.pending {
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-        color: white;
-    }
-    
-    .status-badge.approved,
-    .status-badge.approved_manager,
-    .status-badge.approved_rh {
-        background: linear-gradient(135deg, #43e97b, #38f9d7);
-        color: white;
-    }
-    
-    .status-badge.rejected,
-    .status-badge.rejected_manager,
-    .status-badge.rejected_rh {
-        background: linear-gradient(135deg, #fa709a, #fee140);
-        color: white;
-    }
-    
-    .btn-modern {
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .btn-primary-modern {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: white;
-    }
-    
-    .btn-secondary-modern {
-        background: linear-gradient(135deg, #a8edea, #fed6e3);
-        color: #4a5568;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-        color: #718096;
-    }
-    
-    .empty-state-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    
-    
-    @media (max-width: 768px) {
-        .action-buttons {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        
-        .stat-card {
-            padding: 1.5rem;
-        }
-        
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête de page -->
-    <div class="page-header">
-        <h1 class="page-title">Mes Demandes de Congé</h1>
-        <p class="page-subtitle">Consultez l'état de vos demandes de congé</p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Mes demandes de congés</h1>
+        <p class="ds-text-muted">Consultez et gérez vos demandes de congés</p>
     </div>
     
-    <!-- Bouton Nouvelle demande -->
-    <div class="action-buttons mb-4">
-        <a href="{% url 'leave:leave_request_create' %}" class="btn btn-primary-modern btn-modern">
-            <i class="bi bi-plus-circle me-2"></i>
+    <!-- Barre d'actions -->
+    <div class="ds-d-flex ds-justify-content-between ds-align-items-center ds-mb-3" style="flex-wrap: wrap; gap: 1rem;">
+        <a href="{% url 'leave:leave_request_create' %}" class="ds-btn ds-btn-primary">
+            <i class="bi bi-plus-circle"></i>
             Nouvelle demande
         </a>
-    </div>
-    
-    <!-- Statistiques -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card total">
-                <div class="stat-icon total">
-                    <i class="bi bi-clock"></i>
-                </div>
-                <div class="stat-number">{{ leave_requests|length }}</div>
-                <div class="stat-label">Total demandes</div>
-            </div>
-        </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card pending">
-                <div class="stat-icon pending">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-                <div class="stat-number">{{ pending_count|default:0 }}</div>
-                <div class="stat-label">En attente</div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card approved">
-                <div class="stat-icon approved">
-                    <i class="bi bi-check-circle"></i>
-                </div>
-                <div class="stat-number">{{ approved_count|default:0 }}</div>
-                <div class="stat-label">Approuvées</div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card rejected">
-                <div class="stat-icon rejected">
-                    <i class="bi bi-x-circle"></i>
-                </div>
-                <div class="stat-number">{{ rejected_count|default:0 }}</div>
-                <div class="stat-label">Rejetées</div>
-            </div>
+        <div class="ds-d-flex ds-gap-2" style="flex-wrap: wrap;">
+            <span class="ds-badge ds-badge-warning">
+                {{ pending_count }} en attente
+            </span>
+            <span class="ds-badge ds-badge-success">
+                {{ approved_count }} approuvée{{ approved_count|pluralize }}
+            </span>
+            <span class="ds-badge ds-badge-danger">
+                {{ rejected_count }} rejetée{{ rejected_count|pluralize }}
+            </span>
         </div>
     </div>
     
-    <!-- Liste des demandes -->
-    <div class="requests-table">
-        <div class="table-header">
-            <i class="bi bi-list-ul me-2"></i>
-            Historique des demandes
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="ds-alert ds-alert-{{ message.tags }}">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ message }}
         </div>
-        
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Tableau des demandes -->
+    <div class="ds-card ds-p-0">
         {% if leave_requests %}
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Date de début</th>
-                        <th>Date de fin</th>
-                        <th>Durée</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for request in leave_requests %}
-                    <tr>
-                        <td>
-                            <strong>{{ request.leave_type.name }}</strong>
-                        </td>
-                        <td>{{ request.start_date|date:"d/m/Y" }}</td>
-                        <td>{{ request.end_date|date:"d/m/Y" }}</td>
-                        <td>{{ request.duration }} jour{{ request.duration|pluralize }}</td>
-                        <td>
-                            <span class="status-badge {{ request.status }}">
-                                {{ request.get_status_display }}
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Période</th>
+                    <th>Durée</th>
+                    <th>Statut</th>
+                    <th>Date demande</th>
+                    <th class="ds-text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in leave_requests %}
+                <tr>
+                    <td>
+                        <strong>{{ request.leave_type.name }}</strong>
+                    </td>
+                    <td>
+                        <i class="bi bi-calendar-event me-1 ds-text-muted"></i>
+                        {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
+                    </td>
+                    <td>
+                        <span class="ds-badge ds-badge-primary">
+                            {{ request.duration }} jour{{ request.duration|pluralize }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if request.status == 'pending' %}
+                            <span class="ds-badge ds-badge-warning">
+                                <i class="bi bi-clock me-1"></i>
+                                En attente
                             </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'leave:leave_approval_detail' request.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        {% elif request.status == 'approved_manager' %}
+                            <span class="ds-badge ds-badge-info">
+                                <i class="bi bi-check me-1"></i>
+                                Approuvé Manager
+                            </span>
+                        {% elif request.status == 'approved_rh' %}
+                            <span class="ds-badge ds-badge-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Approuvé RH
+                            </span>
+                        {% elif request.status == 'rejected_manager' %}
+                            <span class="ds-badge ds-badge-danger">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Rejeté Manager
+                            </span>
+                        {% elif request.status == 'rejected_rh' %}
+                            <span class="ds-badge ds-badge-danger">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Rejeté RH
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="ds-text-muted">
+                            {{ request.created_at|date:"d/m/Y H:i" }}
+                        </span>
+                    </td>
+                    <td class="ds-text-center">
+                        <a href="{% url 'leave:leave_approval_detail' request.id %}" 
+                           class="ds-btn ds-btn-sm ds-btn-outline-primary"
+                           title="Voir détails">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
-        <div class="empty-state">
-            <div class="empty-state-icon">
-                <i class="bi bi-calendar-x"></i>
-            </div>
-            <h3>Aucune demande de congé</h3>
-            <p>Vous n'avez pas encore fait de demande de congé.</p>
-            <a href="{% url 'leave:leave_request_create' %}" class="btn btn-primary-modern btn-modern mt-3">
-                <i class="bi bi-plus me-2"></i>
-                Créer votre première demande
+        <div class="ds-p-4 ds-text-center">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: var(--gray-400);"></i>
+            <p class="ds-text-muted ds-mt-2">Aucune demande de congé</p>
+            <a href="{% url 'leave:leave_request_create' %}" class="ds-btn ds-btn-primary ds-mt-2">
+                <i class="bi bi-plus-circle"></i>
+                Créer une demande
             </a>
         </div>
         {% endif %}
     </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="ds-d-flex ds-justify-content-center ds-mt-3">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée pour les cartes
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.stat-card, .requests-table');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 150);
-        });
-    });
-</script>
 {% endblock %}

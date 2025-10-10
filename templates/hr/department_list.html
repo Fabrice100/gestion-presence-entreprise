@@ -4,441 +4,156 @@
 {% block title %}Gestion des départements{% endblock %}
 
 {% block extra_css %}
-<style>
-    .page-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 30s linear infinite;
-    }
-    
-    @keyframes rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .page-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .action-bar {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 2rem;
-    }
-    
-    .btn-modern {
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .btn-primary-modern {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: white;
-    }
-    
-    .departments-table-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .departments-table-card .card-header {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: white;
-        padding: 1.5rem 2rem;
-        border: none;
-    }
-    
-    .departments-table-card .card-title {
-        margin: 0;
-        font-size: 1.3rem;
-        font-weight: 600;
-    }
-    
-    .table {
-        margin-bottom: 0;
-    }
-    
-    .table thead th {
-        background: #f8f9fa;
-        color: #495057;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.875rem;
-        letter-spacing: 0.5px;
-        padding: 1rem;
-        border-bottom: 2px solid #dee2e6;
-    }
-    
-    .table tbody tr {
-        transition: all 0.3s ease;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .table tbody tr:hover {
-        background: #f8f9fa;
-        transform: scale(1.01);
-    }
-    
-    .table tbody td {
-        padding: 1rem;
-        vertical-align: middle;
-    }
-    
-    .dept-icon {
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.2rem;
-        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
-    }
-    
-    .dept-info h6 {
-        margin: 0 0 0.25rem 0;
-        font-weight: 600;
-        color: #2d3748;
-        font-size: 1.1rem;
-    }
-    
-    .dept-info .dept-code {
-        font-size: 0.75rem;
-        color: #6c757d;
-        font-family: monospace;
-    }
-    
-    .manager-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.8rem;
-        border-radius: 50px;
-        background: #e7f3ff;
-        color: #0d6efd;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-    
-    .manager-badge i {
-        font-size: 1rem;
-    }
-    
-    .status-badge {
-        padding: 0.4rem 0.8rem;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.875rem;
-    }
-    
-    .status-badge.active {
-        background: #d4edda;
-        color: #155724;
-    }
-    
-    .status-badge.inactive {
-        background: #f8d7da;
-        color: #721c24;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-    }
-    
-    .btn-action {
-        width: 35px;
-        height: 35px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-        border: none;
-    }
-    
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    .btn-action.edit {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: white;
-    }
-    
-    .btn-action.delete {
-        background: linear-gradient(135deg, #dc3545, #c82333);
-        color: white;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-    }
-    
-    .empty-state-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-    }
-    
-    .empty-state-icon i {
-        font-size: 2.5rem;
-        color: #6c757d;
-    }
-    
-    .empty-state h3 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .empty-state p {
-        color: #6c757d;
-        margin-bottom: 1.5rem;
-    }
-    
-    @media (max-width: 768px) {
-        .page-header {
-            padding: 1.5rem;
-        }
-        
-        .page-title {
-            font-size: 2rem;
-        }
-        
-        .table {
-            font-size: 0.875rem;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- En-tête de page -->
-    <div class="page-header">
-        <h1 class="page-title">Gestion des Départements</h1>
-        <p class="page-subtitle">Gérez les départements de votre organisation</p>
+<div class="ds-container">
+    <!-- En-tête -->
+    <div class="ds-mb-4">
+        <h1 class="ds-mb-2">Gestion des départements</h1>
+        <p class="ds-text-muted">Gérez les départements et équipes de l'entreprise</p>
     </div>
     
     <!-- Barre d'actions -->
-    <div class="action-bar">
-        <a href="{% url 'hr:department_create' %}" class="btn btn-primary-modern btn-modern">
-            <i class="bi bi-plus-circle me-2"></i>
+    <div class="ds-d-flex ds-justify-content-between ds-align-items-center ds-mb-3" style="flex-wrap: wrap; gap: 1rem;">
+        <a href="{% url 'hr:department_create' %}" class="ds-btn ds-btn-primary">
+            <i class="bi bi-plus-circle"></i>
             Nouveau département
         </a>
+        
+        <span class="ds-badge ds-badge-primary">
+            {{ departments|length }} département{{ departments|length|pluralize }}
+        </span>
     </div>
     
-    <!-- Liste des départements -->
-    <div class="departments-table-card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="bi bi-building me-2"></i>
-                Liste des départements ({{ departments|length }})
-            </h3>
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="ds-alert ds-alert-{{ message.tags }}">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ message }}
         </div>
-        <div class="card-body p-0">
-            {% if departments %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Département</th>
-                                <th>Description</th>
-                                <th>Manager</th>
-                                <th>Employés</th>
-                                <th>Statut</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for department in departments %}
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="dept-icon">
-                                            <i class="bi bi-building"></i>
-                                        </div>
-                                        <div class="dept-info">
-                                            <h6>{{ department.name }}</h6>
-                                            <p class="dept-code mb-0">CODE: {{ department.code|default:"—" }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if department.description %}
-                                        <span class="text-muted">{{ department.description|truncatechars:60 }}</span>
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if department.manager %}
-                                        <span class="manager-badge">
-                                            <i class="bi bi-person-badge"></i>
-                                            {{ department.manager.get_full_name|default:department.manager.username }}
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary">
-                                        {{ department.employees.count }} employé{{ department.employees.count|pluralize }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if department.is_active %}
-                                        <span class="status-badge active">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            Actif
-                                        </span>
-                                    {% else %}
-                                        <span class="status-badge inactive">
-                                            <i class="bi bi-x-circle me-1"></i>
-                                            Inactif
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="{% url 'hr:department_edit' department.pk %}" class="btn-action edit" title="Modifier">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <a href="{% url 'hr:department_delete' department.pk %}" class="btn-action delete" title="Supprimer">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination -->
-                {% if is_paginated %}
-                    <div class="card-footer bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="text-muted">
-                                Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
-                            </div>
-                            <nav>
-                                <ul class="pagination mb-0">
-                                    {% if page_obj.has_previous %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    
-                                    {% for num in page_obj.paginator.page_range %}
-                                        {% if page_obj.number == num %}
-                                            <li class="page-item active">
-                                                <span class="page-link">{{ num }}</span>
-                                            </li>
-                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                            </li>
-                                        {% endif %}
-                                    {% endfor %}
-                                    
-                                    {% if page_obj.has_next %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                </ul>
-                            </nav>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Tableau des départements -->
+    <div class="ds-card ds-p-0">
+        {% if departments %}
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Manager</th>
+                    <th>Employés</th>
+                    <th>Statut</th>
+                    <th>Date de création</th>
+                    <th class="ds-text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for department in departments %}
+                <tr>
+                    <td>
+                        <strong>
+                            <i class="bi bi-building me-2 ds-text-primary"></i>
+                            {{ department.name }}
+                        </strong>
+                    </td>
+                    <td>
+                        {% if department.manager %}
+                            <i class="bi bi-person-badge me-1 ds-text-muted"></i>
+                            {{ department.manager.get_full_name|default:department.manager.username }}
+                        {% else %}
+                            <span class="ds-text-muted">Aucun</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="ds-badge ds-badge-primary">
+                            {{ department.get_employee_count }} employé{{ department.get_employee_count|pluralize }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if department.is_active %}
+                            <span class="ds-badge ds-badge-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Actif
+                            </span>
+                        {% else %}
+                            <span class="ds-badge ds-badge-secondary">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Inactif
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="ds-text-muted">
+                            <i class="bi bi-calendar me-1"></i>
+                            {{ department.created_at|date:"d/m/Y" }}
+                        </span>
+                    </td>
+                    <td class="ds-text-center">
+                        <div class="ds-d-flex ds-justify-content-center ds-gap-1">
+                            <a href="{% url 'hr:department_edit' department.pk %}" 
+                               class="ds-btn ds-btn-sm ds-btn-outline-primary"
+                               title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'hr:department_delete' department.pk %}" 
+                               class="ds-btn ds-btn-sm ds-btn-outline-primary"
+                               style="border-color: var(--danger); color: var(--danger);"
+                               title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </a>
                         </div>
-                    </div>
-                {% endif %}
-            {% else %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="bi bi-building"></i>
-                    </div>
-                    <h3>Aucun département</h3>
-                    <p>Commencez par créer votre premier département</p>
-                    <a href="{% url 'hr:department_create' %}" class="btn btn-primary-modern btn-modern">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        Créer un département
-                    </a>
-                </div>
-            {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="ds-p-4 ds-text-center">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: var(--gray-400);"></i>
+            <p class="ds-text-muted ds-mt-2">Aucun département trouvé</p>
+            <a href="{% url 'hr:department_create' %}" class="ds-btn ds-btn-primary ds-mt-2">
+                <i class="bi bi-plus-circle"></i>
+                Créer le premier département
+            </a>
         </div>
+        {% endif %}
     </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="ds-d-flex ds-justify-content-center ds-mt-3">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">Première</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Dernière</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Animation d'entrée
-    document.addEventListener('DOMContentLoaded', function() {
-        const card = document.querySelector('.departments-table-card');
-        if (card) {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 200);
-        }
-    });
-</script>
 {% endblock %}
