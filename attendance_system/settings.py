@@ -176,9 +176,9 @@ MESSAGE_TAGS = {
 
 # Configuration des emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Pour le développement
-DEFAULT_FROM_EMAIL = 'noreply@attendance-system.local'
+DEFAULT_FROM_EMAIL = 'noreply@presencepro.local'
 SITE_URL = 'http://localhost:8000'  # URL du site pour les emails
-SITE_NAME = 'Système de Gestion de Présence'
+SITE_NAME = 'PresencePro'
 
 # Configuration du logging pour voir les erreurs
 LOGGING = {

@@ -103,40 +103,5 @@
         </div>
     </div>
     
-    <!-- Accès rapides -->
-    <div class="ds-row">
-        <div class="ds-col-4">
-            <div class="ds-card ds-text-center">
-                <i class="bi bi-graph-up" style="font-size: 3rem; color: var(--primary);"></i>
-                <h3 class="ds-mt-2">Rapports</h3>
-                <p class="ds-text-muted">Consultez les rapports et statistiques</p>
-                <a href="{% url 'reports:reports_dashboard' %}" class="ds-btn ds-btn-primary ds-mt-2">
-                    Accéder aux rapports
-                </a>
-            </div>
-        </div>
-        
-        <div class="ds-col-4">
-            <div class="ds-card ds-text-center">
-                <i class="bi bi-gear" style="font-size: 3rem; color: var(--secondary);"></i>
-                <h3 class="ds-mt-2">Administration</h3>
-                <p class="ds-text-muted">Configuration système Django</p>
-                <a href="/admin/" class="ds-btn ds-btn-secondary ds-mt-2">
-                    Accéder à l'admin
-                </a>
-            </div>
-        </div>
-        
-        <div class="ds-col-4">
-            <div class="ds-card ds-text-center">
-                <i class="bi bi-calendar-event" style="font-size: 3rem; color: var(--success);"></i>
-                <h3 class="ds-mt-2">Congés</h3>
-                <p class="ds-text-muted">Gérez les types de congés et jours fériés</p>
-                <a href="{% url 'leave:leave_type_list' %}" class="ds-btn ds-btn-success ds-mt-2">
-                    Gérer les congés
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
