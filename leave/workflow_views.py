@@ -30,6 +30,7 @@ from django.db import transaction
 from .models import LeaveRequest, LeaveType, LeaveBalance
 from .forms import LeaveRequestForm, LeaveApprovalForm
 from accounts.models import EmployeeProfile
+from accounts.notification_service import NotificationService
 
 
 class LeaveRequestListView(LoginRequiredMixin, ListView):
@@ -138,7 +139,15 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         leave_request.save()
         self.object = leave_request  # Important pour get_success_url()
         
-        # Déclencher les notifications (sera géré par les signaux)
+        # Envoyer notification au validateur
+        if leave_request.status == 'pending' and leave_request.manager:
+            # Notifier le manager
+            NotificationService.send_leave_pending_notification(leave_request, leave_request.manager)
+        elif leave_request.status == 'approved_manager':
+            # Notifier les RH/DG
+            rh_users = User.objects.filter(employee_profile__role='rh_dg', employee_profile__is_active=True)
+            for rh_user in rh_users:
+                NotificationService.send_leave_pending_notification(leave_request, rh_user)
         
         messages.success(self.request, f'Demande de congé créée avec succès ! ({days_requested} jours)')
         return HttpResponseRedirect(reverse('leave:leave_request_list'))
@@ -252,12 +261,18 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             
             leave_request.save()
         
-        # TODO: Déclencher les notifications (à implémenter avec emails)
-        
-        # Messages de succès
+        # Envoyer notification à l'employé
         if action == 'approve':
+            NotificationService.send_leave_approved_notification(leave_request, user)
             messages.success(self.request, 'Demande de congé approuvée avec succès.')
+            
+            # Si c'est un manager qui approuve, notifier les RH/DG
+            if profile.role == 'manager':
+                rh_users = User.objects.filter(employee_profile__role='rh_dg', employee_profile__is_active=True)
+                for rh_user in rh_users:
+                    NotificationService.send_leave_pending_notification(leave_request, rh_user)
         else:
+            NotificationService.send_leave_rejected_notification(leave_request, user, comment)
             messages.success(self.request, 'Demande de congé rejetée.')
         
         return redirect('leave:leave_approval_list')

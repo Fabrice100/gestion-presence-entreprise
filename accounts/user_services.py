@@ -104,6 +104,7 @@ class UserService:
     def send_welcome_email(user, employee_id, temporary_password):
         """
         Envoie un email de bienvenue avec les credentials à l'employé.
+        Utilise le NotificationService centralisé.
         
         Args:
             user (User): L'utilisateur Django
@@ -113,37 +114,8 @@ class UserService:
         Returns:
             bool: True si l'email a été envoyé, False sinon
         """
-        try:
-            subject = 'Bienvenue - Vos accès au système de gestion de présence'
-            
-            # Contexte pour le template
-            context = {
-                'user': user,
-                'employee_id': employee_id,
-                'username': user.username,
-                'temporary_password': temporary_password,
-                'login_url': f'{settings.SITE_URL}/accounts/login/' if hasattr(settings, 'SITE_URL') else 'http://localhost:8000/accounts/login/',
-            }
-            
-            # Générer le contenu HTML
-            html_message = render_to_string('accounts/welcome_email.html', context)
-            plain_message = strip_tags(html_message)
-            
-            # Envoyer l'email
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            
-            return True
-            
-        except Exception as e:
-            print(f'Erreur lors de l\'envoi de l\'email: {str(e)}')
-            return False
+        from .notification_service import NotificationService
+        return NotificationService.send_welcome_email(user, employee_id, temporary_password)
     
     @staticmethod
     def generate_username_from_email(email):
