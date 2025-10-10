@@ -175,7 +175,17 @@ MESSAGE_TAGS = {
 }
 
 # Configuration des emails
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Pour le développement
+# Backend console amélioré (par défaut) - Affichage visible dans le terminal
+EMAIL_BACKEND = 'accounts.email_backend.EnhancedConsoleEmailBackend'
+
+# Alternative : Mailtrap (décommentez les lignes ci-dessous pour utiliser)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+# EMAIL_PORT = 2525
+# EMAIL_HOST_USER = 'VOTRE_USERNAME_MAILTRAP'  # À remplir après inscription
+# EMAIL_HOST_PASSWORD = 'VOTRE_PASSWORD_MAILTRAP'  # À remplir après inscription
+# EMAIL_USE_TLS = True
+
 DEFAULT_FROM_EMAIL = 'noreply@presencepro.local'
 SITE_URL = 'http://localhost:8000'  # URL du site pour les emails
 SITE_NAME = 'PresencePro'
