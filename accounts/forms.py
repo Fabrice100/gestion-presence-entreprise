@@ -55,98 +55,6 @@ class DepartmentForm(forms.ModelForm):
         self.fields['manager'].empty_label = "Aucun manager"
 
 
-class UserCreateForm(UserCreationForm):
-    """
-    Formulaire pour la création d'un utilisateur avec profil employé.
-    """
-    
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Email'
-        })
-    )
-    
-    first_name = forms.CharField(
-        required=True,
-        max_length=30,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Prénom'
-        })
-    )
-    
-    last_name = forms.CharField(
-        required=True,
-        max_length=30,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nom'
-        })
-    )
-    
-    department = forms.ModelChoiceField(
-        queryset=Department.objects.filter(is_active=True),
-        empty_label="Sélectionner un département",
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        })
-    )
-    
-    manager = forms.ModelChoiceField(
-        queryset=User.objects.none(),  # Sera rempli dynamiquement
-        required=False,
-        empty_label="Aucun manager",
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        })
-    )
-    
-    phone = forms.CharField(
-        required=False,
-        max_length=20,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Numéro de téléphone'
-        })
-    )
-    
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2']
-        widgets = {
-            'username': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nom d\'utilisateur'
-            })
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Styliser les champs de mot de passe
-        self.fields['password1'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Mot de passe'
-        })
-        self.fields['password2'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Confirmation du mot de passe'
-        })
-    
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise ValidationError('Ce nom d\'utilisateur existe déjà.')
-        return username
-    
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError('Cet email est déjà utilisé.')
-        return email
-
-
 class EmployeeCreateFormSimple(forms.ModelForm):
     """
     Formulaire simplifié pour la création d'un employé (sans mot de passe).
@@ -205,17 +113,6 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         empty_label="Aucun manager",
         widget=forms.Select(attrs={
             'class': 'form-control'
-        })
-    )
-    
-    phone = forms.CharField(
-        required=False,
-        max_length=20,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': '+228 XX XX XX XX',
-            'pattern': '[\+]?[0-9\s\-\(\)]+',
-            'title': 'Format valide: +228 XX XX XX XX ou 00228XXXXXXXX'
         })
     )
     
@@ -290,7 +187,7 @@ class EmployeeProfileForm(forms.ModelForm):
         model = EmployeeProfile
         fields = [
             'department', 'manager', 'role', 'employee_type', 
-            'status', 'phone', 'hire_date', 'contract_end_date', 
+            'status', 'hire_date', 'contract_end_date', 
             'is_active', 'can_punch'
         ]
         widgets = {
@@ -307,9 +204,6 @@ class EmployeeProfileForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'status': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'phone': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
             'hire_date': forms.DateInput(attrs={

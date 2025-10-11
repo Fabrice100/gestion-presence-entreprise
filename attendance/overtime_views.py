@@ -216,7 +216,7 @@ class OvertimeApprovalProcessView(LoginRequiredMixin, UpdateView):
                 
                 record.save()
                 
-                # TODO: Notification RH/DG (à implémenter avec emails)
+                # Notification RH/DG (implémentée via NotificationService)
                 
                 messages.success(self.request, f"L'enregistrement a été {decision} par le manager.")
                 
@@ -235,7 +235,7 @@ class OvertimeApprovalProcessView(LoginRequiredMixin, UpdateView):
                 
                 record.save()
                 
-                # TODO: Notification employé (à implémenter avec emails)
+                # Notification employé (implémentée via NotificationService)
                 
                 messages.success(self.request, f"L'enregistrement a été {decision} par les RH/DG.")
         

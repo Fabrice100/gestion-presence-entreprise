@@ -106,8 +106,7 @@ class EmployeeProfileInline(admin.StackedInline):
         }),
         ('Informations personnelles', {
             'fields': (
-                'phone',
-                'address'
+                'address',
             )
         }),
         ('Contrat', {
@@ -198,7 +197,6 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
         'user__last_name',
         'user__username',
         'user__email',
-        'phone'
     ]
     
     ordering = ['employee_id']
@@ -214,7 +212,7 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
             'fields': ('employee_type', 'status')
         }),
         ('Informations personnelles', {
-            'fields': ('phone', 'address')
+            'fields': ('address',)
         }),
         ('Contrat', {
             'fields': ('hire_date', 'contract_end_date')

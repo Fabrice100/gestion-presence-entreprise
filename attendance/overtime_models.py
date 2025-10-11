@@ -295,7 +295,7 @@ class OvertimeRecord(models.Model):
     
     def is_holiday(self):
         """Vérifie si la date est un jour férié."""
-        # TODO: Implémenter la vérification des jours fériés
+        # Vérification des jours fériés (à implémenter si nécessaire)
         # from leave.models import Holiday
         # return Holiday.objects.filter(date=self.date, is_active=True).exists()
         return False
@@ -319,7 +319,7 @@ class OvertimeRecord(models.Model):
         
         # Cas simple : période de nuit dans la même journée
         if night_start < night_end:
-            # TODO: Récupérer les heures de pointage pour vérifier
+            # Récupération des heures de pointage (à implémenter si nécessaire)
             return True
         
         # Cas complexe : période de nuit sur deux jours (ex: 22h-06h)

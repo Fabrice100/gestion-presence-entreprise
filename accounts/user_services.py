@@ -30,38 +30,49 @@ class UserService:
     @staticmethod
     def generate_employee_id(role='employee'):
         """
-        Génère un ID employé unique au format EMP001, EMP002, etc.
-        Format unique pour tous les rôles (conforme aux standards internationaux).
+        Génère un ID employé unique au format EMPXXX avec numéro aléatoire.
+        Format unique pour tous les rôles avec sécurité renforcée (non successif).
         
         Args:
             role (str): Le rôle de l'employé (non utilisé, gardé pour compatibilité)
         
         Returns:
-            str: ID employé unique (ex: EMP001, EMP002, EMP003)
+            str: ID employé unique (ex: EMP472, EMP819, EMP156)
         """
-        # Format unique pour tous : EMP001, EMP002, etc.
+        # Format unique pour tous : EMPXXX avec XXX aléatoire
         prefix = 'EMP'
         
-        # Récupérer le dernier ID
-        last_profile = EmployeeProfile.objects.filter(
-            employee_id__startswith=prefix
-        ).order_by('-employee_id').first()
+        # Récupérer tous les IDs existants
+        existing_ids = set(
+            EmployeeProfile.objects.filter(
+                employee_id__startswith=prefix
+            ).values_list('employee_id', flat=True)
+        )
         
-        if last_profile and last_profile.employee_id:
-            # Extraire le numéro et incrémenter
-            try:
-                last_number = int(last_profile.employee_id.replace(prefix, ''))
-                new_number = last_number + 1
-            except ValueError:
-                new_number = 1
-        else:
-            new_number = 1
+        # Générer un ID aléatoire unique
+        max_attempts = 100  # Éviter boucle infinie
+        for _ in range(max_attempts):
+            # Générer un nombre aléatoire entre 100 et 999
+            random_number = random.randint(100, 999)
+            new_id = f'{prefix}{random_number}'
+            
+            # Vérifier que l'ID n'existe pas déjà
+            if new_id not in existing_ids:
+                return new_id
         
-        # Format: EMP001, EMP002, EMP003, etc.
-        return f'{prefix}{new_number:03d}'
+        # Si tous les IDs 100-999 sont pris, utiliser 001-099
+        for _ in range(max_attempts):
+            random_number = random.randint(1, 99)
+            new_id = f'{prefix}{random_number:03d}'
+            
+            if new_id not in existing_ids:
+                return new_id
+        
+        # En dernier recours (très improbable), lever une exception
+        raise ValueError('Impossible de générer un ID unique. Base de données pleine.')
     
     @staticmethod
-    def generate_random_password(length=12):
+    def generate_random_password(length=8):
         """
         Génère un mot de passe aléatoire sécurisé.
         
@@ -169,7 +180,6 @@ class UserService:
             profile.department = profile_data.get('department')
             profile.manager = profile_data.get('manager')
             profile.role = profile_data.get('role', 'employee')
-            profile.phone = profile_data.get('phone', '')
             profile.force_password_change = True  # Changement obligatoire à la première connexion
             profile.is_active = True
             profile.can_punch = True if profile.role in ['employee', 'manager'] else False

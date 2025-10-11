@@ -1,199 +1,254 @@
-# Système de Gestion de Présence en Entreprise
+# PresencePro - Système de Gestion de Présence
 
 ## 📋 Description
 
-Système web de gestion de présence développé avec Django pour les PME locales au Togo. Ce projet fait partie d'un projet de fin de cycle en architecture des logiciels.
+**PresencePro** est un système web professionnel de gestion de présence et congés développé avec Django. 
+Conçu pour les entreprises au Togo, il offre une solution complète pour la gestion des ressources humaines.
 
-## 🚀 Fonctionnalités
+**Projet de fin de cycle** - Licence en Architecture des Logiciels
 
-### ✅ Fonctionnalités principales
-- **Authentification** : Connexion sécurisée avec gestion des rôles
-- **Pointage** : Pointage d'entrée/sortie avec géolocalisation
-- **Gestion des congés** : Demandes, validation et suivi des soldes
-- **Rapports** : Génération de rapports de présence et congés
-- **Administration** : Interface d'administration Django complète
+---
 
-### 👥 Rôles utilisateurs
-- **Administrateur** : Gestion complète du système
-- **Manager** : Validation des congés de son équipe
-- **RH/DG** : Gestion globale des ressources humaines
-- **Employé** : Pointage et demandes de congés
+## 🚀 Fonctionnalités principales
+
+### ✅ Gestion des employés
+- Création automatique d'ID unique (EMPXXX)
+- Génération de mot de passe sécurisé
+- Envoi automatique des credentials par email
+- Changement de mot de passe obligatoire à la première connexion
+- Gestion des départements et hiérarchies
+
+### 👆 Pointage GPS
+- Pointage entrée/sortie avec géolocalisation
+- Vérification de la zone autorisée
+- Détection automatique des anomalies (retards, absences)
+- Historique complet des présences
+
+### 🏖️ Gestion des congés
+- Types de congés conformes au Code du travail togolais
+- Workflow de validation à 2 niveaux (Manager → RH/DG)
+- Calcul automatique des soldes
+- Détection des chevauchements
+- Jours fériés du Togo intégrés
+
+### 📊 Rapports & Analytics
+- Rapports de présence
+- Rapports de congés
+- Détection d'anomalies
+- Export des données
+
+### 🔔 Notifications automatiques
+- Email de bienvenue (création compte)
+- Notification de demande (pour validateur)
+- Notification d'approbation (pour employé)
+- Notification de rejet (avec motif)
+
+---
+
+## 👥 Rôles utilisateurs
+
+| Rôle | Permissions |
+|------|-------------|
+| **Employé** | Pointage, demandes de congés, consultation historique |
+| **Manager** | + Validation congés niveau 1, gestion équipe |
+| **RH/DG** | + Validation congés niveau 2, gestion employés/départements |
+| **Admin** | + Accès complet, rapports, configuration système |
+
+---
 
 ## 🛠️ Technologies
 
-- **Backend** : Django 4.2.7
-- **Base de données** : SQLite (développement) / PostgreSQL (production)
-- **Frontend** : HTML/CSS/JavaScript + Bootstrap 5
-- **Géolocalisation** : API Geolocation du navigateur
-- **Authentification** : Django Auth System
+- **Backend** : Django 5.1.3
+- **Base de données** : SQLite (développement)
+- **Frontend** : HTML5, CSS3, Bootstrap 5.3.2
+- **Design System** : CSS Variables, composants réutilisables
+- **Géolocalisation** : API Geolocation HTML5
+- **Emails** : Console backend (démo) / Mailtrap (test)
+- **Authentification** : Django Auth + Backend personnalisé
+
+---
 
 ## 📦 Installation
 
 ### Prérequis
-- Python 3.8+
+- Python 3.10+
 - pip
-- Git
 
-### Installation
+### Étapes d'installation
+
 ```bash
-# Cloner le projet
+# 1. Cloner le projet
 git clone <url-du-repo>
 cd attendance_system
 
-# Créer un environnement virtuel
+# 2. Créer un environnement virtuel
 python -m venv venv
 
-# Activer l'environnement virtuel
+# 3. Activer l'environnement virtuel
 # Windows
 venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
 
-# Installer les dépendances
+# 4. Installer les dépendances
 pip install -r requirements.txt
 
-# Copier le fichier d'environnement
-copy env.example .env
-
-# Appliquer les migrations
+# 5. Appliquer les migrations
 python manage.py migrate
 
-# Créer un superutilisateur
-python create_admin.py
+# 6. Charger les données initiales (Togo)
+python manage.py init_togo_setup
 
-# Créer les données de test
-python create_test_data.py
-
-# Lancer le serveur
+# 7. Lancer le serveur
 python manage.py runserver
 ```
 
-## 🔐 Comptes de test
+### Accès
+- **Landing page** : http://127.0.0.1:8000/
+- **Connexion** : http://127.0.0.1:8000/accounts/login/
 
-| Rôle | Nom d'utilisateur | Mot de passe |
-|------|-------------------|--------------|
-| Administrateur | admin | admin123 |
-| Manager IT | manager.it | password123 |
-| RH/DG | rh.dg | password123 |
-| Développeur | dev1 | password123 |
-| Commercial | com1 | password123 |
+---
+
+## 🔐 Comptes de démonstration
+
+| Rôle | ID Employé | Mot de passe |
+|------|------------|--------------|
+| Administrateur | EMP007 | admin123 |
+| RH/DG | EMP009 | password123 |
+| Manager | EMP008 | password123 |
+| Employé | EMP001 | password123 |
+
+---
 
 ## 📁 Structure du projet
 
 ```
 attendance_system/
-├── accounts/          # Gestion des utilisateurs et départements
-├── attendance/        # Pointage et présences
-├── leave/            # Gestion des congés
-├── reports/          # Rapports et paramètres
-├── attendance_system/ # Configuration Django
-├── templates/        # Templates HTML
-├── static/          # Fichiers statiques (CSS, JS)
-├── media/           # Fichiers uploadés
-└── logs/            # Fichiers de logs
+├── accounts/              # Authentification & Gestion utilisateurs
+│   ├── models.py         # Department, EmployeeProfile
+│   ├── views.py          # Vues authentification
+│   ├── hr_views.py       # Vues gestion RH
+│   ├── user_services.py  # Services création utilisateurs
+│   ├── notification_service.py  # Notifications email
+│   └── auth_backend.py   # Authentification par employee_id
+│
+├── attendance/           # Gestion des présences
+│   ├── models.py        # Attendance, AttendanceAnomaly
+│   ├── views.py         # Pointage, historique
+│   └── overtime_*.py    # Heures supplémentaires
+│
+├── leave/               # Gestion des congés
+│   ├── models.py       # LeaveType, LeaveRequest, LeaveBalance, Holiday
+│   ├── workflow_views.py  # Workflow de validation
+│   ├── fixtures/       # Données Togo (types congés, jours fériés)
+│   └── signals.py      # Création automatique soldes
+│
+├── reports/            # Rapports & Analytics
+│   ├── report_views.py # Génération rapports
+│   └── export_services.py  # Export Excel
+│
+├── templates/          # Templates HTML (35 pages)
+│   ├── landing.html   # Page d'accueil
+│   ├── base.html      # Template de base
+│   ├── accounts/      # Auth, profil, emails
+│   ├── dashboard/     # Tableaux de bord (4 rôles)
+│   ├── hr/           # Gestion RH
+│   ├── leave/        # Congés
+│   └── attendance/   # Pointage
+│
+└── static/
+    └── css/
+        ├── design-system.css  # Design System
+        └── style.css         # Styles globaux
 ```
 
-## 🎯 Utilisation
+---
 
-1. **Accès** : http://127.0.0.1:8000/
-2. **Administration** : http://127.0.0.1:8000/admin/
-3. **Pointage** : http://127.0.0.1:8000/attendance/punch/
+## 🎨 Design System
 
-## 📊 Modèles de données
+Le projet utilise un Design System professionnel avec :
+- Variables CSS (couleurs, espacements, typographie)
+- Composants standardisés (boutons, cartes, formulaires, tableaux)
+- Responsive mobile/tablette/desktop
+- Règle des 8px pour les espacements
+- Palette de couleurs cohérente (bleu principal)
 
-### Utilisateurs et départements
-- `Department` : Départements de l'entreprise
-- `EmployeeProfile` : Profils étendus des employés
+---
 
-### Présence
-- `Attendance` : Pointages avec géolocalisation
-- `AttendanceAnomaly` : Anomalies détectées
+## 📧 Configuration Email
 
-### Congés
-- `LeaveType` : Types de congés
-- `LeaveRequest` : Demandes de congés
-- `LeaveBalance` : Soldes de congés
-- `Holiday` : Jours fériés
+### Mode Console (par défaut)
+Les emails s'affichent dans le terminal avec un format amélioré.
 
-### Système
-- `SystemSettings` : Paramètres globaux
-- `ReportTemplate` : Modèles de rapports
+### Mode Mailtrap (optionnel)
+Voir `MAILTRAP_SETUP.md` pour la configuration.
 
-## 🔧 Configuration
+---
 
-### Variables d'environnement (.env)
-```env
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-SITE_CENTER_LAT=6.1378
-SITE_CENTER_LNG=1.2123
-RADIUS_METERS=200
-ACCURACY_MAX_METERS=100
-```
+## 🌍 Localisation Togo
 
-### Géolocalisation
-Le système utilise les coordonnées GPS pour vérifier que le pointage se fait dans la zone autorisée :
-- **Centre** : Lomé, Togo (6.1378°N, 1.2123°E)
-- **Rayon autorisé** : 200 mètres
-- **Précision requise** : < 100 mètres
+Le système intègre les spécificités togolaises :
+- **Types de congés** : Conformes au Code du travail togolais
+- **Jours fériés 2025** : 10 jours fériés officiels
+- **Samedi travaillé** : Pris en compte dans les calculs
 
-## 🚀 Déploiement
+---
 
-### Production
-1. Changer `DEBUG=False` dans les settings
-2. Configurer une base de données PostgreSQL
-3. Configurer les variables d'environnement
-4. Utiliser un serveur web (nginx + gunicorn)
+## 🧪 Tests
 
-### Sécurité
-- Changer la SECRET_KEY
-- Configurer HTTPS
-- Activer les cookies sécurisés
-- Configurer HSTS
-
-## 📝 Développement
-
-### Commandes utiles
 ```bash
-# Vérifier le code
+# Vérifier le système
 python manage.py check
 
-# Créer des migrations
-python manage.py makemigrations
-
-# Appliquer les migrations
-python manage.py migrate
-
-# Collecter les fichiers statiques
-python manage.py collectstatic
-
-# Lancer les tests
-python manage.py test
+# Tester les fonctionnalités
+# 1. Créer un employé (RH)
+# 2. Demander un congé (Employé)
+# 3. Valider (Manager puis RH)
+# 4. Pointer (Employé)
 ```
 
-## 🤝 Contribution
+---
 
-1. Fork le projet
-2. Créer une branche feature
-3. Commit les changements
-4. Push vers la branche
-5. Créer une Pull Request
+## 📝 Documentation
 
-## 📄 Licence
+- `CONFIGURATION_EMAIL.md` - Configuration emails
+- `MAILTRAP_SETUP.md` - Guide Mailtrap
+- `NOTIFICATIONS_EXPLICATIONS.md` - Système de notifications
 
-Ce projet est développé dans le cadre d'un projet académique.
+---
+
+## 🎓 Pour la soutenance
+
+### Démonstration recommandée
+
+1. **Landing page** : Présentation du système
+2. **Création employé** : Génération ID + Email
+3. **Workflow congés** : Demande → Validation Manager → Validation RH
+4. **Pointage GPS** : Démonstration géolocalisation
+5. **Rapports** : Consultation des statistiques
+
+### Arguments clés
+
+- ✅ Conforme aux standards de l'industrie (SAP, Workday)
+- ✅ Workflow de validation à 2 niveaux
+- ✅ Sécurité renforcée (ID unique, changement mot de passe)
+- ✅ Adapté au contexte togolais
+- ✅ Design professionnel et responsive
+- ✅ Notifications automatiques
+
+---
 
 ## 👨‍💻 Auteur
 
-**Votre nom** - Projet de fin de cycle - Licence en Architecture des Logiciels
+**HUSUNUKPE Fabrice**  
+Projet de fin de cycle - Licence en Architecture des Logiciels  
+Année académique 2024-2025
 
-## 📞 Support
+---
 
-Pour toute question ou problème, contactez l'administrateur système.
+## 📄 Licence
+
+Projet académique - Tous droits réservés
 
 ---
 
 **Version** : 1.0.0  
-**Dernière mise à jour** : Septembre 2025
-
+**Date** : Octobre 2025

@@ -25,7 +25,7 @@ from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 
 from .models import EmployeeProfile, Department
-from .forms import DepartmentForm, UserCreateForm, EmployeeProfileForm, EmployeeCreateFormSimple
+from .forms import DepartmentForm, EmployeeProfileForm, EmployeeCreateFormSimple
 from .user_services import UserService
 
 
@@ -146,7 +146,6 @@ class ManagerCreateView(HRRequiredMixin, CreateView):
             'department': form.cleaned_data.get('department'),
             'manager': None,  # Les managers n'ont pas de manager
             'role': 'manager',
-            'phone': form.cleaned_data.get('phone', ''),
         }
         
         # Créer le manager avec génération automatique des credentials
@@ -204,7 +203,6 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
             'department': form.cleaned_data.get('department'),
             'manager': form.cleaned_data.get('manager'),
             'role': 'employee',
-            'phone': form.cleaned_data.get('phone', ''),
         }
         
         # Créer l'employé avec génération automatique des credentials

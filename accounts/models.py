@@ -171,18 +171,6 @@ class EmployeeProfile(models.Model):
         help_text="Statut de l'employé"
     )
     
-    phone = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        validators=[RegexValidator(
-            regex=r'^\+?[0-9\s\-\(\)]+$',
-            message='Numéro de téléphone invalide'
-        )],
-        verbose_name="Téléphone",
-        help_text="Numéro de téléphone de l'employé"
-    )
-    
     address = models.TextField(
         blank=True,
         null=True,
@@ -286,15 +274,46 @@ def create_employee_profile(sender, instance, created, **kwargs):
     Signal créant automatiquement un EmployeeProfile lors de la création d'un User.
     
     Ce signal s'assure que chaque utilisateur a un profil employé associé.
+    Génère un ID aléatoire non successif pour renforcer la sécurité.
     """
     if created:
-        # Générer un ID employé unique
-        last_profile = EmployeeProfile.objects.order_by('-id').first()
-        if last_profile:
-            last_id = int(last_profile.employee_id[3:]) if last_profile.employee_id.startswith('EMP') else 0
-            new_id = f"EMP{last_id + 1:03d}"
-        else:
-            new_id = "EMP001"
+        # Générer un ID employé unique aléatoire
+        import random
+        prefix = 'EMP'
+        
+        # Récupérer tous les IDs existants
+        existing_ids = set(
+            EmployeeProfile.objects.filter(
+                employee_id__startswith=prefix
+            ).values_list('employee_id', flat=True)
+        )
+        
+        # Générer un ID aléatoire unique
+        max_attempts = 100
+        new_id = None
+        
+        for _ in range(max_attempts):
+            # Générer un nombre aléatoire entre 100 et 999
+            random_number = random.randint(100, 999)
+            candidate_id = f'{prefix}{random_number}'
+            
+            if candidate_id not in existing_ids:
+                new_id = candidate_id
+                break
+        
+        # Si pas trouvé dans 100-999, essayer 001-099
+        if not new_id:
+            for _ in range(max_attempts):
+                random_number = random.randint(1, 99)
+                candidate_id = f'{prefix}{random_number:03d}'
+                
+                if candidate_id not in existing_ids:
+                    new_id = candidate_id
+                    break
+        
+        # Utiliser l'ID trouvé ou un ID par défaut
+        if not new_id:
+            new_id = f'{prefix}{random.randint(1000, 9999)}'  # Fallback
         
         EmployeeProfile.objects.create(
             user=instance,
