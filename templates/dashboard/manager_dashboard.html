@@ -125,7 +125,7 @@
                                     <br>
                                     <small class="ds-text-muted">
                                         {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
-                                        ({{ request.duration }} jour{{ request.duration|pluralize }})
+                                        ({{ request.duration_days }} jour{{ request.duration_days|pluralize }})
                                     </small>
                                 </div>
                                 <span class="ds-badge ds-badge-warning">En attente</span>

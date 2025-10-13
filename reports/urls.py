@@ -30,6 +30,9 @@ urlpatterns = [
     # API pour exports
     path('api/export/', report_views.export_report_api, name='export_report_api'),
     
+    # API pour statistiques critiques
+    path('api/critical-stats/', report_views.critical_stats_api, name='critical_stats_api'),
+    
     # Paramètres système
     path('settings/', views.SystemSettingsView.as_view(), name='system_settings'),
     

@@ -60,22 +60,31 @@ class CustomLogoutView(View):
 class CustomLoginView(LoginView):
     """
     Vue de connexion personnalisée avec redirection par rôle.
+    Note: Les admins ne peuvent pas se connecter via cette interface.
     """
     template_name = 'accounts/login.html'
+    
     
     def get_success_url(self):
         """
         Redirige l'utilisateur vers la page appropriée selon son rôle.
+        Note: Les admins utilisent directement /admin/ pour l'authentification.
         """
         user = self.request.user
         
+        # Les admins ne passent pas par cette vue de connexion
+        # Ils utilisent directement /admin/ pour l'authentification Django Admin
+        
+        # Redirection directe pour les superusers et admins vers Django Admin
         if user.is_superuser:
-            return reverse_lazy('dashboard:admin_dashboard')
+            return '/admin/'
         
         try:
             profile = user.employee_profile
             
-            if profile.role == 'rh_dg':
+            if profile.role == 'admin':
+                return reverse_lazy('dashboard:admin_dashboard')
+            elif profile.role == 'rh_dg':
                 return reverse_lazy('dashboard:rh_dg_dashboard')
             elif profile.role == 'manager':
                 return reverse_lazy('dashboard:manager_dashboard')
@@ -145,7 +154,9 @@ class UserListView(LoginRequiredMixin, ListView):
         if not self.request.user.employee_profile.is_admin():
             return User.objects.none()
         
-        queryset = User.objects.select_related('employee_profile').order_by('employee_profile__employee_id')
+        queryset = User.objects.select_related('employee_profile').exclude(
+            employee_profile__role__in=['admin', 'rh_dg']
+        ).order_by('employee_profile__employee_id')
         
         # Filtres
         search = self.request.GET.get('search')
@@ -186,7 +197,9 @@ class UserDetailView(LoginRequiredMixin, DetailView):
         """Filtre selon les permissions."""
         if not self.request.user.employee_profile.is_admin():
             return User.objects.none()
-        return User.objects.select_related('employee_profile')
+        return User.objects.select_related('employee_profile').exclude(
+            employee_profile__role__in=['admin', 'rh_dg']
+        )
 
 
 class UserEditView(LoginRequiredMixin, UpdateView):

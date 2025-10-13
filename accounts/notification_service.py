@@ -80,7 +80,7 @@ Bonne nouvelle ! Votre demande de congé a été approuvée.
 Détails :
 - Type : {leave_request.leave_type.name}
 - Période : {leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')}
-- Durée : {leave_request.duration} jour(s)
+- Durée : {leave_request.duration_days} jour(s)
 - Approuvé par : {approved_by.get_full_name()}
 
 Vous pouvez consulter les détails sur {settings.SITE_URL}
@@ -125,7 +125,7 @@ Votre demande de congé a été rejetée.
 Détails :
 - Type : {leave_request.leave_type.name}
 - Période : {leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')}
-- Durée : {leave_request.duration} jour(s)
+- Durée : {leave_request.duration_days} jour(s)
 - Rejeté par : {rejected_by.get_full_name()}
 
 Motif du rejet :
@@ -172,7 +172,7 @@ Une nouvelle demande de congé nécessite votre validation.
 Employé : {leave_request.employee.get_full_name()}
 Type : {leave_request.leave_type.name}
 Période : {leave_request.start_date.strftime('%d/%m/%Y')} - {leave_request.end_date.strftime('%d/%m/%Y')}
-Durée : {leave_request.duration} jour(s)
+Durée : {leave_request.duration_days} jour(s)
 
 Motif : {leave_request.reason}
 
@@ -196,4 +196,6 @@ L'équipe {settings.SITE_NAME}
         except Exception as e:
             print(f"❌ Erreur notification: {str(e)}")
             return False
+
+
 

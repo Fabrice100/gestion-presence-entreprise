@@ -56,3 +56,5 @@ class EnhancedConsoleEmailBackend(ConsoleEmailBackend):
         if hasattr(stream, 'flush'):
             stream.flush()
 
+
+

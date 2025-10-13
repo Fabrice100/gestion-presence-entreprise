@@ -79,7 +79,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
             'class': 'form-control',
             'placeholder': 'Prénom',
             'required': 'required',
-            'pattern': '[A-Za-zÀ-ÿ\s\-]+',
+            'pattern': r'[A-Za-zÀ-ÿ\s\-]+',
             'title': 'Le prénom ne doit contenir que des lettres (minimum 2 caractères)'
         })
     )
@@ -92,7 +92,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
             'class': 'form-control',
             'placeholder': 'Nom',
             'required': 'required',
-            'pattern': '[A-Za-zÀ-ÿ\s\-]+',
+            'pattern': r'[A-Za-zÀ-ÿ\s\-]+',
             'title': 'Le nom ne doit contenir que des lettres (minimum 2 caractères)'
         })
     )

@@ -63,7 +63,7 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
         if profile.role == 'rh_dg':
             # Statistiques pour RH/DG (toute l'entreprise)
             stats.update({
-                'total_employees': EmployeeProfile.objects.filter(is_active=True).count(),
+                'total_employees': EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg']).count(),
                 'total_departments': Department.objects.count(),
                 'present_today': self._get_present_today_count(),
                 'absent_today': self._get_absent_today_count(),
@@ -615,6 +615,35 @@ def export_report_api(request):
                 excel_service = ExcelExportService()
                 return excel_service.export_leave_report(request, year, leave_type_id, status)
         
+        elif report_type == 'employees':
+            # Export de la liste des employés
+            from .export_services import EmployeeExportService
+            
+            if format_type == 'excel':
+                service = EmployeeExportService()
+                return service.export_employees_list_excel(request)
+            elif format_type == 'csv':
+                service = EmployeeExportService()
+                return service.export_employees_list_csv(request)
+        
+        elif report_type == 'attendance_data':
+            # Export des données de présence brutes
+            from .export_services import AttendanceExportService
+            
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            department_id = request.GET.get('department')
+            employee_id = request.GET.get('employee')
+            
+            # Conversion des dates
+            from datetime import datetime
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else date.today() - timedelta(days=30)
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else date.today()
+            
+            if format_type == 'excel':
+                service = AttendanceExportService()
+                return service.export_attendance_data_excel(request, start_date, end_date, department_id, employee_id)
+        
         elif report_type == 'summary':
             # Export récapitulatif
             if format_type == 'pdf':
@@ -636,5 +665,161 @@ def export_report_api(request):
         # En cas d'erreur, retourner un message d'erreur
         return JsonResponse({
             'error': 'Erreur lors de l\'export',
+            'details': str(e)
+        }, status=500)
+
+
+@login_required
+def critical_stats_api(request):
+    """
+    API pour les statistiques critiques importantes.
+    Retourne les métriques essentielles pour la gestion d'entreprise.
+    """
+    from datetime import date, timedelta
+    from django.db.models import Count, Sum, Avg
+    from attendance.models import Attendance
+    from leave.models import LeaveRequest
+    from attendance.overtime_models import OvertimeRecord
+    
+    try:
+        user = request.user
+        profile = user.employee_profile
+        
+        # Période : 6 derniers mois
+        end_date = date.today()
+        start_date = end_date - timedelta(days=180)
+        
+        stats = {}
+        
+        if profile.role in ['rh_dg', 'admin']:
+            # === STATISTIQUES GLOBALES ===
+            
+            # 1. TAUX DE PRÉSENCE GLOBAL (6 mois)
+            total_working_days = 130  # Estimation 6 mois
+            total_possible_presences = EmployeeProfile.objects.filter(
+                is_active=True
+            ).exclude(role__in=['admin', 'rh_dg']).count() * total_working_days
+            
+            total_presences = Attendance.objects.filter(
+                date__range=[start_date, end_date],
+                punch_type='in',
+                employee__employee_profile__is_active=True
+            ).exclude(
+                employee__employee_profile__role__in=['admin', 'rh_dg']
+            ).count()
+            
+            taux_presence = (total_presences / total_possible_presences * 100) if total_possible_presences > 0 else 0
+            
+            # 2. ÉVOLUTION ABSENTÉISME (6 mois)
+            evolution_absences = []
+            for i in range(6):
+                month_start = end_date - timedelta(days=30*(i+1))
+                month_end = end_date - timedelta(days=30*i)
+                
+                month_presences = Attendance.objects.filter(
+                    date__range=[month_start, month_end],
+                    punch_type='in'
+                ).exclude(
+                    employee__employee_profile__role__in=['admin', 'rh_dg']
+                ).count()
+                
+                month_possible = EmployeeProfile.objects.filter(
+                    is_active=True
+                ).exclude(role__in=['admin', 'rh_dg']).count() * 22  # 22 jours ouvrables/mois
+                
+                month_rate = (month_presences / month_possible * 100) if month_possible > 0 else 0
+                evolution_absences.append({
+                    'mois': month_start.strftime('%Y-%m'),
+                    'taux_presence': round(month_rate, 1)
+                })
+            
+            # 3. HEURES SUPPLÉMENTAIRES (6 mois)
+            overtime_total = OvertimeRecord.objects.filter(
+                date__range=[start_date, end_date],
+                status='approved'
+            ).aggregate(total=Sum('overtime_hours'))['total'] or 0
+            
+            overtime_avg_per_employee = overtime_total / EmployeeProfile.objects.filter(
+                is_active=True
+            ).exclude(role__in=['admin', 'rh_dg']).count() if EmployeeProfile.objects.filter(
+                is_active=True
+            ).exclude(role__in=['admin', 'rh_dg']
+            ).count() > 0 else 0
+            
+            # 4. CONGÉS - UTILISATION
+            leaves_used = LeaveRequest.objects.filter(
+                start_date__range=[start_date, end_date],
+                status__in=['approved_manager', 'approved_rh']
+            ).aggregate(total=Sum('duration_days'))['total'] or 0
+            
+            stats = {
+                'taux_presence_global': round(taux_presence, 1),
+                'evolution_6_mois': list(reversed(evolution_absences)),
+                'heures_supp_total': overtime_total,
+                'heures_supp_moyenne_employe': round(overtime_avg_per_employee, 1),
+                'conges_utilises_6_mois': leaves_used,
+                'alertes': []
+            }
+            
+            # Alertes critiques
+            if taux_presence < 90:
+                stats['alertes'].append({
+                    'type': 'warning',
+                    'message': f'Taux de présence faible: {taux_presence:.1f}%'
+                })
+            
+            if overtime_avg_per_employee > 10:
+                stats['alertes'].append({
+                    'type': 'info',
+                    'message': f'Heures supplémentaires élevées: {overtime_avg_per_employee:.1f}h/employé'
+                })
+        
+        elif profile.role == 'manager':
+            # === STATISTIQUES MANAGER (son équipe) ===
+            managed_employees = User.objects.filter(employee_profile__manager=user)
+            
+            # Taux de présence de l'équipe
+            team_presences = Attendance.objects.filter(
+                date__range=[start_date, end_date],
+                punch_type='in',
+                employee__in=managed_employees
+            ).count()
+            
+            team_possible = managed_employees.count() * 130  # 6 mois
+            team_rate = (team_presences / team_possible * 100) if team_possible > 0 else 0
+            
+            stats = {
+                'taux_presence_equipe': round(team_rate, 1),
+                'effectif': managed_employees.count(),
+                'conges_en_attente': LeaveRequest.objects.filter(
+                    employee__in=managed_employees,
+                    status='pending'
+                ).count()
+            }
+        
+        else:
+            # === STATISTIQUES EMPLOYÉ ===
+            user_presences = Attendance.objects.filter(
+                date__range=[start_date, end_date],
+                punch_type='in',
+                employee=user
+            ).count()
+            
+            user_rate = (user_presences / 130) * 100  # 6 mois
+            
+            stats = {
+                'taux_presence_personnel': round(user_rate, 1),
+                'conges_restants': 25 - LeaveRequest.objects.filter(
+                    employee=user,
+                    status__in=['approved_manager', 'approved_rh'],
+                    start_date__year=date.today().year
+                ).aggregate(total=Sum('duration_days'))['total'] or 0
+            }
+        
+        return JsonResponse(stats)
+    
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Erreur lors du calcul des statistiques',
             'details': str(e)
         }, status=500)

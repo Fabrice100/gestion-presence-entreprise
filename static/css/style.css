@@ -102,6 +102,20 @@
     align-items: center;
 }
 
+.user-avatar-link {
+    text-decoration: none;
+    margin-right: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.user-avatar-link:hover {
+    transform: scale(1.05);
+}
+
+.user-avatar-link:hover .user-avatar {
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
 .user-avatar {
     width: 45px;
     height: 45px;
@@ -110,9 +124,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
     color: var(--white);
     font-size: 1.5rem;
+    transition: box-shadow 0.2s ease;
 }
 
 .user-info {

@@ -63,11 +63,17 @@
             <div class="date" id="current-date">--</div>
         </div>
         
+        <!-- Info GPS -->
+        <div class="ds-alert ds-alert-info ds-mb-3">
+            <i class="bi bi-geo-alt me-2"></i>
+            <small>Géolocalisation requise - Autorisez la localisation</small>
+        </div>
+        
         <!-- Messages -->
         {% if messages %}
             {% for message in messages %}
             <div class="ds-alert ds-alert-{{ message.tags }}">
-                <i class="bi bi-check-circle me-2"></i>
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
                 {{ message }}
             </div>
             {% endfor %}
@@ -138,21 +144,76 @@
     updateTime();
     setInterval(updateTime, 1000);
     
-    // Fonction de pointage
+    // Fonction de pointage avec GPS OBLIGATOIRE
     function punch(type) {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                document.getElementById('punch-type').value = type;
+        document.getElementById('punch-type').value = type;
+        
+        // Vérifier que le navigateur supporte la géolocalisation
+        if (!navigator.geolocation) {
+            alert('❌ Votre navigateur ne supporte pas la géolocalisation.\nVeuillez utiliser un navigateur récent (Chrome, Firefox, Edge).');
+            return;
+        }
+        
+        // Afficher un message de chargement
+        const buttons = document.querySelectorAll('.punch-btn');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Localisation en cours...';
+        });
+        
+        // Obtenir la géolocalisation (OBLIGATOIRE)
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                // GPS OK : enregistrer les coordonnées
                 document.getElementById('latitude').value = position.coords.latitude;
                 document.getElementById('longitude').value = position.coords.longitude;
                 document.getElementById('accuracy').value = position.coords.accuracy;
+                
+                // Soumettre le formulaire
                 document.getElementById('punch-form').submit();
-            }, function(error) {
-                alert('Erreur de géolocalisation. Veuillez activer le GPS.');
-            });
-        } else {
-            alert('La géolocalisation n\'est pas supportée par votre navigateur.');
-        }
+            }, 
+            function(error) {
+                // GPS refusé ou erreur
+                buttons.forEach(btn => btn.disabled = false);
+                
+                let errorMessage = '';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = '🚫 Vous avez refusé la géolocalisation.\n\n' +
+                                     'Pour pointer, vous DEVEZ autoriser la localisation :\n' +
+                                     '1. Cliquez sur l\'icône 🔒 dans la barre d\'adresse\n' +
+                                     '2. Autorisez la localisation\n' +
+                                     '3. Rechargez la page';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = '📡 Position GPS indisponible.\n\n' +
+                                     'Veuillez vous rapprocher d\'une fenêtre ou sortir à l\'extérieur.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = '⏱️  Délai d\'attente GPS dépassé.\n\n' +
+                                     'Le signal GPS est trop faible. Réessayez à l\'extérieur.';
+                        break;
+                    default:
+                        errorMessage = '❌ Erreur GPS inconnue.\n\nVeuillez réessayer.';
+                }
+                
+                alert(errorMessage);
+                
+                // Réinitialiser les boutons
+                updatePunchButtons();
+            },
+            {
+                enableHighAccuracy: true,  // Haute précision
+                timeout: 10000,            // 10 secondes max
+                maximumAge: 0              // Pas de cache
+            }
+        );
+    }
+    
+    // Fonction pour réinitialiser les boutons
+    function updatePunchButtons() {
+        document.querySelector('.punch-btn.ds-btn-success').innerHTML = '<i class="bi bi-arrow-right-circle me-2"></i>Pointer l\'entrée';
+        document.querySelector('.punch-btn.ds-btn-danger').innerHTML = '<i class="bi bi-arrow-left-circle me-2"></i>Pointer la sortie';
     }
 </script>
 {% endblock %}

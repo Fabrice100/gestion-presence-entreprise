@@ -116,7 +116,7 @@ class PDFExportService:
         from attendance.models import Attendance
         
         if request.user.employee_profile.role == 'rh_dg':
-            employees = EmployeeProfile.objects.filter(is_active=True)
+            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
             if department_id:
                 employees = employees.filter(department_id=department_id)
         elif request.user.employee_profile.role == 'manager':
@@ -380,7 +380,7 @@ class ExcelExportService:
         from attendance.models import Attendance
         
         if request.user.employee_profile.role == 'rh_dg':
-            employees = EmployeeProfile.objects.filter(is_active=True)
+            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
             if department_id:
                 employees = employees.filter(department_id=department_id)
         elif request.user.employee_profile.role == 'manager':
@@ -548,6 +548,201 @@ class ExcelExportService:
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = f'attachment; filename="rapport_conges_{year}.xlsx"'
+        
+        wb.save(response)
+        return response
+
+
+class EmployeeExportService:
+    """Service pour l'export des listes d'employés."""
+    
+    def export_employees_list_excel(self, request):
+        """Export de la liste des employés en Excel."""
+        from accounts.models import EmployeeProfile
+        
+        # Récupérer les employés (exclure admin et rh_dg)
+        employees = EmployeeProfile.objects.select_related('user', 'department', 'manager').filter(
+            is_active=True
+        ).exclude(role__in=['admin', 'rh_dg']).order_by('employee_id')
+        
+        # Créer le workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Liste des Employés"
+        
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="2E86AB", end_color="2E86AB", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Titre
+        ws.merge_cells('A1:H1')
+        title_cell = ws['A1']
+        title_cell.value = "LISTE DES EMPLOYÉS"
+        title_cell.font = Font(size=16, bold=True, color="2E86AB")
+        title_cell.alignment = Alignment(horizontal='center')
+        
+        # Informations du rapport
+        ws['A3'] = "Généré le:"
+        ws['B3'] = datetime.now().strftime('%d/%m/%Y à %H:%M')
+        ws['A4'] = "Généré par:"
+        ws['B4'] = request.user.get_full_name() or request.user.username
+        ws['A5'] = "Total employés:"
+        ws['B5'] = employees.count()
+        
+        # En-têtes du tableau
+        headers = ['ID Employé', 'Nom', 'Prénom', 'Email', 'Département', 'Rôle', 'Manager', 'Date embauche']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=7, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Données des employés
+        for row, employee in enumerate(employees, 8):
+            ws.cell(row=row, column=1, value=employee.employee_id).border = border
+            ws.cell(row=row, column=2, value=employee.user.last_name).border = border
+            ws.cell(row=row, column=3, value=employee.user.first_name).border = border
+            ws.cell(row=row, column=4, value=employee.user.email).border = border
+            ws.cell(row=row, column=5, value=employee.department.name if employee.department else '').border = border
+            ws.cell(row=row, column=6, value=employee.get_role_display()).border = border
+            ws.cell(row=row, column=7, value=f"{employee.manager.get_full_name()}" if employee.manager else '').border = border
+            ws.cell(row=row, column=8, value=employee.user.date_joined.strftime('%d/%m/%Y')).border = border
+        
+        # Ajuster la largeur des colonnes
+        column_widths = [15, 20, 20, 30, 20, 15, 25, 15]
+        for col, width in enumerate(column_widths, 1):
+            ws.column_dimensions[get_column_letter(col)].width = width
+        
+        # Réponse HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f"liste_employes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        wb.save(response)
+        return response
+    
+    def export_employees_list_csv(self, request):
+        """Export de la liste des employés en CSV."""
+        import csv
+        from accounts.models import EmployeeProfile
+        
+        # Récupérer les employés
+        employees = EmployeeProfile.objects.select_related('user', 'department', 'manager').filter(
+            is_active=True
+        ).exclude(role__in=['admin', 'rh_dg']).order_by('employee_id')
+        
+        response = HttpResponse(content_type='text/csv')
+        filename = f"liste_employes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        writer = csv.writer(response)
+        
+        # En-têtes
+        writer.writerow(['ID Employé', 'Nom', 'Prénom', 'Email', 'Département', 'Rôle', 'Manager', 'Date embauche'])
+        
+        # Données
+        for employee in employees:
+            writer.writerow([
+                employee.employee_id,
+                employee.user.last_name,
+                employee.user.first_name,
+                employee.user.email,
+                employee.department.name if employee.department else '',
+                employee.get_role_display(),
+                f"{employee.manager.get_full_name()}" if employee.manager else '',
+                employee.user.date_joined.strftime('%d/%m/%Y')
+            ])
+        
+        return response
+
+
+class AttendanceExportService:
+    """Service pour l'export des données de présence."""
+    
+    def export_attendance_data_excel(self, request, start_date, end_date, department_id=None, employee_id=None):
+        """Export des données de présence en Excel."""
+        from attendance.models import Attendance
+        
+        # Construire la requête
+        queryset = Attendance.objects.select_related(
+            'employee__employee_profile__department',
+            'employee__employee_profile'
+        ).filter(date__range=[start_date, end_date])
+        
+        # Filtres
+        if department_id:
+            queryset = queryset.filter(employee__employee_profile__department_id=department_id)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Créer le workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Données de Présence"
+        
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="E74C3C", end_color="E74C3C", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Titre
+        ws.merge_cells('A1:F1')
+        title_cell = ws['A1']
+        title_cell.value = "DONNÉES DE PRÉSENCE"
+        title_cell.font = Font(size=16, bold=True, color="E74C3C")
+        title_cell.alignment = Alignment(horizontal='center')
+        
+        # Informations du rapport
+        ws['A3'] = "Période:"
+        ws['B3'] = f"Du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+        ws['A4'] = "Généré le:"
+        ws['B4'] = datetime.now().strftime('%d/%m/%Y à %H:%M')
+        ws['A5'] = "Généré par:"
+        ws['B5'] = request.user.get_full_name() or request.user.username
+        
+        # En-têtes du tableau
+        headers = ['Date', 'Employé', 'ID Employé', 'Type', 'Heure', 'Département']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=7, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Données des présences
+        for row, attendance in enumerate(queryset.order_by('date', 'employee__last_name'), 8):
+            ws.cell(row=row, column=1, value=attendance.date.strftime('%d/%m/%Y')).border = border
+            ws.cell(row=row, column=2, value=attendance.employee.get_full_name()).border = border
+            ws.cell(row=row, column=3, value=attendance.employee.employee_profile.employee_id).border = border
+            ws.cell(row=row, column=4, value=attendance.get_punch_type_display()).border = border
+            ws.cell(row=row, column=5, value=attendance.time.strftime('%H:%M')).border = border
+            ws.cell(row=row, column=6, value=attendance.employee.employee_profile.department.name if attendance.employee.employee_profile.department else '').border = border
+        
+        # Ajuster la largeur des colonnes
+        column_widths = [12, 25, 15, 12, 10, 20]
+        for col, width in enumerate(column_widths, 1):
+            ws.column_dimensions[get_column_letter(col)].width = width
+        
+        # Réponse HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f"presences_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         wb.save(response)
         return response

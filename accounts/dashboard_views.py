@@ -16,13 +16,14 @@ Version: 1.0
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import date, timedelta
 
-from accounts.models import EmployeeProfile
+from accounts.models import EmployeeProfile, Department
 from attendance.models import Attendance, AttendanceAnomaly
 from leave.models import LeaveRequest, LeaveBalance
 
@@ -57,6 +58,26 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             return redirect('dashboard:manager_dashboard')
         else:
             return redirect('dashboard:employee_dashboard')
+
+
+class AdminDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Tableau de bord pour les administrateurs.
+    """
+    template_name = 'dashboard/admin_dashboard.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Vérifier que l'utilisateur est bien admin"""
+        try:
+            profile = request.user.employee_profile
+            if not profile.is_admin():
+                messages.error(request, 'Accès non autorisé.')
+                return redirect('dashboard:dashboard')
+        except EmployeeProfile.DoesNotExist:
+            messages.error(request, 'Profil utilisateur non trouvé.')
+            return redirect('accounts:profile_edit')
+        
+        return super().dispatch(request, *args, **kwargs)
 
 
 class EmployeeDashboardView(LoginRequiredMixin, TemplateView):
@@ -208,7 +229,7 @@ class RHDGDashboardView(LoginRequiredMixin, TemplateView):
         today = date.today()
         
         # Tous les employés actifs
-        all_employees = EmployeeProfile.objects.filter(is_active=True)
+        all_employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
         
         # Présences globales aujourd'hui
         global_attendance_today = Attendance.objects.filter(
@@ -235,7 +256,9 @@ class RHDGDashboardView(LoginRequiredMixin, TemplateView):
         
         # Statistiques par département
         department_stats = []
-        for dept in user.managed_departments.all():
+        # RH/DG peut gérer tous les départements
+        all_departments = Department.objects.filter(is_active=True)
+        for dept in all_departments:
             dept_employees = all_employees.filter(department=dept)
             dept_present = global_attendance_today.filter(
                 employee__employee_profile__department=dept,
@@ -270,84 +293,15 @@ class RHDGDashboardView(LoginRequiredMixin, TemplateView):
             'department_stats': department_stats,
             'monthly_attendance': monthly_attendance,
             'today': today,
+            # Variables pour le template
+            'total_employees': global_stats['total_employees'],
+            'total_departments': len(department_stats),
+            'pending_validations': global_stats['pending_rh_requests'],
+            'total_leave_requests': global_stats['pending_rh_requests'],
+            'recent_employees': all_employees[:5],  # ✅ Ajout de la variable manquante
         })
         
         return context
 
 
-class AdminDashboardView(LoginRequiredMixin, TemplateView):
-    """
-    Tableau de bord pour les administrateurs.
-    """
-    template_name = 'dashboard/admin_dashboard.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        today = date.today()
-        
-        # Statistiques globales
-        total_users = EmployeeProfile.objects.count()
-        active_users = EmployeeProfile.objects.filter(is_active=True).count()
-        total_departments = EmployeeProfile.objects.values('department').distinct().count()
-        
-        # Présences aujourd'hui
-        today_attendance = Attendance.objects.filter(date=today)
-        today_present = today_attendance.filter(punch_type='in').count()
-        
-        # Anomalies globales
-        total_anomalies = AttendanceAnomaly.objects.count()
-        pending_anomalies = AttendanceAnomaly.objects.filter(status='pending').count()
-        
-        # Demandes de congés
-        total_leave_requests = LeaveRequest.objects.count()
-        pending_leave_requests = LeaveRequest.objects.filter(
-            status__in=['pending', 'approved_manager']
-        ).count()
-        
-        # Statistiques système
-        system_stats = {
-            'total_users': total_users,
-            'active_users': active_users,
-            'total_departments': total_departments,
-            'today_present': today_present,
-            'total_anomalies': total_anomalies,
-            'pending_anomalies': pending_anomalies,
-            'total_leave_requests': total_leave_requests,
-            'pending_leave_requests': pending_leave_requests,
-        }
-        
-        # Activité récente
-        recent_activities = []
-        
-        # Derniers pointages
-        recent_punches = Attendance.objects.order_by('-created_at')[:10]
-        for punch in recent_punches:
-            recent_activities.append({
-                'type': 'punch',
-                'description': f"{punch.employee.get_full_name()} a pointé {punch.get_punch_type_display()}",
-                'time': punch.created_at,
-                'user': punch.employee,
-            })
-        
-        # Dernières demandes de congés
-        recent_requests = LeaveRequest.objects.order_by('-created_at')[:5]
-        for request in recent_requests:
-            recent_activities.append({
-                'type': 'leave_request',
-                'description': f"{request.employee.get_full_name()} a demandé des congés",
-                'time': request.created_at,
-                'user': request.employee,
-            })
-        
-        # Trier par date
-        recent_activities.sort(key=lambda x: x['time'], reverse=True)
-        recent_activities = recent_activities[:10]
-        
-        context.update({
-            'system_stats': system_stats,
-            'recent_activities': recent_activities,
-            'today': today,
-        })
-        
-        return context
 

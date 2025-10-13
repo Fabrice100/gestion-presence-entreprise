@@ -51,12 +51,32 @@
                 </div>
                 {% endif %}
                 
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">&nbsp;</label>
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-search me-2"></i>
                         Appliquer
                     </button>
+                </div>
+                
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-success dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportAttendanceData('excel')">
+                                <i class="bi bi-file-earmark-excel text-success me-2"></i>Données Excel
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
+                                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>Rapport PDF
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
+                                <i class="bi bi-file-earmark-excel text-success me-2"></i>Rapport Excel
+                            </a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </form>
@@ -230,6 +250,59 @@ function showEmployeeDetails(employeeId) {
 
 function closeModal() {
     document.getElementById('employeeModal').style.display = 'none';
+}
+
+function exportAttendanceData(format) {
+    // Afficher un indicateur de chargement
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Génération...';
+    button.disabled = true;
+    
+    const params = new URLSearchParams(window.location.search);
+    params.set('format', format);
+    
+    fetch(`/reports/api/export/?type=attendance_data&${params.toString()}`)
+        .then(response => {
+            if (response.ok) {
+                // Si c'est un fichier, le télécharger
+                if (response.headers.get('content-type').includes('spreadsheetml')) {
+                    
+                    const filename = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || `donnees_presence.${format}`;
+                    
+                    return response.blob().then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        // Afficher un message de succès
+                        showNotification(`Données de présence en ${format.toUpperCase()} téléchargées avec succès !`, 'success');
+                    });
+                } else {
+                    // Si c'est du JSON (erreur), l'afficher
+                    return response.json().then(data => {
+                        showNotification(data.error || 'Erreur lors de l\'export', 'error');
+                    });
+                }
+            } else {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors de l\'export: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Restaurer le bouton
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
 }
 
 function exportReport(format) {

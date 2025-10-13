@@ -264,9 +264,22 @@ class EmployeeProfile(models.Model):
         return User.objects.none()
 
 
-# Signal pour créer automatiquement un profil employé lors de la création d'un utilisateur
-from django.db.models.signals import post_save
+# Signals pour automatisation
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+
+@receiver(pre_save, sender='accounts.EmployeeProfile')
+def assign_department_manager(sender, instance, **kwargs):
+    """
+    Assigne automatiquement le manager du département à l'employé
+    si aucun manager n'est spécifié.
+    """
+    # Si l'employé a un département mais pas de manager
+    if instance.department and not instance.manager:
+        # Si le département a un manager
+        if instance.department.manager:
+            # Assigner le manager du département
+            instance.manager = instance.department.manager
 
 @receiver(post_save, sender=User)
 def create_employee_profile(sender, instance, created, **kwargs):

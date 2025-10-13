@@ -158,11 +158,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# =============================================================================
+# CONFIGURATION DU SYSTÈME DE POINTAGE (GÉOLOCALISATION & HORAIRES)
+# =============================================================================
+
 # Configuration géolocalisation
 SITE_CENTER_LAT = config('SITE_CENTER_LAT', default=6.1304, cast=float)  # Latitude Lomé
 SITE_CENTER_LNG = config('SITE_CENTER_LNG', default=1.2158, cast=float)  # Longitude Lomé
-RADIUS_METERS = config('RADIUS_METERS', default=200, cast=int)
-ACCURACY_MAX_METERS = config('ACCURACY_MAX_METERS', default=50, cast=int)
+RADIUS_METERS = config('RADIUS_METERS', default=200, cast=int)  # Rayon autorisé (200m)
+ACCURACY_MAX_METERS = config('ACCURACY_MAX_METERS', default=50, cast=int)  # Précision GPS max
+
+# Géolocalisation obligatoire
+GPS_REQUIRED = config('GPS_REQUIRED', default=True, cast=bool)  # GPS obligatoire
+
+# Horaires de travail
+WORK_START_TIME = '08:00'  # Heure d'arrivée attendue
+WORK_END_TIME = '17:00'    # Heure de sortie attendue
+LATE_TOLERANCE_MINUTES = 15  # Tolérance retard (15 minutes)
 
 # Configuration des messages
 from django.contrib.messages import constants as messages

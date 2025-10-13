@@ -113,7 +113,9 @@ class UserListView(HRRequiredMixin, ListView):
         role = self.request.GET.get('role')
         department_id = self.request.GET.get('department')
         
-        queryset = EmployeeProfile.objects.select_related('user', 'department', 'manager')
+        queryset = EmployeeProfile.objects.select_related('user', 'department', 'manager').exclude(
+            role__in=['admin', 'rh_dg']
+        )
         
         if role:
             queryset = queryset.filter(role=role)
@@ -202,8 +204,15 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
         profile_data = {
             'department': form.cleaned_data.get('department'),
             'manager': form.cleaned_data.get('manager'),
-            'role': 'employee',
+            'role': 'employee',  # ✅ TOUJOURS 'employee' pour RH/DG
         }
+        
+        # ✅ SÉCURITÉ : Validation stricte du rôle
+        # RH/DG ne peut créer QUE des employés
+        if 'role' in form.cleaned_data:
+            if form.cleaned_data['role'] not in ['employee']:
+                messages.error(self.request, 'Seuls les employés peuvent être créés via cette interface.')
+                return self.form_invalid(form)
         
         # Créer l'employé avec génération automatique des credentials
         user, employee_id, temporary_password = UserService.create_employee_with_credentials(

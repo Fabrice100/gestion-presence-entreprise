@@ -48,9 +48,11 @@
             <div class="sidebar-content">
                 <!-- Profil utilisateur -->
                 <div class="user-profile">
-                    <div class="user-avatar">
-                        <i class="bi bi-person-circle"></i>
-                    </div>
+                    <a href="{% url 'dashboard:dashboard' %}" class="user-avatar-link" title="Retour au tableau de bord">
+                        <div class="user-avatar">
+                            <i class="bi bi-person-circle"></i>
+                        </div>
+                    </a>
                     <div class="user-info">
                         <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
                         <div class="user-role">
@@ -65,12 +67,6 @@
                 
                 <!-- Menu de navigation -->
                 <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:dashboard' %}">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Tableau de bord</span>
-                        </a>
-                    </li>
                     
                     {% if user.employee_profile.can_punch %}
                     <li class="nav-item">
@@ -81,6 +77,7 @@
                     </li>
                     {% endif %}
                     
+                    {% if user.employee_profile.role not in 'admin,rh_dg' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'attendance:my_attendance' %}">
                             <i class="bi bi-calendar-check"></i>
@@ -94,6 +91,7 @@
                             <span>Mes congés</span>
                         </a>
                     </li>
+                    {% endif %}
                     
                     {% if user.employee_profile.role == 'manager' or user.employee_profile.role == 'rh_dg' %}
                     <li class="nav-item">
@@ -121,14 +119,17 @@
                     </li>
                     {% endif %}
                     
-                    {% if user.employee_profile.role == 'admin' %}
+                    
+                    {% if user.employee_profile.role == 'rh_dg' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'reports:reports_dashboard' %}">
-                            <i class="bi bi-graph-up"></i>
-                            <span>Rapports</span>
+                        <a class="nav-link" href="{% url 'attendance:company_settings' %}">
+                            <i class="bi bi-sliders"></i>
+                            <span>Configuration</span>
                         </a>
                     </li>
+                    {% endif %}
                     
+                    {% if user.employee_profile.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/">
                             <i class="bi bi-gear"></i>
