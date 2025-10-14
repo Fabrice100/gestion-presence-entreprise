@@ -49,35 +49,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             # Si pas de profil, rediriger vers la création de profil
             return redirect('accounts:profile_edit')
         
-        # Redirection selon le rôle
-        if profile.is_admin():
-            return redirect('dashboard:admin_dashboard')
-        elif profile.is_rh_dg():
+        # Redirection selon le rôle métier
+        # Note: Les superusers (admins techniques) sont gérés par le middleware
+        if profile.is_rh_dg():
             return redirect('dashboard:rh_dg_dashboard')
         elif profile.is_manager():
             return redirect('dashboard:manager_dashboard')
         else:
             return redirect('dashboard:employee_dashboard')
-
-
-class AdminDashboardView(LoginRequiredMixin, TemplateView):
-    """
-    Tableau de bord pour les administrateurs.
-    """
-    template_name = 'dashboard/admin_dashboard.html'
-    
-    def dispatch(self, request, *args, **kwargs):
-        """Vérifier que l'utilisateur est bien admin"""
-        try:
-            profile = request.user.employee_profile
-            if not profile.is_admin():
-                messages.error(request, 'Accès non autorisé.')
-                return redirect('dashboard:dashboard')
-        except EmployeeProfile.DoesNotExist:
-            messages.error(request, 'Profil utilisateur non trouvé.')
-            return redirect('accounts:profile_edit')
-        
-        return super().dispatch(request, *args, **kwargs)
 
 
 class EmployeeDashboardView(LoginRequiredMixin, TemplateView):

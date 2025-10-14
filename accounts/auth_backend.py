@@ -46,6 +46,10 @@ class EmployeeIDBackend(ModelBackend):
                 # Fallback: essayer avec le username classique
                 user = User.objects.get(username=username)
             
+            # Empêcher l'authentification des superusers via ce backend
+            if user.is_superuser:
+                return None
+            
             # Vérifier le mot de passe
             if user.check_password(password) and self.user_can_authenticate(user):
                 return user

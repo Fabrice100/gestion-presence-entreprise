@@ -64,6 +64,20 @@ class CustomLoginView(LoginView):
     """
     template_name = 'accounts/login.html'
     
+    def form_valid(self, form):
+        """
+        Validation du formulaire de connexion.
+        Empêche les admins de se connecter via le site web.
+        """
+        user = form.get_user()
+        
+        # Si superuser (admin technique), empêcher la connexion via le site
+        if user.is_superuser:
+            messages.error(self.request, 'Les administrateurs doivent utiliser Django Admin (/admin/) pour se connecter.')
+            return self.form_invalid(form)
+        
+        return super().form_valid(form)
+    
     
     def get_success_url(self):
         """
@@ -75,16 +89,11 @@ class CustomLoginView(LoginView):
         # Les admins ne passent pas par cette vue de connexion
         # Ils utilisent directement /admin/ pour l'authentification Django Admin
         
-        # Redirection directe pour les superusers et admins vers Django Admin
-        if user.is_superuser:
-            return '/admin/'
-        
+        # Redirection selon le rôle métier (pas d'admin technique ici)
         try:
             profile = user.employee_profile
             
-            if profile.role == 'admin':
-                return reverse_lazy('dashboard:admin_dashboard')
-            elif profile.role == 'rh_dg':
+            if profile.role == 'rh_dg':
                 return reverse_lazy('dashboard:rh_dg_dashboard')
             elif profile.role == 'manager':
                 return reverse_lazy('dashboard:manager_dashboard')
@@ -98,6 +107,7 @@ class CustomLoginView(LoginView):
                 return reverse_lazy('dashboard:employee_dashboard')
                 
         except EmployeeProfile.DoesNotExist:
+            # Si pas de profil, c'est probablement un admin technique
             return reverse_lazy('dashboard:employee_dashboard')
 
 

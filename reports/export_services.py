@@ -553,7 +553,8 @@ class ExcelExportService:
         return response
 
 
-class EmployeeExportService:
+# Service supprimé - export inutile
+class _EmployeeExportService:
     """Service pour l'export des listes d'employés."""
     
     def export_employees_list_excel(self, request):
@@ -665,7 +666,8 @@ class EmployeeExportService:
         return response
 
 
-class AttendanceExportService:
+# Service supprimé - export inutile  
+class _AttendanceExportService:
     """Service pour l'export des données de présence."""
     
     def export_attendance_data_excel(self, request, start_date, end_date, department_id=None, employee_id=None):

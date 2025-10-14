@@ -30,20 +30,6 @@
         
         <!-- Boutons d'export -->
         <div class="ds-d-flex ds-gap-2" style="flex-wrap: wrap;">
-            <div class="dropdown">
-                <button class="ds-btn ds-btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-download"></i>
-                    Exporter
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" onclick="exportEmployees('excel')">
-                        <i class="bi bi-file-earmark-excel text-success me-2"></i>Excel
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportEmployees('csv')">
-                        <i class="bi bi-file-earmark-text text-info me-2"></i>CSV
-                    </a></li>
-                </ul>
-            </div>
         </div>
         
         <div class="ds-d-flex ds-gap-2" style="flex-wrap: wrap;">
@@ -203,57 +189,6 @@
 </div>
 
 <script>
-function exportEmployees(format) {
-    // Afficher un indicateur de chargement
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Génération...';
-    button.disabled = true;
-    
-    // Appeler l'API d'export
-    fetch(`/reports/api/export/?type=employees&format=${format}`)
-        .then(response => {
-            if (response.ok) {
-                // Si c'est un fichier, le télécharger
-                if (response.headers.get('content-type').includes('spreadsheetml') || 
-                    response.headers.get('content-type').includes('text/csv')) {
-                    
-                    const filename = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || `liste_employes.${format}`;
-                    
-                    return response.blob().then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                        
-                        // Afficher un message de succès
-                        showNotification(`Liste des employés en ${format.toUpperCase()} téléchargée avec succès !`, 'success');
-                    });
-                } else {
-                    // Si c'est du JSON (erreur), l'afficher
-                    return response.json().then(data => {
-                        showNotification(data.error || 'Erreur lors de l\'export', 'error');
-                    });
-                }
-            } else {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showNotification('Erreur lors de l\'export: ' + error.message, 'error');
-        })
-        .finally(() => {
-            // Restaurer le bouton
-            button.innerHTML = originalText;
-            button.disabled = false;
-        });
-}
 
 // Fonction pour afficher des notifications
 function showNotification(message, type = 'info') {

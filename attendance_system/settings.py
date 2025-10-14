@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire
+    'accounts.admin_middleware.AdminRedirectMiddleware',   # Redirection admin vers Django Admin
 ]
 
 ROOT_URLCONF = 'attendance_system.urls'

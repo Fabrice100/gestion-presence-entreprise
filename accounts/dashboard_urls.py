@@ -23,7 +23,7 @@ urlpatterns = [
     path('', dashboard_views.DashboardView.as_view(), name='dashboard'),
     
     # Tableaux de bord spécifiques par rôle
-    path('admin/', dashboard_views.AdminDashboardView.as_view(), name='admin_dashboard'),
+    # Note: Admin redirigé vers Django Admin (/admin/)
     path('employee/', dashboard_views.EmployeeDashboardView.as_view(), name='employee_dashboard'),
     path('manager/', dashboard_views.ManagerDashboardView.as_view(), name='manager_dashboard'),
     path('rh-dg/', dashboard_views.RHDGDashboardView.as_view(), name='rh_dg_dashboard'),

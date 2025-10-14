@@ -615,34 +615,7 @@ def export_report_api(request):
                 excel_service = ExcelExportService()
                 return excel_service.export_leave_report(request, year, leave_type_id, status)
         
-        elif report_type == 'employees':
-            # Export de la liste des employés
-            from .export_services import EmployeeExportService
-            
-            if format_type == 'excel':
-                service = EmployeeExportService()
-                return service.export_employees_list_excel(request)
-            elif format_type == 'csv':
-                service = EmployeeExportService()
-                return service.export_employees_list_csv(request)
-        
-        elif report_type == 'attendance_data':
-            # Export des données de présence brutes
-            from .export_services import AttendanceExportService
-            
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
-            department_id = request.GET.get('department')
-            employee_id = request.GET.get('employee')
-            
-            # Conversion des dates
-            from datetime import datetime
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else date.today() - timedelta(days=30)
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else date.today()
-            
-            if format_type == 'excel':
-                service = AttendanceExportService()
-                return service.export_attendance_data_excel(request, start_date, end_date, department_id, employee_id)
+        # Exports inutiles supprimés - garder seulement les rapports avec valeur ajoutée
         
         elif report_type == 'summary':
             # Export récapitulatif
@@ -662,10 +635,15 @@ def export_report_api(request):
             return JsonResponse({'error': 'Type de rapport non supporté'}, status=400)
     
     except Exception as e:
-        # En cas d'erreur, retourner un message d'erreur
+        # En cas d'erreur, retourner un message d'erreur avec plus de détails
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Erreur export: {e}")
+        print(f"Details: {error_details}")
         return JsonResponse({
             'error': 'Erreur lors de l\'export',
-            'details': str(e)
+            'details': str(e),
+            'traceback': error_details
         }, status=500)
 
 
