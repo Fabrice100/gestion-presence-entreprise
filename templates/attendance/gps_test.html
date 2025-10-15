@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Test GPS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Diagnostic GPS - Système de Pointage
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Test GPS -->
+                    <div class="mb-4">
+                        <h5>🔍 Test de Géolocalisation</h5>
+                        <button id="test-gps" class="btn btn-primary">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            Tester le GPS
+                        </button>
+                        <div id="gps-result" class="mt-3"></div>
+                    </div>
+                    
+                    <!-- Informations de configuration -->
+                    <div class="mb-4">
+                        <h5>⚙️ Configuration du Système</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Coordonnées du bureau :</strong><br>
+                                <small class="text-muted">Lat: 6.140766, Lng: 1.241907</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Rayon autorisé :</strong><br>
+                                <small class="text-muted">200 mètres</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Test de distance -->
+                    <div class="mb-4">
+                        <h5>📏 Test de Distance</h5>
+                        <div id="distance-result"></div>
+                    </div>
+                    
+                    <!-- Test de pointage -->
+                    <div class="mb-4">
+                        <h5>👆 Test de Pointage</h5>
+                        <button id="test-punch" class="btn btn-success" disabled>
+                            <i class="bi bi-clock me-2"></i>
+                            Tester le Pointage
+                        </button>
+                        <div id="punch-result" class="mt-3"></div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle me-2"></i>Instructions :</h6>
+                        <ol>
+                            <li>Cliquez sur "Tester le GPS"</li>
+                            <li>Autorisez la géolocalisation si demandé</li>
+                            <li>Vérifiez que votre position est proche du bureau</li>
+                            <li>Testez le pointage si tout est OK</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPosition = null;
+    
+    // Test GPS
+    document.getElementById('test-gps').addEventListener('click', function() {
+        const button = this;
+        const result = document.getElementById('gps-result');
+        
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Test en cours...';
+        
+        if (!navigator.geolocation) {
+            result.innerHTML = '<div class="alert alert-danger">❌ Votre navigateur ne supporte pas la géolocalisation.</div>';
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Tester le GPS';
+            return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                currentPosition = position;
+                
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                // Calculer la distance
+                const distance = calculateDistance(lat, lng, 6.140766, 1.241907);
+                
+                let statusClass = 'success';
+                let statusIcon = '✅';
+                let statusText = 'Position OK';
+                
+                if (distance > 200) {
+                    statusClass = 'warning';
+                    statusIcon = '⚠️';
+                    statusText = 'Trop loin du bureau';
+                }
+                
+                if (accuracy > 50) {
+                    statusClass = 'warning';
+                    statusIcon = '⚠️';
+                    statusText = 'Précision faible';
+                }
+                
+                result.innerHTML = `
+                    <div class="alert alert-${statusClass}">
+                        ${statusIcon} <strong>${statusText}</strong><br>
+                        <small>
+                            Position: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                            Précision: ${accuracy.toFixed(1)}m<br>
+                            Distance du bureau: ${distance.toFixed(1)}m
+                        </small>
+                    </div>
+                `;
+                
+                // Mettre à jour le test de distance
+                document.getElementById('distance-result').innerHTML = `
+                    <div class="alert alert-${distance <= 200 ? 'success' : 'danger'}">
+                        📏 Distance: ${distance.toFixed(1)}m ${distance <= 200 ? '(✅ OK)' : '(❌ Trop loin)'}
+                    </div>
+                `;
+                
+                // Activer le test de pointage
+                document.getElementById('test-punch').disabled = false;
+                
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Tester le GPS';
+            },
+            function(error) {
+                let errorMessage = '';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = '🚫 Géolocalisation refusée. Autorisez-la dans les paramètres du navigateur.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = '📡 Position indisponible. Vérifiez votre connexion GPS.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = '⏱️ Délai dépassé. Le signal GPS est faible.';
+                        break;
+                    default:
+                        errorMessage = '❌ Erreur inconnue.';
+                }
+                
+                result.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+                
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Tester le GPS';
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
+    
+    // Test de pointage
+    document.getElementById('test-punch').addEventListener('click', function() {
+        if (!currentPosition) {
+            alert('Veuillez d\'abord tester le GPS');
+            return;
+        }
+        
+        const button = this;
+        const result = document.getElementById('punch-result');
+        
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Pointage en cours...';
+        
+        // Simuler un appel de pointage
+        setTimeout(() => {
+            result.innerHTML = '<div class="alert alert-success">✅ Pointage simulé avec succès !</div>';
+            
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-clock me-2"></i>Tester le Pointage';
+        }, 1000);
+    });
+    
+    // Fonction de calcul de distance
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // Rayon de la Terre en mètres
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+</script>
+{% endblock %}

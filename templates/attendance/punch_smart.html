@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pointage Intelligent{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' }}">
+<style>
+    .punch-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .time-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .time-display .time {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .time-display .date {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+    
+    .punch-btn {
+        width: 100%;
+        padding: 1.5rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        border-radius: 15px;
+        border: none;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .punch-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .punch-btn:disabled {
+        opacity: 0.6;
+        transform: none;
+    }
+    
+    .location-status {
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .location-ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .location-fallback { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    .location-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    
+    .last-punch {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        border-left: 4px solid #007bff;
+    }
+    
+    .gps-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        width: 60px;
+        height: 30px;
+        background: #ccc;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .toggle-switch.active {
+        background: #007bff;
+    }
+    
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        width: 26px;
+        height: 26px;
+        background: white;
+        border-radius: 50%;
+        top: 2px;
+        left: 2px;
+        transition: left 0.3s;
+    }
+    
+    .toggle-switch.active::after {
+        left: 32px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="punch-container">
+                <!-- Contrôle GPS -->
+                <div class="gps-toggle">
+                    <span class="me-3">GPS</span>
+                    <div class="toggle-switch active" id="gps-toggle" onclick="toggleGPS()"></div>
+                    <span class="ms-3">Activé</span>
+                </div>
+                
+                <!-- Statut de localisation -->
+                <div id="location-status" class="location-status location-ok">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    <span id="location-text">GPS activé - Prêt pour le pointage</span>
+                </div>
+                
+                <!-- Horloge -->
+                <div class="time-display">
+                    <div class="time" id="current-time">{{ "now"|date:"H:i:s" }}</div>
+                    <div class="date" id="current-date">{{ "now"|date:"l d F Y" }}</div>
+                </div>
+                
+                <!-- Formulaire de pointage -->
+                <form method="post" id="punch-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="punch-type" name="punch_type" value="">
+                    <input type="hidden" id="latitude" name="latitude" value="">
+                    <input type="hidden" id="longitude" name="longitude" value="">
+                    <input type="hidden" id="accuracy" name="accuracy" value="">
+                    <input type="hidden" id="gps-disabled" name="gps_disabled" value="false">
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success punch-btn" onclick="punch('in')">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            Pointer Entrée
+                        </button>
+                        
+                        <button type="button" class="btn btn-danger punch-btn" onclick="punch('out')">
+                            <i class="bi bi-arrow-left-circle me-2"></i>
+                            Pointer Sortie
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Informations -->
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Pointage Intelligent :</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>GPS activé : Utilise votre position exacte</li>
+                            <li>GPS désactivé : Utilise les coordonnées du bureau</li>
+                            <li>Fallback automatique en cas d'erreur GPS</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Dernier pointage -->
+                {% if last_attendance %}
+                <div class="last-punch">
+                    <div class="text-muted mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Dernier pointage
+                    </div>
+                    <div>
+                        <strong>
+                            {% if last_attendance.punch_type == 'in' %}
+                                <i class="bi bi-arrow-right-circle text-success me-1"></i>
+                                Entrée
+                            {% else %}
+                                <i class="bi bi-arrow-left-circle text-danger me-1"></i>
+                                Sortie
+                            {% endif %}
+                        </strong>
+                        <br>
+                        <span class="text-muted">
+                            {{ last_attendance.date|date:"d/m/Y" }} à {{ last_attendance.time|time:"H:i" }}
+                        </span>
+                        {% if last_attendance.status != 'normal' %}
+                        <br>
+                        <small class="badge bg-warning">{{ last_attendance.get_status_display }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let gpsEnabled = true;
+    let currentPosition = null;
+    
+    // Horloge en temps réel
+    function updateTime() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const date = now.toLocaleDateString('fr-FR', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        document.getElementById('current-time').textContent = time;
+        document.getElementById('current-date').textContent = date;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Toggle GPS
+    function toggleGPS() {
+        const toggle = document.getElementById('gps-toggle');
+        const status = document.getElementById('location-status');
+        const text = document.getElementById('location-text');
+        
+        gpsEnabled = !gpsEnabled;
+        
+        if (gpsEnabled) {
+            toggle.classList.add('active');
+            status.className = 'location-status location-ok';
+            text.innerHTML = '<i class="bi bi-geo-alt me-2"></i>GPS activé - Prêt pour le pointage';
+            document.getElementById('gps-disabled').value = 'false';
+        } else {
+            toggle.classList.remove('active');
+            status.className = 'location-status location-fallback';
+            text.innerHTML = '<i class="bi bi-building me-2"></i>Mode bureau - Coordonnées fixes';
+            document.getElementById('gps-disabled').value = 'true';
+        }
+    }
+    
+    // Fonction de pointage intelligente
+    function punch(type) {
+        document.getElementById('punch-type').value = type;
+        
+        const buttons = document.querySelectorAll('.punch-btn');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Pointage en cours...';
+        });
+        
+        if (gpsEnabled) {
+            // Essayer le GPS d'abord
+            getCurrentPosition()
+                .then(position => {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                    document.getElementById('accuracy').value = position.coords.accuracy;
+                    submitForm();
+                })
+                .catch(error => {
+                    console.log('GPS failed, using fallback:', error);
+                    useOfficeCoordinates();
+                });
+        } else {
+            // Utiliser directement les coordonnées du bureau
+            useOfficeCoordinates();
+        }
+    }
+    
+    // Utiliser les coordonnées du bureau
+    function useOfficeCoordinates() {
+        document.getElementById('latitude').value = '6.140766';
+        document.getElementById('longitude').value = '1.241907';
+        document.getElementById('accuracy').value = '100';
+        submitForm();
+    }
+    
+    // Soumettre le formulaire
+    function submitForm() {
+        document.getElementById('punch-form').submit();
+    }
+    
+    // Fonction GPS avec Promise
+    function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported'));
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                resolve,
+                reject,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 30000
+                }
+            );
+        });
+    }
+    
+    // Test GPS au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        if (gpsEnabled) {
+            getCurrentPosition()
+                .then(position => {
+                    currentPosition = position;
+                    console.log('GPS ready:', position.coords);
+                })
+                .catch(error => {
+                    console.log('GPS not available:', error);
+                });
+        }
+    });
+</script>
+{% endblock %}

@@ -27,16 +27,17 @@ from accounts.models import EmployeeProfile, Department
 from attendance.models import Attendance, AttendanceAnomaly
 from leave.models import LeaveRequest, LeaveBalance
 
+# Import du mixin centralisé (principe DRY)
+from common.mixins import (
+    EnhancedLoginRequiredMixin, 
+    EmployeeRequiredMixin, 
+    ManagerRequiredMixin, 
+    RHRequiredMixin,
+    AdminRequiredMixin
+)
 
-class LoginRequiredMixin:
-    """Mixin pour exiger une authentification."""
-    
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
 
-
-class DashboardView(LoginRequiredMixin, TemplateView):
+class DashboardView(EnhancedLoginRequiredMixin, TemplateView):
     """
     Vue principale du tableau de bord qui redirige selon le rôle de l'utilisateur.
     """
@@ -59,7 +60,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             return redirect('dashboard:employee_dashboard')
 
 
-class EmployeeDashboardView(LoginRequiredMixin, TemplateView):
+class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
     """
     Tableau de bord pour les employés.
     """
@@ -128,7 +129,7 @@ class EmployeeDashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ManagerDashboardView(LoginRequiredMixin, TemplateView):
+class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
     """
     Tableau de bord pour les managers.
     """
@@ -196,7 +197,7 @@ class ManagerDashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class RHDGDashboardView(LoginRequiredMixin, TemplateView):
+class RHDGDashboardView(RHRequiredMixin, TemplateView):
     """
     Tableau de bord pour les RH/DG.
     """

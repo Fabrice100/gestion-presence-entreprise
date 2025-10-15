@@ -28,21 +28,12 @@ from .models import EmployeeProfile, Department
 from .forms import DepartmentForm, EmployeeProfileForm, EmployeeCreateFormSimple
 from .user_services import UserService
 
+# Import du mixin centralisé (principe DRY)
+from common.mixins import RHRequiredMixin as BaseRHRequiredMixin
 
-class HRRequiredMixin:
-    """Mixin pour exiger le rôle RH/DG."""
-    
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        if not hasattr(self.request.user, 'employee_profile'):
-            messages.error(self.request, 'Profil employé non trouvé.')
-            return redirect('dashboard:dashboard')
-        
-        if not self.request.user.employee_profile.is_rh_dg():
-            messages.error(self.request, 'Accès refusé. Seuls les RH/DG peuvent accéder à cette fonctionnalité.')
-            return redirect('dashboard:dashboard')
-        
-        return super().dispatch(*args, **kwargs)
+
+# Alias pour la compatibilité
+HRRequiredMixin = BaseRHRequiredMixin
 
 
 class DepartmentListView(HRRequiredMixin, ListView):

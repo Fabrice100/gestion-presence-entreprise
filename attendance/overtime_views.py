@@ -13,7 +13,7 @@ Version: 1.0
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, UpdateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import EmployeeRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse
@@ -24,37 +24,27 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from .models import OvertimeRecord, OvertimeConfiguration
-from .overtime_forms import OvertimeRecordForm, OvertimeApprovalForm
+from .overtime_models import OvertimeRequest, OvertimeRecord, OvertimeConfiguration
+from .overtime_forms import OvertimeRequestForm, OvertimeRecordForm
+
+# Import des mixins centralisés (principe DRY)
+from common.mixins import (
+    EnhancedEmployeeRequiredMixin,
+    EmployeeRequiredMixin,
+    ManagerRequiredMixin as BaseManagerRequiredMixin,
+    RHRequiredMixin as BaseRHRequiredMixin
+)
 from accounts.models import EmployeeProfile
 
 
-# Mixins pour les permissions
-
-class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Mixin pour vérifier si l'utilisateur est un manager."""
-    
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.employee_profile.is_manager()
-    
-    def handle_no_permission(self):
-        messages.error(self.request, "Vous n'avez pas les permissions nécessaires pour accéder à cette page.")
-        return redirect('dashboard:dashboard')
-
-
-class RHRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Mixin pour vérifier si l'utilisateur est RH/DG."""
-    
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.employee_profile.is_rh_dg()
-    
-    def handle_no_permission(self):
-        messages.error(self.request, "Vous n'avez pas les permissions nécessaires pour accéder à cette page.")
-        return redirect('dashboard:dashboard')
+# Alias pour la compatibilité
+ManagerRequiredMixin = BaseManagerRequiredMixin
+RHRequiredMixin = BaseRHRequiredMixin
 
 
 # Vues pour les enregistrements d'heures supplémentaires
 
-class OvertimeRecordListView(LoginRequiredMixin, ListView):
+class OvertimeRecordListView(EmployeeRequiredMixin, ListView):
     """
     Vue pour lister les enregistrements d'heures supplémentaires.
     """
@@ -99,7 +89,7 @@ class OvertimeRecordListView(LoginRequiredMixin, ListView):
         return context
 
 
-class OvertimeRecordDetailView(LoginRequiredMixin, DetailView):
+class OvertimeRecordDetailView(EmployeeRequiredMixin, DetailView):
     """
     Vue pour afficher les détails d'un enregistrement d'heures supplémentaires.
     """
@@ -125,7 +115,7 @@ class OvertimeRecordDetailView(LoginRequiredMixin, DetailView):
             return OvertimeRecord.objects.none()
 
 
-class OvertimeApprovalListView(LoginRequiredMixin, ListView):
+class OvertimeApprovalListView(EmployeeRequiredMixin, ListView):
     """
     Vue pour lister les enregistrements en attente de validation.
     """
@@ -167,12 +157,12 @@ class OvertimeApprovalListView(LoginRequiredMixin, ListView):
         return context
 
 
-class OvertimeApprovalProcessView(LoginRequiredMixin, UpdateView):
+class OvertimeApprovalProcessView(EmployeeRequiredMixin, UpdateView):
     """
     Vue pour traiter la validation d'un enregistrement d'heures supplémentaires.
     """
     model = OvertimeRecord
-    form_class = OvertimeApprovalForm
+    form_class = OvertimeRecordForm
     template_name = 'attendance/overtime_approval_process.html'
     context_object_name = 'record'
 

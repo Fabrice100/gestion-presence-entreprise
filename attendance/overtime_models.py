@@ -295,10 +295,12 @@ class OvertimeRecord(models.Model):
     
     def is_holiday(self):
         """Vérifie si la date est un jour férié."""
-        # Vérification des jours fériés (à implémenter si nécessaire)
-        # from leave.models import Holiday
-        # return Holiday.objects.filter(date=self.date, is_active=True).exists()
-        return False
+        try:
+            from attendance.lazy_imports import get_leave_models
+            Holiday = get_leave_models()
+            return Holiday.objects.filter(date=self.date, is_active=True).exists()
+        except ImportError:
+            return False
     
     def is_night_shift(self):
         """Vérifie si les heures supplémentaires sont de nuit."""

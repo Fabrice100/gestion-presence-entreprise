@@ -53,17 +53,17 @@ class CompanySettings(models.Model):
     )
     
     site_center_latitude = models.FloatField(
-        default=6.1304,
+        default=6.140766,
         validators=[MinValueValidator(-90), MaxValueValidator(90)],
         verbose_name="Latitude du bureau",
-        help_text="Coordonnée GPS latitude du bureau principal (ex: 6.1304 pour Lomé)"
+        help_text="Coordonnée GPS latitude du bureau principal (ex: 6.140766)"
     )
     
     site_center_longitude = models.FloatField(
-        default=1.2158,
+        default=1.241907,
         validators=[MinValueValidator(-180), MaxValueValidator(180)],
         verbose_name="Longitude du bureau",
-        help_text="Coordonnée GPS longitude du bureau principal (ex: 1.2158 pour Lomé)"
+        help_text="Coordonnée GPS longitude du bureau principal (ex: 1.241907)"
     )
     
     allowed_radius_meters = models.IntegerField(
@@ -74,10 +74,10 @@ class CompanySettings(models.Model):
     )
     
     gps_accuracy_max_meters = models.IntegerField(
-        default=50,
-        validators=[MinValueValidator(10), MaxValueValidator(200)],
-        verbose_name="Précision GPS minimale (mètres)",
-        help_text="Précision GPS minimale acceptée (ex: 50m)"
+        default=200,
+        validators=[MinValueValidator(10), MaxValueValidator(500)],
+        verbose_name="Précision GPS maximale (mètres)",
+        help_text="Précision GPS maximale acceptée (ex: 200m)"
     )
     
     # Métadonnées

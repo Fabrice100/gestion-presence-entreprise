@@ -1,0 +1,1 @@
+# Module de tests pour le système de gestion de présence

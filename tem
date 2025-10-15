@@ -1,0 +1,39 @@
+[33mcommit d02c29180fb3a0740ea9bef399a2d6170bb56bde[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Fabrice <husunukpefabrice@gmail.com>
+Date:   Tue Oct 14 08:00:40 2025 +0000
+
+    refactor: Nettoyage et optimisation du système
+    
+     Corrections apportées:
+    - Configuration admin stricte (Django Admin uniquement)
+    - Suppression des exports inutiles (liste employés, données brutes)
+    - Nettoyage des services d'export
+    - Suppression des vues placeholder non fonctionnelles
+    - Optimisation des templates et JavaScript
+    - Séparation claire admin technique vs employés métier
+    
+     Améliorations:
+    - Interface simplifiée et plus claire
+    - Performance améliorée (moins de code inutile)
+    - Sécurité renforcée pour les admins
+    - Focus sur les fonctionnalités utiles
+    
+     Prochaines étapes:
+    - Amélioration visuelle des interfaces
+    - Finalisation des fonctionnalités manquantes
+
+ accounts/admin_middleware.py             |  38 [32m++++++++[m
+ accounts/auth_backend.py                 |   4 [32m+[m
+ accounts/dashboard_urls.py               |   2 [32m+[m[31m-[m
+ accounts/dashboard_views.py              |  27 [32m+[m[31m-----[m
+ accounts/views.py                        |  24 [32m+++[m[31m--[m
+ attendance_system/settings.py            |   1 [32m+[m
+ reports/export_services.py               |   6 [32m+[m[31m-[m
+ reports/report_views.py                  |  38 [32m++[m[31m------[m
+ templates/accounts/login.html            |   4 [32m+[m[31m-[m
+ templates/base.html                      |   8 [31m--[m
+ templates/dashboard/admin_dashboard.html | 155 [31m-------------------------------[m
+ templates/dashboard/rh_dg_dashboard.html |   2 [32m+[m[31m-[m
+ templates/hr/user_list.html              |  65 [31m-------------[m
+ templates/reports/attendance_report.html |  56 [32m+[m[31m----------[m
+ 14 files changed, 80 insertions(+), 350 deletions(-)

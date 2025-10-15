@@ -27,6 +27,13 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+# Import du mixin centralisé (principe DRY)
+from common.mixins import (
+    EnhancedLoginRequiredMixin, 
+    AdminRequiredMixin,
+    EmployeeRequiredMixin
+)
+
 from .models import EmployeeProfile, Department
 
 
@@ -59,67 +66,28 @@ class CustomLogoutView(View):
 
 class CustomLoginView(LoginView):
     """
-    Vue de connexion personnalisée avec redirection par rôle.
-    Note: Les admins ne peuvent pas se connecter via cette interface.
+    Vue de connexion personnalisée.
+    
+    Utilise le backend d'authentification personnalisé pour permettre
+    la connexion avec l'ID Employé.
     """
     template_name = 'accounts/login.html'
     
-    def form_valid(self, form):
-        """
-        Validation du formulaire de connexion.
-        Empêche les admins de se connecter via le site web.
-        """
-        user = form.get_user()
-        
-        # Si superuser (admin technique), empêcher la connexion via le site
-        if user.is_superuser:
-            messages.error(self.request, 'Les administrateurs doivent utiliser Django Admin (/admin/) pour se connecter.')
-            return self.form_invalid(form)
-        
-        return super().form_valid(form)
-    
-    
     def get_success_url(self):
-        """
-        Redirige l'utilisateur vers la page appropriée selon son rôle.
-        Note: Les admins utilisent directement /admin/ pour l'authentification.
-        """
-        user = self.request.user
-        
-        # Les admins ne passent pas par cette vue de connexion
-        # Ils utilisent directement /admin/ pour l'authentification Django Admin
-        
-        # Redirection selon le rôle métier (pas d'admin technique ici)
-        try:
-            profile = user.employee_profile
-            
-            if profile.role == 'rh_dg':
-                return reverse_lazy('dashboard:rh_dg_dashboard')
-            elif profile.role == 'manager':
-                return reverse_lazy('dashboard:manager_dashboard')
-            elif profile.role == 'employee':
-                # Si l'employé peut pointer, rediriger vers le pointage
-                if profile.can_punch:
-                    return reverse_lazy('attendance:punch')
-                else:
-                    return reverse_lazy('dashboard:employee_dashboard')
-            else:
-                return reverse_lazy('dashboard:employee_dashboard')
-                
-        except EmployeeProfile.DoesNotExist:
-            # Si pas de profil, c'est probablement un admin technique
-            return reverse_lazy('dashboard:employee_dashboard')
-
-
-class LoginRequiredMixin:
-    """Mixin pour exiger une authentification."""
+        """Redirige vers le tableau de bord après connexion."""
+        return reverse_lazy('dashboard:dashboard')
     
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+    def form_valid(self, form):
+        """Traite la connexion réussie."""
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f'Bienvenue {self.request.user.get_full_name() or self.request.user.username} !'
+        )
+        return response
 
 
-class ProfileView(LoginRequiredMixin, TemplateView):
+class ProfileView(EnhancedLoginRequiredMixin, TemplateView):
     """
     Vue pour afficher le profil de l'utilisateur connecté.
     """
@@ -131,13 +99,13 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ProfileEditView(LoginRequiredMixin, UpdateView):
+class ProfileEditView(EnhancedLoginRequiredMixin, UpdateView):
     """
     Vue pour modifier le profil de l'utilisateur connecté.
     """
     model = EmployeeProfile
     template_name = 'accounts/profile_edit.html'
-    fields = ['address']
+    fields = ['phone', 'address']
     success_url = reverse_lazy('accounts:profile')
     
     def get_object(self):
@@ -150,7 +118,7 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class UserListView(LoginRequiredMixin, ListView):
+class UserListView(AdminRequiredMixin, ListView):
     """
     Vue pour lister tous les utilisateurs (admin seulement).
     """
@@ -195,7 +163,7 @@ class UserListView(LoginRequiredMixin, ListView):
         return context
 
 
-class UserDetailView(LoginRequiredMixin, DetailView):
+class UserDetailView(AdminRequiredMixin, DetailView):
     """
     Vue pour afficher les détails d'un utilisateur.
     """
@@ -205,14 +173,12 @@ class UserDetailView(LoginRequiredMixin, DetailView):
     
     def get_queryset(self):
         """Filtre selon les permissions."""
-        if not self.request.user.employee_profile.is_admin():
-            return User.objects.none()
         return User.objects.select_related('employee_profile').exclude(
             employee_profile__role__in=['admin', 'rh_dg']
         )
 
 
-class UserEditView(LoginRequiredMixin, UpdateView):
+class UserEditView(AdminRequiredMixin, UpdateView):
     """
     Vue pour modifier un utilisateur (admin seulement).
     """
@@ -254,7 +220,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
         return Department.objects.filter(is_active=True).prefetch_related('employees')
 
 
-class DepartmentDetailView(LoginRequiredMixin, DetailView):
+class DepartmentDetailView(EnhancedLoginRequiredMixin, DetailView):
     """
     Vue pour afficher les détails d'un département.
     """

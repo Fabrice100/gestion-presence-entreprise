@@ -268,7 +268,7 @@ class EmployeeProfile(models.Model):
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-@receiver(pre_save, sender='accounts.EmployeeProfile')
+@receiver(pre_save, sender=EmployeeProfile)
 def assign_department_manager(sender, instance, **kwargs):
     """
     Assigne automatiquement le manager du département à l'employé

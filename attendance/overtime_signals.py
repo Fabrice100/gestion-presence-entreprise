@@ -16,7 +16,9 @@ from django.utils import timezone
 from datetime import date, timedelta
 import logging
 
-from .models import Attendance, OvertimeRecord
+from .models import Attendance
+# Import tardif pour éviter les imports circulaires
+# from .models import OvertimeRecord
 from .overtime_service import OvertimeCalculationService
 
 logger = logging.getLogger(__name__)
@@ -72,11 +74,13 @@ def recalculate_overtime_on_attendance_delete(sender, instance, **kwargs):
     """
     Recalcule les heures supplémentaires après suppression d'un pointage.
     """
-    try:
+    # Temporairement désactivé pour éviter les imports circulaires
+    pass
+    # try:
         target_date = instance.date
         
         # Supprimer les enregistrements d'heures supplémentaires existants pour cette date
-        OvertimeRecord.objects.filter(
+        # OvertimeRecord.objects.filter(
             employee=instance.employee,
             date=target_date
         ).delete()

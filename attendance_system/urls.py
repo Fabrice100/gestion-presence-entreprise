@@ -25,12 +25,12 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='landing.html'), name='landing'),
     
     # Interface utilisateur
-           path('accounts/', include('accounts.urls')),
-           path('attendance/', include('attendance.urls')),
-           path('leave/', include('leave.urls')),
-           path('reports/', include('reports.urls')),
-           path('dashboard/', include('accounts.dashboard_urls')),
-           
+    path('accounts/', include('accounts.urls')),
+    path('attendance/', include('attendance.urls')),
+    path('leave/', include('leave.urls')),
+    path('reports/', include('reports.urls')),
+    path('dashboard/', include('accounts.dashboard_urls')),
+    
     # Interface RH/DG
     path('hr/', include('accounts.hr_urls')),
 

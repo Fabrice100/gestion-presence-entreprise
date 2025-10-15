@@ -386,3 +386,282 @@ class AttendanceAnomalyAdmin(admin.ModelAdmin):
         )
     mark_as_ignored.short_description = "Marquer comme ignorées"
 
+
+# Import tardif des modèles d'overtime pour éviter les imports circulaires
+# Temporairement désactivé pour résoudre les problèmes d'indentation
+# try:
+#     from .overtime_models import OvertimeConfiguration, OvertimeRecord
+# except ImportError:
+#     OvertimeConfiguration = None
+#     OvertimeRecord = None
+
+# OvertimeConfiguration = None
+# OvertimeRecord = None
+
+# if OvertimeConfiguration:
+#     @admin.register(OvertimeConfiguration)
+#     class OvertimeConfigurationAdmin(admin.ModelAdmin):
+        """
+        Configuration de l'administration pour le modèle OvertimeConfiguration.
+        """
+        
+        list_display = [
+            'name',
+            'config_type_display',
+            'daily_hours_limit',
+            'weekly_hours_limit',
+            'is_active_display',
+            'created_at'
+        ]
+        
+        list_filter = [
+            'config_type',
+            'is_active',
+            'created_at'
+        ]
+        
+        search_fields = [
+            'name',
+            'config_type'
+        ]
+    
+        ordering = ['config_type', 'name']
+    
+        fieldsets = (
+        ('Informations générales', {
+            'fields': (
+                'name',
+                'config_type',
+                'is_active'
+            )
+        }),
+        ('Règles de déclenchement', {
+            'fields': (
+                'daily_hours_limit',
+                'weekly_hours_limit'
+            )
+        }),
+        ('Heures spécifiques', {
+            'fields': (
+                'night_start_hour',
+                'night_end_hour'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+        )
+    
+        readonly_fields = ['created_at', 'updated_at']
+    
+        def config_type_display(self, obj):
+        """Affiche le type de configuration avec une couleur."""
+        colors = {
+            'daily': 'blue',
+            'weekly': 'green',
+            'weekend': 'orange',
+            'holiday': 'red',
+            'night': 'purple'
+        }
+        color = colors.get(obj.config_type, 'black')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_config_type_display()
+        )
+        config_type_display.short_description = "Type"
+    
+    
+        def is_active_display(self, obj):
+        """Affiche le statut actif avec une couleur."""
+        if obj.is_active:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Actif</span>'
+            )
+        else:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">✗ Inactif</span>'
+            )
+        is_active_display.short_description = "Statut"
+
+
+if OvertimeRecord:
+    @admin.register(OvertimeRecord)
+    class OvertimeRecordAdmin(admin.ModelAdmin):
+        """
+        Configuration de l'administration pour le modèle OvertimeRecord.
+        """
+        
+        list_display = [
+        'employee_name',
+        'date',
+        'overtime_type_display',
+        'overtime_hours',
+        'status_display',
+        'manager_decision_display',
+        'rh_decision_display',
+        'created_at'
+        ]
+    
+        list_filter = [
+        'overtime_type',
+        'status',
+        'manager_decision',
+        'rh_decision',
+        'date',
+        'created_at'
+        ]
+    
+        search_fields = [
+        'employee__first_name',
+        'employee__last_name',
+        'employee__username'
+        ]
+    
+        ordering = ['-created_at']
+    
+        fieldsets = (
+        ('Informations de l\'enregistrement', {
+            'fields': (
+                'employee',
+                'overtime_type',
+                'date',
+                'normal_hours',
+                'overtime_hours',
+                'total_hours'
+            )
+        }),
+        ('Pointages concernés', {
+            'fields': ('attendance_records',),
+            'classes': ('collapse',)
+        }),
+        ('Validation Manager', {
+            'fields': (
+                'manager',
+                'manager_decision',
+                'manager_comment',
+                'manager_decision_at'
+            )
+        }),
+        ('Validation RH/DG', {
+            'fields': (
+                'rh_decision',
+                'rh_comment',
+                'rh_decision_at'
+            )
+        }),
+        ('Statut général', {
+            'fields': ('status',)
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+        )
+    
+        readonly_fields = ['normal_hours', 'overtime_hours', 'total_hours', 'created_at', 'updated_at']
+    
+        def employee_name(self, obj):
+        """Affiche le nom de l'employé."""
+        try:
+            profile = obj.employee.employee_profile
+            return f"{obj.employee.get_full_name() or obj.employee.username} ({profile.employee_id})"
+        except:
+            return obj.employee.get_full_name() or obj.employee.username
+        employee_name.short_description = "Employé"
+    
+        def overtime_type_display(self, obj):
+        """Affiche le type d'heures supplémentaires avec une couleur."""
+        colors = {
+            'daily': 'blue',
+            'weekly': 'green',
+            'weekend': 'orange',
+            'holiday': 'red',
+            'night': 'purple'
+        }
+        color = colors.get(obj.overtime_type, 'black')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_overtime_type_display()
+        )
+        overtime_type_display.short_description = "Type"
+    
+        def status_display(self, obj):
+        """Affiche le statut avec une couleur."""
+        colors = {
+            'detected': 'blue',
+            'pending_approval': 'orange',
+            'approved': 'green',
+            'rejected': 'red',
+            'disputed': 'purple'
+        }
+        color = colors.get(obj.status, 'black')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+        status_display.short_description = "Statut"
+    
+        def manager_decision_display(self, obj):
+        """Affiche la décision du manager."""
+        if obj.manager_decision:
+            colors = {
+                'approved': 'green',
+                'rejected': 'red',
+                'pending_approval': 'orange'
+            }
+            color = colors.get(obj.manager_decision, 'black')
+            
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color,
+                obj.get_manager_decision_display()
+            )
+        return "En attente"
+        manager_decision_display.short_description = "Manager"
+    
+        def rh_decision_display(self, obj):
+        """Affiche la décision RH."""
+        if obj.rh_decision:
+            colors = {
+                'approved': 'green',
+                'rejected': 'red',
+                'pending_approval': 'orange'
+            }
+            color = colors.get(obj.rh_decision, 'black')
+            
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color,
+                obj.get_rh_decision_display()
+            )
+        return "En attente"
+        rh_decision_display.short_description = "RH/DG"
+    
+        actions = ['approve_records', 'reject_records']
+    
+        def approve_records(self, request, queryset):
+        """Approuve les enregistrements sélectionnés."""
+        updated = queryset.update(status='approved')
+        self.message_user(
+            request,
+            f'{updated} enregistrement(s) ont été approuvé(s).'
+        )
+        approve_records.short_description = "Approuver les enregistrements sélectionnés"
+    
+        def reject_records(self, request, queryset):
+        """Rejette les enregistrements sélectionnés."""
+        updated = queryset.update(status='rejected')
+        self.message_user(
+            request,
+            f'{updated} enregistrement(s) ont été rejeté(s).'
+        )
+        reject_records.short_description = "Rejeter les enregistrements sélectionnés"
+

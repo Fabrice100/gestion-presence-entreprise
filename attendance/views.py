@@ -14,7 +14,6 @@ Version: 1.0
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, DetailView, CreateView
@@ -26,16 +25,11 @@ import json
 
 from .models import Attendance, AttendanceAnomaly
 
-
-class LoginRequiredMixin:
-    """Mixin pour exiger une authentification."""
-    
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+# Import du mixin centralisé (principe DRY)
+from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
 
 
-class PunchView(LoginRequiredMixin, TemplateView):
+class PunchView(EmployeeRequiredMixin, TemplateView):
     """Vue principale pour le pointage."""
     template_name = 'attendance/punch.html'
     
@@ -45,8 +39,12 @@ class PunchView(LoginRequiredMixin, TemplateView):
         today = date.today()
         
         # Vérifier si l'utilisateur peut pointer
-        if not user.employee_profile.can_punch:
-            messages.error(self.request, 'Vous n\'êtes pas autorisé à pointer.')
+        try:
+            if not user.employee_profile.can_punch:
+                messages.error(self.request, 'Vous n\'êtes pas autorisé à pointer.')
+                return redirect('dashboard:dashboard')
+        except:
+            messages.error(self.request, 'Vous n\'avez pas de profil employé. Contactez l\'administrateur.')
             return redirect('dashboard:dashboard')
         
         # Pointages du jour
@@ -92,8 +90,12 @@ class PunchView(LoginRequiredMixin, TemplateView):
         settings = CompanySettings.load()
         
         # Vérifier les permissions
-        if not user.employee_profile.can_punch:
-            messages.error(request, 'Vous n\'êtes pas autorisé à pointer.')
+        try:
+            if not user.employee_profile.can_punch:
+                messages.error(request, 'Vous n\'êtes pas autorisé à pointer.')
+                return redirect('dashboard:dashboard')
+        except:
+            messages.error(request, 'Vous n\'avez pas de profil employé. Contactez l\'administrateur.')
             return redirect('dashboard:dashboard')
         
         punch_type = request.POST.get('punch_type')
@@ -101,27 +103,43 @@ class PunchView(LoginRequiredMixin, TemplateView):
         longitude_str = request.POST.get('longitude', '')
         accuracy_str = request.POST.get('accuracy', '')
         
-        # === VALIDATION GPS OBLIGATOIRE ===
-        if not latitude_str or not longitude_str or latitude_str == '0.0':
-            messages.error(
-                request,
-                '🚫 Géolocalisation requise ! Veuillez activer le GPS et autoriser la localisation.'
-            )
-            return redirect('attendance:punch')
+        # === MODE GPS : FLEXIBLE COMME LES VRAIES APPS ===
+        demo_mode = request.POST.get('demo_mode', 'false') == 'true'
+        gps_disabled = request.POST.get('gps_disabled', 'false') == 'true'
+        
+        # Si pas de GPS ET pas en mode démo → utiliser les coordonnées du bureau
+        if not demo_mode and (not latitude_str or not longitude_str or latitude_str == '0.0'):
+            if not gps_disabled:
+                messages.warning(
+                    request,
+                    '⚠️ Géolocalisation non disponible. Utilisation des coordonnées du bureau.'
+                )
+            # Utiliser les coordonnées du bureau par défaut
+            latitude_str = str(settings.site_center_latitude)
+            longitude_str = str(settings.site_center_longitude)
+            accuracy_str = '100'  # Précision moyenne
         
         try:
-            latitude = float(latitude_str)
-            longitude = float(longitude_str)
-            accuracy = float(accuracy_str) if accuracy_str else 999.0
+            if demo_mode:
+                # Mode démo : utiliser les coordonnées du bureau
+                latitude = float(settings.site_center_latitude)
+                longitude = float(settings.site_center_longitude)
+                accuracy = 5.0  # Précision parfaite en mode démo
+            else:
+                latitude = float(latitude_str)
+                longitude = float(longitude_str)
+                accuracy = float(accuracy_str) if accuracy_str else 999.0
         except ValueError:
             messages.error(request, '❌ Données GPS invalides.')
             return redirect('attendance:punch')
         
         # === VALIDATION PRÉCISION GPS ===
-        if accuracy > settings.gps_accuracy_max_meters:
-            messages.warning(
+        if not demo_mode and accuracy > settings.gps_accuracy_max_meters:
+            messages.error(
                 request,
-                f'⚠️  Précision GPS insuffisante ({accuracy:.0f}m). Essayez à l\'extérieur ou près d\'une fenêtre.'
+                f'❌ Précision GPS trop faible ({accuracy:.0f}m). '
+                f'Précision maximale autorisée: {settings.gps_accuracy_max_meters}m. '
+                f'Veuillez vous rapprocher d\'une fenêtre ou sortir à l\'extérieur.'
             )
             return redirect('attendance:punch')
         
@@ -146,7 +164,7 @@ class PunchView(LoginRequiredMixin, TemplateView):
         )
         
         # === VALIDATION ZONE AUTORISÉE ===
-        if distance > settings.allowed_radius_meters:
+        if not demo_mode and distance > settings.allowed_radius_meters:
             messages.error(
                 request,
                 f'🚫 Vous êtes trop loin du bureau ({distance:.0f}m). '
@@ -155,6 +173,9 @@ class PunchView(LoginRequiredMixin, TemplateView):
             return redirect('attendance:punch')
         
         # === VÉRIFICATION DOUBLONS ===
+        # === CONTRÔLES DE COHÉRENCE ===
+        
+        # 1. Vérification doublon
         existing_punch = Attendance.objects.filter(
             employee=user,
             date=today,
@@ -167,6 +188,35 @@ class PunchView(LoginRequiredMixin, TemplateView):
                 f'❌ Pointage {"d\'entrée" if punch_type == "in" else "de sortie"} déjà effectué aujourd\'hui.'
             )
             return redirect('attendance:punch')
+        
+        # 2. Contrôle : Sortie sans entrée
+        if punch_type == 'out':
+            has_entry = Attendance.objects.filter(
+                employee=user,
+                date=today,
+                punch_type='in'
+            ).exists()
+            
+            if not has_entry:
+                messages.error(
+                    request,
+                    '❌ Impossible de pointer la sortie sans avoir pointé l\'arrivée.'
+                )
+                return redirect('attendance:punch')
+        
+        # 3. Contrôle : Entrée après sortie
+        if punch_type == 'in':
+            last_punch = Attendance.objects.filter(
+                employee=user,
+                date=today
+            ).order_by('-time').first()
+            
+            if last_punch and last_punch.punch_type == 'out':
+                messages.error(
+                    request,
+                    '❌ Impossible de pointer l\'arrivée après avoir pointé la sortie.'
+                )
+                return redirect('attendance:punch')
         
         # === DÉTECTION STATUT (retard, normal, etc.) ===
         status = 'normal'
@@ -230,7 +280,7 @@ class PunchView(LoginRequiredMixin, TemplateView):
         return ip
 
 
-class PunchInView(LoginRequiredMixin, CreateView):
+class PunchInView(EmployeeRequiredMixin, CreateView):
     """Vue pour le pointage d'entrée."""
     model = Attendance
     fields = ['notes']
@@ -287,7 +337,7 @@ class PunchInView(LoginRequiredMixin, CreateView):
         return ip
 
 
-class PunchOutView(LoginRequiredMixin, CreateView):
+class PunchOutView(EmployeeRequiredMixin, CreateView):
     """Vue pour le pointage de sortie."""
     model = Attendance
     fields = ['notes']
@@ -364,8 +414,8 @@ class PunchOutView(LoginRequiredMixin, CreateView):
         return ip
 
 
-class MyAttendanceView(LoginRequiredMixin, ListView):
-    """Vue pour consulter ses propres présences."""
+class MyAttendanceView(EmployeeRequiredMixin, ListView):
+    """Vue pour consulter ses propres pointages."""
     model = Attendance
     template_name = 'attendance/my_attendance.html'
     context_object_name = 'attendances'
@@ -393,7 +443,7 @@ class MyAttendanceView(LoginRequiredMixin, ListView):
         return queryset
 
 
-class PunchAPIView(LoginRequiredMixin, TemplateView):
+class PunchAPIView(EmployeeRequiredMixin, TemplateView):
     """API pour le pointage via AJAX."""
     
     def post(self, request, *args, **kwargs):

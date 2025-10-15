@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pointage - Mode Démo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' }}">
+<style>
+    .punch-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .time-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .time-display .time {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .time-display .date {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+    
+    .punch-btn {
+        width: 100%;
+        padding: 1.5rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        border-radius: 15px;
+        border: none;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .punch-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .punch-btn:disabled {
+        opacity: 0.6;
+        transform: none;
+    }
+    
+    .demo-badge {
+        background: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: inline-block;
+    }
+    
+    .last-punch {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        border-left: 4px solid #007bff;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-online { background: #28a745; }
+    .status-demo { background: #ffc107; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="punch-container">
+                <!-- Mode Démo -->
+                <div class="text-center mb-4">
+                    <span class="demo-badge">
+                        <i class="bi bi-play-circle me-1"></i>
+                        MODE DÉMO POUR PRÉSENTATION
+                    </span>
+                </div>
+                
+                <!-- Horloge -->
+                <div class="time-display">
+                    <div class="time" id="current-time">{{ "now"|date:"H:i:s" }}</div>
+                    <div class="date" id="current-date">{{ "now"|date:"l d F Y" }}</div>
+                </div>
+                
+                <!-- Formulaire de pointage -->
+                <form method="post" id="punch-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="punch-type" name="punch_type" value="">
+                    <input type="hidden" id="latitude" name="latitude" value="">
+                    <input type="hidden" id="longitude" name="longitude" value="">
+                    <input type="hidden" id="accuracy" name="accuracy" value="">
+                    <input type="hidden" name="demo_mode" value="true">
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success punch-btn" onclick="punch('in')">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            <span class="status-indicator status-online"></span>
+                            Pointer Entrée
+                        </button>
+                        
+                        <button type="button" class="btn btn-danger punch-btn" onclick="punch('out')">
+                            <i class="bi bi-arrow-left-circle me-2"></i>
+                            <span class="status-indicator status-online"></span>
+                            Pointer Sortie
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Informations démo -->
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Mode Démo :</strong> Pointage simulé avec coordonnées du bureau
+                        <br>
+                        <small>Lat: 6.140766, Lng: 1.241907 (Précision: 5m)</small>
+                    </div>
+                </div>
+                
+                <!-- Dernier pointage -->
+                {% if last_attendance %}
+                <div class="last-punch">
+                    <div class="text-muted mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Dernier pointage
+                    </div>
+                    <div>
+                        <strong>
+                            {% if last_attendance.punch_type == 'in' %}
+                                <i class="bi bi-arrow-right-circle text-success me-1"></i>
+                                Entrée
+                            {% else %}
+                                <i class="bi bi-arrow-left-circle text-danger me-1"></i>
+                                Sortie
+                            {% endif %}
+                        </strong>
+                        <br>
+                        <span class="text-muted">
+                            {{ last_attendance.date|date:"d/m/Y" }} à {{ last_attendance.time|time:"H:i" }}
+                        </span>
+                        {% if last_attendance.status != 'normal' %}
+                        <br>
+                        <small class="badge bg-warning">{{ last_attendance.get_status_display }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Horloge en temps réel
+    function updateTime() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const date = now.toLocaleDateString('fr-FR', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        document.getElementById('current-time').textContent = time;
+        document.getElementById('current-date').textContent = date;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Fonction de pointage en mode démo
+    function punch(type) {
+        document.getElementById('punch-type').value = type;
+        
+        // Coordonnées du bureau (mode démo)
+        document.getElementById('latitude').value = '6.140766';
+        document.getElementById('longitude').value = '1.241907';
+        document.getElementById('accuracy').value = '5.0';
+        
+        // Désactiver les boutons
+        const buttons = document.querySelectorAll('.punch-btn');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Pointage en cours...';
+        });
+        
+        // Soumettre le formulaire
+        document.getElementById('punch-form').submit();
+    }
+    
+    // Animation d'entrée
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.querySelector('.punch-container');
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            container.style.transition = 'all 0.5s ease';
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 100);
+    });
+</script>
+{% endblock %}

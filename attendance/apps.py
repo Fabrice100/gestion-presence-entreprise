@@ -11,4 +11,4 @@ class AttendanceConfig(AppConfig):
         Méthode appelée quand l'application est prête.
         Utilisée pour enregistrer les signaux.
         """
-        import attendance.overtime_signals
+        # import attendance.overtime_signals  # Temporairement désactivé

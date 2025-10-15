@@ -385,8 +385,5 @@ class AttendanceAnomaly(models.Model):
         self.save()
 
 
-# Import des modèles d'heures supplémentaires
-from .overtime_models import OvertimeConfiguration, OvertimeRecord
-
-# Import de la configuration système
-from .admin_models import CompanySettings
+# Les imports des modèles d'heures supplémentaires et de configuration
+# sont déplacés vers la fin pour éviter les imports circulaires

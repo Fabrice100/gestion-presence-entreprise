@@ -14,8 +14,9 @@ Version: 1.0
 """
 
 from django.urls import path
+from django.views.generic import TemplateView
 from . import views
-from . import overtime_views
+# from . import overtime_views  # Temporairement désactivé
 from . import settings_views
 
 app_name = 'attendance'
@@ -25,7 +26,11 @@ urlpatterns = [
     path('settings/', settings_views.CompanySettingsView.as_view(), name='company_settings'),
     
     # Pointage
-    path('punch/', views.PunchView.as_view(), name='punch'),
+    path('punch/', views.PunchView.as_view(), {'template_name': 'attendance/punch_smart.html'}, name='punch'),
+    path('punch/original/', views.PunchView.as_view(), name='punch_original'),
+    path('punch/gps-test/', TemplateView.as_view(template_name='attendance/gps_test.html'), name='gps_test'),
+    path('punch/demo/', views.PunchView.as_view(), {'template_name': 'attendance/punch_demo.html'}, name='punch_demo'),
+    path('punch/test/', views.PunchView.as_view(), {'template_name': 'attendance/punch_test.html'}, name='punch_test'),
     path('punch/in/', views.PunchInView.as_view(), name='punch_in'),
     path('punch/out/', views.PunchOutView.as_view(), name='punch_out'),
     
@@ -35,12 +40,12 @@ urlpatterns = [
     # API pour le pointage (AJAX)
     path('api/punch/', views.PunchAPIView.as_view(), name='punch_api'),
 
-    # Heures supplémentaires
-    path('overtime/', overtime_views.OvertimeRecordListView.as_view(), name='overtime_record_list'),
-    path('overtime/<int:pk>/', overtime_views.OvertimeRecordDetailView.as_view(), name='overtime_record_detail'),
-    path('overtime/approvals/', overtime_views.OvertimeApprovalListView.as_view(), name='overtime_approval_list'),
-    path('overtime/<int:pk>/approve/', overtime_views.OvertimeApprovalProcessView.as_view(), name='overtime_approval_process'),
+    # Heures supplémentaires (temporairement désactivé)
+    # path('overtime/', overtime_views.OvertimeRecordListView.as_view(), name='overtime_record_list'),
+    # path('overtime/<int:pk>/', overtime_views.OvertimeRecordDetailView.as_view(), name='overtime_record_detail'),
+    # path('overtime/approvals/', overtime_views.OvertimeApprovalListView.as_view(), name='overtime_approval_list'),
+    # path('overtime/<int:pk>/approve/', overtime_views.OvertimeApprovalProcessView.as_view(), name='overtime_approval_process'),
 
     # API pour les heures supplémentaires
-    path('api/overtime/stats/', overtime_views.get_overtime_stats_api, name='api_overtime_stats'),
+    # path('api/overtime/stats/', overtime_views.get_overtime_stats_api, name='api_overtime_stats'),
 ]

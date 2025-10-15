@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pointage{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/design-system.css' %}">
+<style>
+    .punch-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .punch-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .punch-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: float 20s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+    
+    .time-display {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .current-time {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-family: 'Courier New', monospace;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .current-date {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+    
+    .punch-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid #f0f0f0;
+        margin-bottom: 2rem;
+    }
+    
+    .punch-status {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .status-indicator {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1rem;
+        color: white;
+    }
+    
+    .status-present {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+    
+    .status-absent {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+    
+    .status-text {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-subtitle {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+    
+    .punch-btn {
+        width: 100%;
+        padding: 1.5rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        border-radius: 12px;
+        border: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .punch-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .punch-btn:hover::before {
+        left: 100%;
+    }
+    
+    .btn-in {
+        background: linear-gradient(135deg, #43e97b, #38f9d7);
+        color: white;
+    }
+    
+    .btn-out {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+    }
+    
+    .punch-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .punch-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .gps-status {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+    }
+    
+    .gps-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #4a5568;
+    }
+    
+    .gps-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+    }
+    
+    .gps-active {
+        background: #43e97b;
+    }
+    
+    .gps-inactive {
+        background: #f093fb;
+    }
+    
+    .last-punch {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .last-punch-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .punch-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .punch-time {
+        font-weight: 600;
+        color: #2d3748;
+    }
+    
+    .punch-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .type-in {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .type-out {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .loading.show {
+        display: block;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid;
+    }
+    
+    .alert-danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+    
+    .alert-success {
+        background: #d1fae5;
+        border-color: #a7f3d0;
+        color: #065f46;
+    }
+    
+    .alert-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+    
+    @media (max-width: 768px) {
+        .punch-container {
+            padding: 1rem;
+        }
+        
+        .current-time {
+            font-size: 2.5rem;
+        }
+        
+        .punch-btn {
+            padding: 1.2rem;
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="punch-container">
+    <!-- En-tête avec horloge -->
+    <div class="punch-header">
+        <h1 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem;">
+            <i class="bi bi-clock-fill me-2"></i>
+            Pointage
+        </h1>
+        <div class="time-display">
+            <div class="current-time" id="current-time">
+                <script>
+                    function updateTime() {
+                        const now = new Date();
+                        document.getElementById('current-time').textContent = now.toLocaleTimeString('fr-FR');
+                    }
+                    updateTime();
+                    setInterval(updateTime, 1000);
+                </script>
+            </div>
+            <div class="current-date" id="current-date">
+                <script>
+                    const now = new Date();
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    document.getElementById('current-date').textContent = now.toLocaleDateString('fr-FR', options);
+                </script>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages d'erreur -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Carte de pointage -->
+    <div class="punch-card">
+        <!-- Statut GPS -->
+        <div class="gps-status">
+            <div class="gps-indicator">
+                <div class="gps-icon gps-inactive" id="gps-icon">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <span id="gps-text">Géolocalisation en cours...</span>
+            </div>
+        </div>
+        
+        <!-- Statut de présence -->
+        <div class="punch-status">
+            <div class="status-indicator status-absent" id="status-indicator">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="status-text" id="status-text">En attente de pointage</div>
+            <div class="status-subtitle" id="status-subtitle">Cliquez sur le bouton pour pointer</div>
+        </div>
+        
+        <!-- Bouton de pointage -->
+        <form method="post" id="punch-form">
+            {% csrf_token %}
+            <input type="hidden" name="punch_type" id="punch_type" value="">
+            <input type="hidden" name="latitude" id="latitude" value="">
+            <input type="hidden" name="longitude" id="longitude" value="">
+            <input type="hidden" name="accuracy" id="accuracy" value="">
+            
+            <button type="submit" class="punch-btn btn-in" id="punch-btn">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="punch-text">Pointer l'arrivée</span>
+            </button>
+        </form>
+        
+        <!-- Indicateur de chargement -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Enregistrement du pointage...</p>
+        </div>
+    </div>
+    
+    <!-- Derniers pointages -->
+    {% if today_attendance %}
+    <div class="last-punch">
+        <h3 class="last-punch-title">
+            <i class="bi bi-clock-history me-2"></i>
+            Pointages d'aujourd'hui
+        </h3>
+        {% for attendance in today_attendance %}
+        <div class="punch-item">
+            <div class="punch-time">{{ attendance.time|time:"H:i" }}</div>
+            <div class="punch-type type-{{ attendance.punch_type }}">
+                {{ attendance.get_punch_type_display }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const punchBtn = document.getElementById('punch-btn');
+    const punchText = document.getElementById('punch-text');
+    const punchType = document.getElementById('punch_type');
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const statusSubtitle = document.getElementById('status-subtitle');
+    const loading = document.getElementById('loading');
+    const form = document.getElementById('punch-form');
+    const gpsIcon = document.getElementById('gps-icon');
+    const gpsText = document.getElementById('gps-text');
+    
+    let currentPunchType = 'in';
+    let hasPunchedIn = false;
+    
+    // Déterminer le type de pointage basé sur l'historique
+    {% if last_attendance %}
+        {% if last_attendance.punch_type == 'in' %}
+            currentPunchType = 'out';
+            hasPunchedIn = true;
+        {% else %}
+            currentPunchType = 'in';
+            hasPunchedIn = false;
+        {% endif %}
+    {% endif %}
+    
+    updateUI();
+    
+    function updateUI() {
+        if (currentPunchType === 'in') {
+            punchBtn.className = 'punch-btn btn-in';
+            punchText.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Pointer l\'arrivée';
+            statusIndicator.className = 'status-indicator status-absent';
+            statusIndicator.innerHTML = '<i class="bi bi-clock"></i>';
+            statusText.textContent = 'Pas encore arrivé';
+            statusSubtitle.textContent = 'Cliquez pour pointer votre arrivée';
+        } else {
+            punchBtn.className = 'punch-btn btn-out';
+            punchText.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Pointer la sortie';
+            statusIndicator.className = 'status-indicator status-present';
+            statusIndicator.innerHTML = '<i class="bi bi-check-circle"></i>';
+            statusText.textContent = 'Présent au travail';
+            statusSubtitle.textContent = 'Cliquez pour pointer votre sortie';
+        }
+    }
+    
+    // Géolocalisation
+    if (navigator.geolocation) {
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        };
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                document.getElementById('accuracy').value = position.coords.accuracy;
+                
+                gpsIcon.className = 'gps-icon gps-active';
+                gpsText.textContent = `GPS activé (précision: ${Math.round(position.coords.accuracy)}m)`;
+            },
+            function(error) {
+                gpsIcon.className = 'gps-icon gps-inactive';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        gpsText.textContent = 'Géolocalisation refusée - Activez le GPS';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        gpsText.textContent = 'Position indisponible - Vérifiez le GPS';
+                        break;
+                    case error.TIMEOUT:
+                        gpsText.textContent = 'Timeout GPS - Réessayez';
+                        break;
+                    default:
+                        gpsText.textContent = 'Erreur GPS inconnue';
+                        break;
+                }
+            },
+            options
+        );
+    } else {
+        gpsIcon.className = 'gps-icon gps-inactive';
+        gpsText.textContent = 'Géolocalisation non supportée';
+    }
+    
+    // Soumission du formulaire
+    form.addEventListener('submit', function(e) {
+        const latitude = document.getElementById('latitude').value;
+        const longitude = document.getElementById('longitude').value;
+        
+        if (!latitude || !longitude) {
+            e.preventDefault();
+            alert('🚫 Géolocalisation requise ! Veuillez activer le GPS et autoriser la localisation.');
+            return false;
+        }
+        
+        punchType.value = currentPunchType;
+        punchBtn.disabled = true;
+        loading.classList.add('show');
+    });
+});
+</script>
+{% endblock %}
