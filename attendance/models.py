@@ -20,6 +20,11 @@ from django.utils import timezone
 from django.conf import settings
 
 
+def get_current_date():
+    """Helper function to get current date."""
+    return timezone.now().date()
+
+
 class Attendance(models.Model):
     """
     Modèle représentant un pointage d'entrée ou de sortie d'un employé.
@@ -62,7 +67,7 @@ class Attendance(models.Model):
     )
     
     date = models.DateField(
-        default=timezone.now,
+        default=get_current_date,
         verbose_name="Date",
         help_text="Date du pointage"
     )
@@ -166,6 +171,19 @@ class Attendance(models.Model):
         """
         Override de la méthode save pour calculer automatiquement la distance et détecter les anomalies.
         """
+        # Définir la date et l'heure actuelles si non fournies
+        if not self.time:
+            now = timezone.now()
+            self.time = now.time()
+        
+        if not self.date:
+            now = timezone.now()
+            self.date = now.date()
+            
+        # Définir une précision par défaut si non fournie
+        if not self.accuracy:
+            self.accuracy = 100.0  # 100 mètres par défaut
+        
         # Calculer la distance du centre du site
         if self.latitude and self.longitude:
             self.distance_from_site = self.calculate_distance_from_site()
@@ -183,9 +201,11 @@ class Attendance(models.Model):
         """
         import math
         
-        # Coordonnées du centre du site (configurées dans settings)
-        site_lat = settings.SITE_CENTER_LAT
-        site_lng = settings.SITE_CENTER_LNG
+        # Coordonnées du centre du site depuis la configuration de l'entreprise
+        from .admin_models import CompanySettings
+        company_settings = CompanySettings.load()
+        site_lat = company_settings.site_center_latitude
+        site_lng = company_settings.site_center_longitude
         
         # Conversion en radians
         lat1_rad = math.radians(site_lat)
@@ -216,13 +236,17 @@ class Attendance(models.Model):
         - Heures de pointage
         - Doublons
         """
+        # Charger la configuration de l'entreprise
+        from .admin_models import CompanySettings
+        company_settings = CompanySettings.load()
+        
         # Vérifier la distance du site
-        if self.distance_from_site and self.distance_from_site > settings.RADIUS_METERS:
+        if self.distance_from_site and self.distance_from_site > company_settings.allowed_radius_meters:
             self.status = 'outside_zone'
             return
         
         # Vérifier la précision GPS
-        if self.accuracy and self.accuracy > settings.ACCURACY_MAX_METERS:
+        if self.accuracy and self.accuracy > company_settings.gps_accuracy_max_meters:
             self.status = 'low_accuracy'
             return
         

@@ -39,6 +39,10 @@ urlpatterns = [
     
     # API pour le pointage (AJAX)
     path('api/punch/', views.PunchAPIView.as_view(), name='punch_api'),
+    
+    # Diagnostic GPS
+    path('gps-diagnostic/', TemplateView.as_view(template_name='attendance/gps_diagnostic.html'), name='gps_diagnostic'),
+    path('test-gps/', TemplateView.as_view(template_name='attendance/test_gps.html'), name='test_gps'),
 
     # Heures supplémentaires (temporairement désactivé)
     # path('overtime/', overtime_views.OvertimeRecordListView.as_view(), name='overtime_record_list'),

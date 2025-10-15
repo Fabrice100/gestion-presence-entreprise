@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test GPS Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Test GPS Simple</h1>
+    
+    <button onclick="testGPS()">Tester GPS</button>
+    <button onclick="testBureauDistance()">Tester Distance Bureau</button>
+    <button onclick="clearResults()">Effacer</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'result') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            document.getElementById('results').appendChild(div);
+            div.scrollIntoView();
+        }
+
+        function testGPS() {
+            addResult("Démarrage test GPS...");
+            
+            if (!navigator.geolocation) {
+                addResult("❌ Geolocation non supportée par ce navigateur", "error");
+                return;
+            }
+
+            addResult("✓ Navigator.geolocation disponible");
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            addResult("📍 Demande de position GPS...");
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    addResult(`✅ GPS OK!<br>
+                              📍 Latitude: ${lat}<br>
+                              📍 Longitude: ${lng}<br>
+                              🎯 Précision: ${accuracy}m`, "success");
+                    
+                    // Calculer distance du bureau
+                    const bureauLat = 6.140766;
+                    const bureauLng = 1.241907;
+                    const distance = calculateDistance(lat, lng, bureauLat, bureauLng);
+                    
+                    addResult(`📏 Distance du bureau: ${distance.toFixed(1)}m`, 
+                             distance <= 200 ? "success" : "error");
+                },
+                function(error) {
+                    let message = "❌ Erreur GPS: ";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message += "Permission refusée";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message += "Position indisponible";
+                            break;
+                        case error.TIMEOUT:
+                            message += "Timeout (10s dépassé)";
+                            break;
+                        default:
+                            message += "Erreur inconnue";
+                            break;
+                    }
+                    addResult(message, "error");
+                },
+                options
+            );
+        }
+
+        function testBureauDistance() {
+            const bureauLat = 6.140766;
+            const bureauLng = 1.241907;
+            
+            addResult("🏢 Test coordonnées bureau...");
+            addResult(`📍 Bureau: ${bureauLat}, ${bureauLng}`);
+            
+            const distance = calculateDistance(bureauLat, bureauLng, bureauLat, bureauLng);
+            addResult(`📏 Distance bureau→bureau: ${distance}m`, "success");
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Rayon terre en mètres
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test automatique au chargement
+        window.onload = function() {
+            addResult("🚀 Page chargée - Prêt pour les tests");
+        };
+    </script>
+</body>
+</html>

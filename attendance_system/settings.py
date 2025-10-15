@@ -22,7 +22,7 @@ try:
     SECURITY_VALIDATION_ENABLED = True
 except ImportError:
     SECURITY_VALIDATION_ENABLED = False
-    print("⚠️  Module de validation de sécurité non disponible")
+    print("WARNING: Module de validation de securite non disponible")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # Utilisation de python-decouple pour la gestion des variables d'environnement
@@ -32,9 +32,9 @@ SECRET_KEY = config('SECRET_KEY')
 # Validation pour empêcher l'utilisation de la clé de développement en production
 if SECRET_KEY == 'django-insecure-change-me-in-production':
     import sys
-    print("❌ ERREUR CRITIQUE: SECRET_KEY par défaut détectée !")
-    print("🔒 SÉCURITÉ: Vous devez définir une SECRET_KEY unique dans votre fichier .env")
-    print("💡 Générez une clé sécurisée avec: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'")
+    print("ERREUR CRITIQUE: SECRET_KEY par defaut detectee !")
+    print("SECURITE: Vous devez definir une SECRET_KEY unique dans votre fichier .env")
+    print("Generez une cle securisee avec: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'")
     sys.exit(1)
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -43,8 +43,8 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Avertissement si DEBUG est activé
 if DEBUG:
-    print("⚠️  AVERTISSEMENT: DEBUG=True détecté")
-    print("🔒 Assurez-vous que DEBUG=False en production !")
+    print("WARNING: DEBUG=True detecte")
+    print("Assurez-vous que DEBUG=False en production !")
 
 # Hosts autorisés pour le déploiement
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver').split(',')
@@ -303,14 +303,14 @@ if SECURITY_VALIDATION_ENABLED:
         
         # Affichage du statut de sécurité
         if not DEBUG:
-            print("🔒 Configuration de production sécurisée validée ✅")
+            print("Configuration de production securisee validee")
         else:
-            print("🚧 Mode développement - Vérifications de sécurité OK ✅")
+            print("Mode developpement - Verifications de securite OK")
             
     except Exception as e:
-        print(f"❌ ERREUR DE VALIDATION SÉCURITÉ: {e}")
+        print(f"ERREUR DE VALIDATION SECURITE: {e}")
         # En production, arrêter l'application si la sécurité n'est pas validée
         if not DEBUG:
             import sys
-            print("🛑 Application arrêtée pour des raisons de sécurité")
+            print("Application arretee pour des raisons de securite")
             sys.exit(1)
