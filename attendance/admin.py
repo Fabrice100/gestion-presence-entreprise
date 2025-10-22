@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import Attendance, AttendanceAnomaly
+from .admin_models import CompanySettings
 
 
 class AttendanceAnomalyInline(admin.TabularInline):
@@ -385,4 +386,99 @@ class AttendanceAnomalyAdmin(admin.ModelAdmin):
             f'{updated} anomalie(s) ont été marquée(s) comme ignorées.'
         )
     mark_as_ignored.short_description = "Marquer comme ignorées"
+
+
+@admin.register(CompanySettings)
+class CompanySettingsAdmin(admin.ModelAdmin):
+    """
+    Configuration de l'administration pour CompanySettings.
+    
+    SÉCURITÉ : Seuls les superusers peuvent modifier les paramètres GPS.
+    """
+    
+    fieldsets = (
+        ('Informations Générales', {
+            'fields': ('company_name',)
+        }),
+        ('Horaires de Travail', {
+            'fields': ('work_start_time', 'work_end_time', 'late_tolerance_minutes'),
+            'description': 'Configuration des horaires de travail standard.'
+        }),
+        ('Configuration GPS (Superuser uniquement)', {
+            'fields': (
+                'gps_required',
+                'site_center_latitude',
+                'site_center_longitude',
+                'allowed_radius_meters',
+                'gps_accuracy_max_meters'
+            ),
+            'classes': ('collapse',),
+            'description': '⚠️ SÉCURITÉ : Modification réservée aux superusers uniquement.'
+        }),
+        ('Métadonnées', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ('updated_at',)
+    
+    def has_add_permission(self, request):
+        """
+        Empêche la création de nouvelles instances.
+        CompanySettings est un singleton.
+        """
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """
+        Empêche la suppression de l'instance.
+        CompanySettings est un singleton.
+        """
+        return False
+    
+    def get_readonly_fields(self, request, obj=None):
+        """
+        SÉCURITÉ GPS : Les champs GPS sont en lecture seule pour les non-superusers.
+        """
+        readonly = list(self.readonly_fields)
+        
+        # Si l'utilisateur n'est PAS superuser, tous les champs GPS sont en lecture seule
+        if not request.user.is_superuser:
+            gps_fields = [
+                'gps_required',
+                'site_center_latitude',
+                'site_center_longitude',
+                'allowed_radius_meters',
+                'gps_accuracy_max_meters'
+            ]
+            readonly.extend(gps_fields)
+        
+        return readonly
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Vérifie les permissions avant de sauvegarder.
+        """
+        # Vérifier si des champs GPS ont été modifiés
+        if change and not request.user.is_superuser:
+            gps_fields = [
+                'gps_required', 'site_center_latitude', 'site_center_longitude',
+                'allowed_radius_meters', 'gps_accuracy_max_meters'
+            ]
+            
+            # Recharger l'objet original depuis la DB
+            original = CompanySettings.objects.get(pk=obj.pk)
+            
+            for field in gps_fields:
+                if getattr(obj, field) != getattr(original, field):
+                    # Restaurer la valeur originale
+                    setattr(obj, field, getattr(original, field))
+        
+        super().save_model(request, obj, form, change)
+    
+    class Meta:
+        verbose_name = "Configuration Entreprise"
+        verbose_name_plural = "Configuration Entreprise"
+
 

@@ -147,6 +147,9 @@ class UserService:
         """
         Crée un employé avec génération automatique des credentials.
         
+        Transaction atomique pour garantir la cohérence des données.
+        Si une erreur survient, toutes les modifications sont annulées.
+        
         Args:
             user_data (dict): Données de l'utilisateur (first_name, last_name, email)
             profile_data (dict): Données du profil (department, manager, role, phone)
@@ -154,38 +157,41 @@ class UserService:
         Returns:
             tuple: (user, employee_id, password) ou (None, None, None) en cas d'erreur
         """
+        from django.db import transaction
+        
         try:
-            # Récupérer le rôle
-            role = profile_data.get('role', 'employee')
-            
-            # Générer les credentials
-            employee_id = UserService.generate_employee_id(role)
-            temporary_password = UserService.generate_random_password()
-            
-            # Générer le username automatiquement à partir de l'email
-            username = UserService.generate_username_from_email(user_data['email'])
-            
-            # Créer l'utilisateur
-            user = User.objects.create_user(
-                username=username,
-                email=user_data['email'],
-                password=temporary_password,
-                first_name=user_data.get('first_name', ''),
-                last_name=user_data.get('last_name', ''),
-            )
-            
-            # Mettre à jour le profil employé (créé automatiquement par le signal)
-            profile = user.employee_profile
-            profile.employee_id = employee_id
-            profile.department = profile_data.get('department')
-            profile.manager = profile_data.get('manager')
-            profile.role = profile_data.get('role', 'employee')
-            profile.force_password_change = True  # Changement obligatoire à la première connexion
-            profile.is_active = True
-            profile.can_punch = True if profile.role in ['employee', 'manager'] else False
-            profile.save()
-            
-            return user, employee_id, temporary_password
+            with transaction.atomic():
+                # Récupérer le rôle
+                role = profile_data.get('role', 'employee')
+                
+                # Générer les credentials
+                employee_id = UserService.generate_employee_id(role)
+                temporary_password = UserService.generate_random_password()
+                
+                # Générer le username automatiquement à partir de l'email
+                username = UserService.generate_username_from_email(user_data['email'])
+                
+                # Créer l'utilisateur
+                user = User.objects.create_user(
+                    username=username,
+                    email=user_data['email'],
+                    password=temporary_password,
+                    first_name=user_data.get('first_name', ''),
+                    last_name=user_data.get('last_name', ''),
+                )
+                
+                # Mettre à jour le profil employé (créé automatiquement par le signal)
+                profile = user.employee_profile
+                profile.employee_id = employee_id
+                profile.department = profile_data.get('department')
+                profile.manager = profile_data.get('manager')
+                profile.role = profile_data.get('role', 'employee')
+                profile.force_password_change = True  # Changement obligatoire à la première connexion
+                profile.is_active = True
+                profile.can_punch = True if profile.role in ['employee', 'manager'] else False
+                profile.save()
+                
+                return user, employee_id, temporary_password
             
         except Exception as e:
             print(f'Erreur lors de la création de l\'employé: {str(e)}')

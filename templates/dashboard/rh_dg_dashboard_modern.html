@@ -1,0 +1,515 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboard RH/DG - PresencePro{% endblock %}
+{% block page_title %}Dashboard RH/DG{% endblock %}
+{% block page_subtitle %}Vue d'ensemble de l'organisation et gestion globale{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'hr:employee_create' %}" class="btn-modern btn-success">
+        <i class="bi bi-person-plus"></i>
+        Nouvel employé
+    </a>
+    <a href="{% url 'reports:reports_dashboard' %}" class="btn-modern btn-primary">
+        <i class="bi bi-graph-up"></i>
+        Rapports avancés
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Métriques globales RH -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ total_employees|default:"0" }}</div>
+                <div class="stat-label">Total employés</div>
+            </div>
+            <i class="bi bi-people stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ present_today|default:"0" }}</div>
+                <div class="stat-label">Présents aujourd'hui</div>
+            </div>
+            <i class="bi bi-check-circle stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ pending_leaves|default:"0" }}</div>
+                <div class="stat-label">Demandes de congé</div>
+            </div>
+            <i class="bi bi-calendar-event stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ departments_count|default:"0" }}</div>
+                <div class="stat-label">Départements</div>
+            </div>
+            <i class="bi bi-building stat-icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Actions RH/DG -->
+<div class="modern-card">
+    <div class="modern-card-header">
+        <h3 class="modern-card-title">Actions RH/DG</h3>
+        <p class="modern-card-subtitle">Gestion organisationnelle et administrative</p>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'hr:employee_list' %}" class="action-card">
+                <div class="action-icon bg-primary">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h6>Employés</h6>
+                <p>Gestion du personnel</p>
+            </a>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'hr:department_list' %}" class="action-card">
+                <div class="action-icon bg-info">
+                    <i class="bi bi-building"></i>
+                </div>
+                <h6>Départements</h6>
+                <p>Structure org.</p>
+            </a>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'leave:leave_approval_list' %}" class="action-card">
+                <div class="action-icon bg-warning">
+                    <i class="bi bi-check-square"></i>
+                </div>
+                <h6>Approbations</h6>
+                <p>Validation congés</p>
+            </a>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'reports:reports_dashboard' %}" class="action-card">
+                <div class="action-icon bg-success">
+                    <i class="bi bi-bar-chart"></i>
+                </div>
+                <h6>Rapports</h6>
+                <p>Analytics RH</p>
+            </a>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'attendance:company_settings' %}" class="action-card">
+                <div class="action-icon bg-secondary">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <h6>Paramètres</h6>
+                <p>Configuration</p>
+            </a>
+        </div>
+        
+        <div class="col-md-2 col-sm-4 col-6">
+            <a href="{% url 'attendance:punch' %}" class="action-card">
+                <div class="action-icon bg-danger">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <h6>Pointer</h6>
+                <p>Mon pointage</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Vue d'ensemble organisationnelle -->
+<div class="row g-4">
+    <!-- Présences par département -->
+    <div class="col-lg-8">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">Présences par département</h3>
+                <p class="modern-card-subtitle">État global - {{ today|date:"l d F Y" }}</p>
+            </div>
+            
+            {% if department_attendance %}
+            <div class="table-responsive">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Département</th>
+                            <th>Total</th>
+                            <th>Présents</th>
+                            <th>Absents</th>
+                            <th>Retards</th>
+                            <th>Taux</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in department_attendance %}
+                        <tr>
+                            <td>
+                                <strong>{{ dept.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ dept.manager|default:"Pas de manager" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge badge-primary">{{ dept.total_employees }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-success">{{ dept.present_count }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-danger">{{ dept.absent_count }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-warning">{{ dept.late_count }}</span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: {{ dept.attendance_rate }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ dept.attendance_rate }}%</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="bi bi-building text-muted" style="font-size: 2rem;"></i>
+                                <br>
+                                <span class="text-muted">Aucun département configuré</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">Aucune donnée de département</h5>
+                <p class="text-muted">Créez des départements pour voir les statistiques</p>
+                <a href="{% url 'hr:department_create' %}" class="btn-modern btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    Créer un département
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Panel de gestion -->
+    <div class="col-lg-4">
+        <!-- Demandes urgentes -->
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Demandes urgentes</h4>
+                <p class="modern-card-subtitle">Nécessitent une action</p>
+            </div>
+            
+            {% if urgent_requests %}
+            <div class="urgent-list">
+                {% for request in urgent_requests %}
+                <div class="urgent-item">
+                    <div class="urgent-type">
+                        {% if request.type == 'leave' %}
+                        <i class="bi bi-calendar-event text-warning"></i>
+                        Congé urgent
+                        {% elif request.type == 'overtime' %}
+                        <i class="bi bi-clock text-info"></i>
+                        Heures sup.
+                        {% endif %}
+                    </div>
+                    <div class="urgent-details">
+                        <strong>{{ request.employee.get_full_name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ request.date_requested|date:"d M Y" }}</small>
+                    </div>
+                    <div class="urgent-action">
+                        <a href="{{ request.url }}" class="btn-modern btn-sm btn-outline">
+                            Traiter
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">Aucune demande urgente</h6>
+                <p class="text-muted small">Tout est sous contrôle</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Métriques RH rapides -->
+        <div class="modern-card mt-4">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Métriques RH</h4>
+            </div>
+            
+            <div class="metrics-list">
+                <div class="metric-item">
+                    <span class="metric-label">Turnover ce mois</span>
+                    <span class="metric-value">{{ turnover_rate|default:"0" }}%</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Heures moyennes/jour</span>
+                    <span class="metric-value">{{ avg_daily_hours|default:"0" }}h</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Congés en cours</span>
+                    <span class="metric-value">{{ active_leaves|default:"0" }}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Nouveaux ce mois</span>
+                    <span class="metric-value">{{ new_employees|default:"0" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions rapides système -->
+        <div class="modern-card mt-4">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Administration</h4>
+            </div>
+            
+            <div class="admin-actions">
+                <a href="{% url 'hr:employee_create' %}" class="admin-link">
+                    <i class="bi bi-person-plus"></i>
+                    Ajouter un employé
+                </a>
+                <a href="{% url 'hr:department_create' %}" class="admin-link">
+                    <i class="bi bi-building"></i>
+                    Nouveau département
+                </a>
+                <a href="{% url 'attendance:company_settings' %}" class="admin-link">
+                    <i class="bi bi-gear"></i>
+                    Paramètres entreprise
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques analytics RH -->
+{% if analytics_data %}
+<div class="row g-4 mt-4">
+    <div class="col-lg-6">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">Tendance des présences</h3>
+                <p class="modern-card-subtitle">30 derniers jours</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="attendanceTrendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">Répartition par département</h3>
+                <p class="modern-card-subtitle">Effectifs actuels</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="departmentChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Styles spécifiques au dashboard RH/DG */
+.action-card h6 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+}
+
+.action-card p {
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+.urgent-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.urgent-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-light);
+    gap: var(--spacing-md);
+}
+
+.urgent-item:last-child {
+    border-bottom: none;
+}
+
+.urgent-type {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.urgent-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.metrics-list {
+    padding: var(--spacing-md) 0;
+}
+
+.metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.metric-item:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.metric-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.admin-actions {
+    padding: var(--spacing-md) 0;
+}
+
+.admin-link {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+}
+
+.admin-link:hover {
+    background: var(--bg-light);
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.progress {
+    border-radius: var(--radius-sm);
+    background: var(--bg-light);
+}
+
+.chart-container {
+    position: relative;
+    height: 250px;
+    margin-top: var(--spacing-lg);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if analytics_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique tendance des présences
+    const attendanceCtx = document.getElementById('attendanceTrendChart').getContext('2d');
+    new Chart(attendanceCtx, {
+        type: 'line',
+        data: {
+            labels: {{ analytics_data.attendance_labels|safe }},
+            datasets: [{
+                label: 'Taux de présence (%)',
+                data: {{ analytics_data.attendance_rates|safe }},
+                borderColor: 'var(--primary-color)',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: 'var(--border-light)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique répartition départements
+    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+    new Chart(deptCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ analytics_data.department_labels|safe }},
+            datasets: [{
+                data: {{ analytics_data.department_counts|safe }},
+                backgroundColor: [
+                    'var(--primary-color)',
+                    'var(--success-color)',
+                    'var(--warning-color)',
+                    'var(--info-color)',
+                    'var(--danger-color)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

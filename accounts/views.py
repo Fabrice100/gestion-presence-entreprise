@@ -80,10 +80,7 @@ class CustomLoginView(LoginView):
     def form_valid(self, form):
         """Traite la connexion réussie."""
         response = super().form_valid(form)
-        messages.success(
-            self.request,
-            f'Bienvenue {self.request.user.get_full_name() or self.request.user.username} !'
-        )
+        # Message de bienvenue désactivé pour éviter l'alerte verte à chaque connexion
         return response
 
 

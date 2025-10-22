@@ -1,0 +1,193 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboard Employé - PresencePro{% endblock %}
+{% block page_title %}Mon Dashboard{% endblock %}
+{% block page_subtitle %}Vue d'ensemble de votre activité professionnelle{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'attendance:punch' %}" class="btn-modern btn-primary btn-lg">
+    <i class="bi bi-geo-alt"></i>
+    Pointer maintenant
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Statistiques rapides -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ today_status|default:"Non pointé" }}</div>
+                <div class="stat-label">Statut aujourd'hui</div>
+            </div>
+            <i class="bi bi-clock stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ this_month_days|default:"0" }}</div>
+                <div class="stat-label">Jours travaillés ce mois</div>
+            </div>
+            <i class="bi bi-calendar-check stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ pending_leave_requests|default:"0" }}</div>
+                <div class="stat-label">Demandes en attente</div>
+            </div>
+            <i class="bi bi-hourglass-split stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ leave_balance|default:"0" }}</div>
+                <div class="stat-label">Jours de congé restants</div>
+            </div>
+            <i class="bi bi-calendar-plus stat-icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="modern-card">
+    <div class="modern-card-header">
+        <h3 class="modern-card-title">Actions Rapides</h3>
+        <p class="modern-card-subtitle">Accès direct aux fonctionnalités principales</p>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'attendance:punch' %}" class="action-card">
+                <div class="action-icon bg-primary">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <h5>Pointer</h5>
+                <p>Enregistrer votre arrivée ou départ</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'leave:leave_request_list' %}" class="action-card">
+                <div class="action-icon bg-success">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <h5>Demander un congé</h5>
+                <p>Nouvelle demande de congé</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'attendance:my_attendance' %}" class="action-card">
+                <div class="action-icon bg-info">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <h5>Mes présences</h5>
+                <p>Historique et statistiques</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'accounts:profile' %}" class="action-card">
+                <div class="action-icon bg-warning">
+                    <i class="bi bi-person"></i>
+                </div>
+                <h5>Mon profil</h5>
+                <p>Modifier mes informations</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Activité récente et Planning -->
+<div class="row g-4">
+    <!-- Activité récente -->
+    <div class="col-lg-8">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">Activité Récente</h3>
+                <p class="modern-card-subtitle">Vos derniers pointages</p>
+            </div>
+            
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">Aucune activité récente</h5>
+                <p class="text-muted">Commencez par pointer votre arrivée</p>
+                <a href="{% url 'attendance:punch' %}" class="btn-modern btn-primary">
+                    <i class="bi bi-geo-alt"></i>
+                    Pointer maintenant
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Planning et Notifications -->
+    <div class="col-lg-4">
+        <!-- Statut du jour -->
+        <div class="modern-card mb-4">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Aujourd'hui</h4>
+                <p class="modern-card-subtitle">{{ today|date:"l d F Y" }}</p>
+            </div>
+            
+            <div class="text-center py-4">
+                <i class="bi bi-calendar-plus text-primary" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">Pas encore pointé</h6>
+                <p class="text-muted small">Pointez votre arrivée</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles spécifiques au dashboard employé */
+.action-card {
+    display: block;
+    padding: var(--spacing-xl);
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition-normal);
+    height: 100%;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: var(--spacing-md);
+}
+
+.action-card h5 {
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.action-card p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+</style>
+{% endblock %}

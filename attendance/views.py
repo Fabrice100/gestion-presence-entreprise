@@ -76,197 +76,104 @@ class PunchView(EmployeeRequiredMixin, TemplateView):
         return context
     
     def post(self, request, *args, **kwargs):
-        """Traite le pointage via POST avec validation GPS et règles métier."""
-        from math import radians, sin, cos, sqrt, atan2
-        from datetime import datetime, time as dt_time
+        """
+        Traite le pointage via POST avec validation GPS et règles métier.
+        
+        VERSION REFACTORISÉE - Respecte les principes SOLID :
+        - Single Responsibility: Chaque service a une responsabilité unique
+        - Dependency Inversion: Utilise des abstractions (services)
+        
+        Cette méthode est réduite de 200 lignes à ~80 lignes en extrayant
+        la logique vers GPSValidationService, AttendanceBusinessRules et AttendanceService.
+        """
+        from .forms import PunchForm
+        from .attendance_service import (
+            GPSValidationService,
+            AttendanceBusinessRules,
+            AttendanceService
+        )
         from .admin_models import CompanySettings
         
-        user = request.user
-        today = date.today()
-        now = timezone.now()
-        current_time = now.time()
+        # 1. VALIDATION DES DONNÉES ENTRANTES (via Form)
+        form = PunchForm(request.POST)
+        if not form.is_valid():
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+            return redirect('attendance:punch')
         
-        # Charger la configuration
-        settings = CompanySettings.load()
-        
-        # Vérifier les permissions
-        try:
-            if not user.employee_profile.can_punch:
-                messages.error(request, 'Vous n\'êtes pas autorisé à pointer.')
-                return redirect('dashboard:dashboard')
-        except:
-            messages.error(request, 'Vous n\'avez pas de profil employé. Contactez l\'administrateur.')
+        # 2. VÉRIFICATION DES PERMISSIONS (via BusinessRules)
+        can_punch, error = AttendanceBusinessRules.can_user_punch(request.user)
+        if not can_punch:
+            messages.error(request, error)
             return redirect('dashboard:dashboard')
         
-        punch_type = request.POST.get('punch_type')
-        latitude_str = request.POST.get('latitude', '')
-        longitude_str = request.POST.get('longitude', '')
-        accuracy_str = request.POST.get('accuracy', '')
+        # 3. CHARGER LA CONFIGURATION
+        settings = CompanySettings.load()
         
-        # === MODE GPS : FLEXIBLE COMME LES VRAIES APPS ===
-        demo_mode = request.POST.get('demo_mode', 'false') == 'true'
-        gps_disabled = request.POST.get('gps_disabled', 'false') == 'true'
-        
-        # Si pas de GPS ET pas en mode démo → utiliser les coordonnées du bureau
-        if not demo_mode and (not latitude_str or not longitude_str or latitude_str == '0.0'):
-            if not gps_disabled:
-                messages.warning(
-                    request,
-                    '⚠️ Géolocalisation non disponible. Utilisation des coordonnées du bureau.'
-                )
-            # Utiliser les coordonnées du bureau par défaut
-            latitude_str = str(settings.site_center_latitude)
-            longitude_str = str(settings.site_center_longitude)
-            accuracy_str = '100'  # Précision moyenne
-        
-        try:
-            if demo_mode:
-                # Mode démo : utiliser les coordonnées du bureau
-                latitude = float(settings.site_center_latitude)
-                longitude = float(settings.site_center_longitude)
-                accuracy = 5.0  # Précision parfaite en mode démo
-            else:
-                latitude = float(latitude_str)
-                longitude = float(longitude_str)
-                accuracy = float(accuracy_str) if accuracy_str else 999.0
-        except ValueError:
-            messages.error(request, '❌ Données GPS invalides.')
-            return redirect('attendance:punch')
-        
-        # === VALIDATION PRÉCISION GPS ===
-        if not demo_mode and accuracy > settings.gps_accuracy_max_meters:
-            messages.error(
-                request,
-                f'❌ Précision GPS trop faible ({accuracy:.0f}m). '
-                f'Précision maximale autorisée: {settings.gps_accuracy_max_meters}m. '
-                f'Veuillez vous rapprocher d\'une fenêtre ou sortir à l\'extérieur.'
-            )
-            return redirect('attendance:punch')
-        
-        # === CALCUL DISTANCE DU BUREAU (Formule Haversine) ===
-        def calculate_distance(lat1, lon1, lat2, lon2):
-            """Calcule la distance entre deux coordonnées GPS en mètres."""
-            R = 6371000  # Rayon de la Terre en mètres
-            
-            lat1_rad = radians(lat1)
-            lat2_rad = radians(lat2)
-            delta_lat = radians(lat2 - lat1)
-            delta_lon = radians(lon2 - lon1)
-            
-            a = sin(delta_lat/2)**2 + cos(lat1_rad) * cos(lat2_rad) * sin(delta_lon/2)**2
-            c = 2 * atan2(sqrt(a), sqrt(1-a))
-            
-            return R * c
-        
-        distance = calculate_distance(
-            latitude, longitude,
-            settings.site_center_latitude, settings.site_center_longitude
+        # 4. PARSER LES DONNÉES GPS (via Service)
+        gps_form_data = form.get_gps_data()
+        gps_parsed = GPSValidationService.parse_gps_data(
+            str(gps_form_data['latitude']) if gps_form_data['latitude'] else '',
+            str(gps_form_data['longitude']) if gps_form_data['longitude'] else '',
+            str(gps_form_data['accuracy']),
+            demo_mode=gps_form_data['demo_mode'],
+            settings=settings
         )
         
-        # === VALIDATION ZONE AUTORISÉE ===
-        if not demo_mode and distance > settings.allowed_radius_meters:
-            messages.error(
-                request,
-                f'🚫 Vous êtes trop loin du bureau ({distance:.0f}m). '
-                f'Vous devez être à moins de {settings.allowed_radius_meters}m pour pointer.'
-            )
+        if not gps_parsed['valid']:
+            messages.error(request, gps_parsed['error_message'])
             return redirect('attendance:punch')
         
-        # === VÉRIFICATION DOUBLONS ===
-        # === CONTRÔLES DE COHÉRENCE ===
+        # Avertissement si GPS non disponible
+        if gps_parsed.get('warning'):
+            messages.warning(request, gps_parsed['warning'])
         
-        # 1. Vérification doublon
-        existing_punch = Attendance.objects.filter(
-            employee=user,
-            date=today,
-            punch_type=punch_type
-        ).exists()
+        # 5. VALIDATION GPS (via Service)
+        validation_result = GPSValidationService.validate_location(
+            gps_parsed['latitude'],
+            gps_parsed['longitude'],
+            gps_parsed['accuracy'],
+            float(settings.site_center_latitude),
+            float(settings.site_center_longitude),
+            settings.allowed_radius_meters,
+            settings.gps_accuracy_max_meters
+        )
         
-        if existing_punch:
-            messages.error(
-                request,
-                f'❌ Pointage {"d\'entrée" if punch_type == "in" else "de sortie"} déjà effectué aujourd\'hui.'
-            )
+        if not validation_result['valid']:
+            messages.error(request, validation_result['error_message'])
             return redirect('attendance:punch')
         
-        # 2. Contrôle : Sortie sans entrée
-        if punch_type == 'out':
-            has_entry = Attendance.objects.filter(
-                employee=user,
-                date=today,
-                punch_type='in'
-            ).exists()
-            
-            if not has_entry:
-                messages.error(
-                    request,
-                    '❌ Impossible de pointer la sortie sans avoir pointé l\'arrivée.'
-                )
-                return redirect('attendance:punch')
+        # 6. CRÉER LE POINTAGE (via Service)
+        gps_data = {
+            'latitude': gps_parsed['latitude'],
+            'longitude': gps_parsed['longitude'],
+            'accuracy': gps_parsed['accuracy'],
+            'distance': validation_result['distance']
+        }
         
-        # 3. Contrôle : Entrée après sortie
-        if punch_type == 'in':
-            last_punch = Attendance.objects.filter(
-                employee=user,
-                date=today
-            ).order_by('-time').first()
-            
-            if last_punch and last_punch.punch_type == 'out':
-                messages.error(
-                    request,
-                    '❌ Impossible de pointer l\'arrivée après avoir pointé la sortie.'
-                )
-                return redirect('attendance:punch')
+        request_meta = {
+            'ip_address': request.META.get('REMOTE_ADDR'),
+            'user_agent': request.META.get('HTTP_USER_AGENT', '')[:200]
+        }
         
-        # === DÉTECTION STATUT (retard, normal, etc.) ===
-        status = 'normal'
-        warning_message = ''
+        attendance, error = AttendanceService.create_punch(
+            request.user,
+            form.cleaned_data['punch_type'],
+            gps_data,
+            request_meta
+        )
         
-        if punch_type == 'in':
-            # Utiliser les horaires de la configuration
-            work_start = settings.work_start_time
-            late_threshold = datetime.combine(today, work_start) + timedelta(minutes=settings.late_tolerance_minutes)
-            late_threshold_time = late_threshold.time()
-            
-            if current_time > late_threshold_time:
-                status = 'late'
-                minutes_late = (datetime.combine(today, current_time) - datetime.combine(today, work_start)).seconds // 60
-                warning_message = f'⚠️  Retard de {minutes_late} minutes détecté.'
+        if error:
+            messages.error(request, error)
+            return redirect('attendance:punch')
         
-        elif punch_type == 'out':
-            work_end = settings.work_end_time
-            if current_time < work_end:
-                status = 'early'
-                warning_message = '⚠️  Sortie anticipée détectée.'
-        
-        try:
-            # Créer le pointage
-            attendance = Attendance.objects.create(
-                employee=user,
-                date=today,
-                time=current_time,
-                punch_type=punch_type,
-                latitude=latitude,
-                longitude=longitude,
-                accuracy=accuracy,
-                distance_from_site=distance,
-                status=status,
-                source='web',
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                ip_address=self.get_client_ip(request)
-            )
-            
-            # Message de succès
-            if warning_message:
-                messages.warning(request, warning_message)
-            
-            messages.success(
-                request,
-                f'Pointage {"d\'entrée" if punch_type == "in" else "de sortie"} enregistré à {current_time.strftime("%H:%M")}'
-            )
-            
-        except Exception as e:
-            messages.error(request, f'❌ Erreur lors du pointage : {str(e)}')
+        # 7. MESSAGE DE SUCCÈS
+        punch_type_label = 'entrée' if attendance.punch_type == 'in' else 'sortie'
+        messages.success(
+            request,
+            f'✅ Pointage {punch_type_label} enregistré avec succès à {attendance.time.strftime("%H:%M")}.'
+        )
         
         return redirect('attendance:punch')
     

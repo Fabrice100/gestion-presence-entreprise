@@ -46,27 +46,15 @@
             </div>
             
             <div class="sidebar-content">
-                <!-- Profil utilisateur -->
-                <div class="user-profile">
-                    <a href="{% url 'dashboard:dashboard' %}" class="user-avatar-link" title="Retour au tableau de bord">
-                        <div class="user-avatar">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
-                    </a>
-                    <div class="user-info">
-                        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
-                        <div class="user-role">
-                            {% if user.employee_profile %}
-                                {{ user.employee_profile.get_role_display }}
-                            {% else %}
-                                Administrateur
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Menu de navigation -->
                 <ul class="nav flex-column">
+                    <!-- Tableau de bord comme premier élément de menu -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:dashboard' %}">
+                            <i class="bi bi-house"></i>
+                            <span>Tableau de bord</span>
+                        </a>
+                    </li>
                     
                     {% if user.employee_profile.can_punch %}
                     <li class="nav-item">
@@ -202,9 +190,9 @@
             document.getElementById('content').classList.toggle('active');
         });
         
-        // Auto-hide alerts
+        // Auto-hide only success/info alerts (warnings/errors persist)
         setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
+            const alerts = document.querySelectorAll('.alert.alert-success, .alert.alert-info');
             alerts.forEach(function(alert) {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();

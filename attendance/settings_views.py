@@ -26,16 +26,16 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('attendance:company_settings')
     
     def get_form_fields(self):
-        """Retourne les champs selon le rôle."""
-        try:
-            profile = self.request.user.employee_profile
-            role = profile.role
-        except:
-            # Superuser = admin
-            role = 'admin' if self.request.user.is_superuser else None
+        """
+        Retourne les champs selon le rôle.
         
-        if role == 'admin':
-            # ADMIN : Tous les champs (technique + métier)
+        POLITIQUE DE SÉCURITÉ GPS :
+        - Superuser uniquement : Peut modifier les champs GPS
+        - RH/DG : Peut modifier uniquement les horaires de travail
+        """
+        # SÉCURITÉ : Seul le superuser peut configurer le GPS
+        if self.request.user.is_superuser:
+            # SUPERUSER : Configuration complète (GPS + horaires)
             return [
                 'company_name',
                 'work_start_time',
@@ -47,14 +47,26 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
                 'allowed_radius_meters',
                 'gps_accuracy_max_meters',
             ]
-        elif role == 'rh_dg':
-            # RH/DG : Uniquement champs métier
+        
+        # Vérifier si l'utilisateur a un profil employé
+        try:
+            profile = self.request.user.employee_profile
+            role = profile.role
+        except:
+            # Utilisateur sans profil = pas d'accès
+            return []
+        
+        if role == 'rh_dg':
+            # RH/DG : Uniquement champs métier (horaires)
+            # PAS d'accès aux champs GPS (sécurité)
             return [
+                'company_name',
                 'work_start_time',
                 'work_end_time',
                 'late_tolerance_minutes',
             ]
         else:
+            # Autres rôles : pas d'accès
             return []
     
     @property
@@ -63,20 +75,33 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
         return self.get_form_fields()
     
     def dispatch(self, request, *args, **kwargs):
-        """Vérifier les permissions."""
+        """
+        Vérifier les permissions d'accès.
+        
+        Accès autorisé à :
+        - Superuser (admin Django) : accès complet GPS + horaires
+        - RH/DG : accès horaires uniquement
+        """
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         
-        # Seuls Admin et RH/DG peuvent accéder
+        # Superuser a toujours accès
+        if request.user.is_superuser:
+            return super().dispatch(request, *args, **kwargs)
+        
+        # Vérifier le rôle pour les autres utilisateurs
         try:
             profile = request.user.employee_profile
-            if profile.role not in ['admin', 'rh_dg']:
+            if profile.role == 'rh_dg':
+                # RH/DG a accès aux horaires
+                return super().dispatch(request, *args, **kwargs)
+            else:
                 messages.error(request, 'Accès refusé. Réservé aux administrateurs et RH.')
                 return redirect('dashboard:dashboard')
         except:
-            if not request.user.is_superuser:
-                messages.error(request, 'Accès refusé.')
-                return redirect('dashboard:dashboard')
+            # Utilisateur sans profil = pas d'accès
+            messages.error(request, 'Accès refusé.')
+            return redirect('dashboard:dashboard')
         
         return super().dispatch(request, *args, **kwargs)
     

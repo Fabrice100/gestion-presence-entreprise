@@ -124,7 +124,8 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 
 
 # Database configuration
-# Configuration de la base de données (SQLite pour le développement)
+# Configuration de la base de données SQLite (développement)
+# Pour PostgreSQL, décommenter la section PostgreSQL et commenter SQLite
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -132,7 +133,7 @@ DATABASES = {
     }
 }
 
-# Configuration PostgreSQL pour la production (à décommenter si nécessaire)
+# Configuration PostgreSQL (production) - Décommenter pour utiliser PostgreSQL
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',

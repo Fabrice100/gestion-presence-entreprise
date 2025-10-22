@@ -1,0 +1,410 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboard Manager - PresencePro{% endblock %}
+{% block page_title %}Dashboard Manager{% endblock %}
+{% block page_subtitle %}Gestion de votre équipe et suivi des performances{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'leave:leave_approval_list' %}" class="btn-modern btn-warning">
+        <i class="bi bi-check-square"></i>
+        Approbations ({{ pending_approvals|default:"0" }})
+    </a>
+    <a href="{% url 'reports:reports_dashboard' %}" class="btn-modern btn-primary">
+        <i class="bi bi-bar-chart"></i>
+        Rapports
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistiques manager -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ team_size|default:"0" }}</div>
+                <div class="stat-label">Membres de l'équipe</div>
+            </div>
+            <i class="bi bi-people stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ present_today|default:"0" }}</div>
+                <div class="stat-label">Présents aujourd'hui</div>
+            </div>
+            <i class="bi bi-check-circle stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ pending_approvals|default:"0" }}</div>
+                <div class="stat-label">Demandes en attente</div>
+            </div>
+            <i class="bi bi-hourglass-split stat-icon"></i>
+        </div>
+    </div>
+    
+    <div class="stat-card danger">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-number">{{ late_today|default:"0" }}</div>
+                <div class="stat-label">Retards aujourd'hui</div>
+            </div>
+            <i class="bi bi-exclamation-circle stat-icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides manager -->
+<div class="modern-card">
+    <div class="modern-card-header">
+        <h3 class="modern-card-title">Actions Manager</h3>
+        <p class="modern-card-subtitle">Gestion de votre équipe</p>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'leave:leave_approval_list' %}" class="action-card">
+                <div class="action-icon bg-warning">
+                    <i class="bi bi-check-square"></i>
+                </div>
+                <h5>Approbations</h5>
+                <p>Valider les demandes de congés</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'reports:reports_dashboard' %}" class="action-card">
+                <div class="action-icon bg-primary">
+                    <i class="bi bi-bar-chart"></i>
+                </div>
+                <h5>Rapports</h5>
+                <p>Analyses et statistiques</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'attendance:punch' %}" class="action-card">
+                <div class="action-icon bg-success">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <h5>Pointer</h5>
+                <p>Mon pointage personnel</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'accounts:profile' %}" class="action-card">
+                <div class="action-icon bg-info">
+                    <i class="bi bi-person"></i>
+                </div>
+                <h5>Mon profil</h5>
+                <p>Mes informations</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Vue d'ensemble équipe -->
+<div class="row g-4">
+    <!-- Présences du jour -->
+    <div class="col-lg-8">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h3 class="modern-card-title">Présences de l'équipe</h3>
+                <p class="modern-card-subtitle">État en temps réel - {{ today|date:"l d F Y" }}</p>
+            </div>
+            
+            {% if team_attendance %}
+            <div class="table-responsive">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Employé</th>
+                            <th>Arrivée</th>
+                            <th>Départ</th>
+                            <th>Statut</th>
+                            <th>Heures</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendance in team_attendance %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-2">
+                                        <i class="bi bi-person-circle"></i>
+                                    </div>
+                                    <div>
+                                        <strong>{{ attendance.employee.get_full_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ attendance.employee.employeeprofile.department.name|default:"N/A" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if attendance.clock_in %}
+                                    <span class="badge badge-success">{{ attendance.clock_in|time:"H:i" }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attendance.clock_out %}
+                                    <span class="badge badge-danger">{{ attendance.clock_out|time:"H:i" }}</span>
+                                {% else %}
+                                    <span class="text-muted">En cours</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attendance.is_late %}
+                                    <span class="badge badge-warning">Retard</span>
+                                {% elif attendance.clock_in %}
+                                    <span class="badge badge-success">Présent</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Absent</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attendance.total_hours %}
+                                    <strong>{{ attendance.total_hours }}h</strong>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <i class="bi bi-people text-muted" style="font-size: 2rem;"></i>
+                                <br>
+                                <span class="text-muted">Aucune donnée de présence</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">Aucune équipe assignée</h5>
+                <p class="text-muted">Contactez les RH pour configurer votre équipe</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Demandes en attente -->
+    <div class="col-lg-4">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Demandes en attente</h4>
+                <p class="modern-card-subtitle">Nécessitent votre validation</p>
+            </div>
+            
+            {% if pending_leave_requests %}
+            <div class="pending-requests">
+                {% for request in pending_leave_requests %}
+                <div class="request-item">
+                    <div class="request-user">
+                        <strong>{{ request.employee.get_full_name }}</strong>
+                    </div>
+                    <div class="request-details">
+                        <span class="badge badge-primary">{{ request.leave_type.name }}</span>
+                        <br>
+                        <small class="text-muted">
+                            {{ request.start_date|date:"d M" }} - {{ request.end_date|date:"d M Y" }}
+                            ({{ request.total_days }} jour{{ request.total_days|pluralize }})
+                        </small>
+                    </div>
+                    <div class="request-actions mt-2">
+                        <a href="{% url 'leave:leave_approval_detail' request.pk %}" class="btn-modern btn-sm btn-outline">
+                            Examiner
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{% url 'leave:leave_approval_list' %}" class="btn-modern btn-primary btn-sm">
+                    Voir toutes les demandes
+                </a>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">Aucune demande en attente</h6>
+                <p class="text-muted small">Toutes les demandes sont traitées</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Résumé hebdomadaire -->
+        <div class="modern-card mt-4">
+            <div class="modern-card-header">
+                <h4 class="modern-card-title">Cette semaine</h4>
+            </div>
+            
+            <div class="week-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Heures moyennes</span>
+                    <span class="summary-value">{{ avg_hours_week|default:"0" }}h</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Taux de présence</span>
+                    <span class="summary-value">{{ attendance_rate|default:"0" }}%</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Retards</span>
+                    <span class="summary-value">{{ late_count_week|default:"0" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphique des performances (optionnel) -->
+{% if team_performance %}
+<div class="modern-card mt-4">
+    <div class="modern-card-header">
+        <h3 class="modern-card-title">Performance de l'équipe</h3>
+        <p class="modern-card-subtitle">Évolution des 7 derniers jours</p>
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="teamPerformanceChart" height="100"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Styles spécifiques au dashboard manager */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--primary-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.pending-requests {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.request-item {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.request-item:hover {
+    background: var(--bg-light);
+}
+
+.request-item:last-child {
+    border-bottom: none;
+}
+
+.week-summary {
+    padding: var(--spacing-md) 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.summary-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: var(--spacing-lg);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if team_performance %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('teamPerformanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ team_performance.labels|safe }},
+            datasets: [{
+                label: 'Taux de présence (%)',
+                data: {{ team_performance.attendance_rate|safe }},
+                borderColor: 'var(--success-color)',
+                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Heures moyennes',
+                data: {{ team_performance.avg_hours|safe }},
+                borderColor: 'var(--primary-color)',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                borderWidth: 3,
+                fill: false,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'var(--border-light)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -78,6 +78,14 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         return kwargs
     
     def form_valid(self, form):
+        """
+        Traite la soumission d'une demande de congé.
+        
+        Transaction atomique pour garantir la cohérence :
+        - Vérification du solde
+        - Création de la demande
+        - Envoi des notifications
+        """
         # Vérifier que l'utilisateur a un profil
         if not hasattr(self.request.user, 'employee_profile'):
             form.add_error(None, 'Erreur: Votre compte n\'a pas de profil employé. Contactez l\'administrateur.')
@@ -115,31 +123,33 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             form.add_error(None, 'Vous avez déjà une demande de congé sur cette période')
             return self.form_invalid(form)
         
-        # Créer la demande
-        leave_request = form.save(commit=False)
-        leave_request.employee = self.request.user
-        leave_request.status = 'pending'
-        
-        # Calculer la durée
-        leave_request.duration_days = days_requested
-        
-        # Déterminer le niveau de validation nécessaire
-        profile = self.request.user.employee_profile
-        if profile.role == 'employee':
-            # Employé : validation par manager puis RH/DG
+        # TRANSACTION ATOMIQUE pour la création
+        with transaction.atomic():
+            # Créer la demande
+            leave_request = form.save(commit=False)
+            leave_request.employee = self.request.user
             leave_request.status = 'pending'
-            leave_request.manager = profile.manager
-        elif profile.role == 'manager':
-            # Manager : validation directe par RH/DG
-            leave_request.status = 'approved_manager'
-        elif profile.role == 'rh_dg':
-            # RH/DG : auto-approbation
-            leave_request.status = 'approved_rh'
+            
+            # Calculer la durée
+            leave_request.duration_days = days_requested
+            
+            # Déterminer le niveau de validation nécessaire
+            profile = self.request.user.employee_profile
+            if profile.role == 'employee':
+                # Employé : validation par manager puis RH/DG
+                leave_request.status = 'pending'
+                leave_request.manager = profile.manager
+            elif profile.role == 'manager':
+                # Manager : validation directe par RH/DG
+                leave_request.status = 'approved_manager'
+            elif profile.role == 'rh_dg':
+                # RH/DG : auto-approbation
+                leave_request.status = 'approved_rh'
+            
+            leave_request.save()
+            self.object = leave_request  # Important pour get_success_url()
         
-        leave_request.save()
-        self.object = leave_request  # Important pour get_success_url()
-        
-        # Envoyer notification au validateur
+        # Envoyer notification au validateur (HORS TRANSACTION)
         if leave_request.status == 'pending' and leave_request.manager:
             # Notifier le manager
             NotificationService.send_leave_pending_notification(leave_request, leave_request.manager)

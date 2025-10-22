@@ -197,9 +197,9 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         return context
 
 
-class RHDGDashboardView(RHRequiredMixin, TemplateView):
+class RhDgDashboardView(RHRequiredMixin, TemplateView):
     """
-    Tableau de bord pour les RH/DG.
+    Tableau de bord pour les RH et DG.
     """
     template_name = 'dashboard/rh_dg_dashboard.html'
     
