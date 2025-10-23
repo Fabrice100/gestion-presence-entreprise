@@ -13,6 +13,7 @@ Date: 22 octobre 2025
 
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.http import HttpResponse
 from django.views.generic import View
 from accounts.models import EmployeeProfile, Department
@@ -23,7 +24,18 @@ from common.mixins import (
 )
 
 
-class EmployeeRequiredMixinTest(TestCase):
+class PermissionMixinTestBase(TestCase):
+    """Classe de base pour tester les mixins de permissions."""
+    
+    def add_messages_to_request(self, request):
+        """Ajoute le stockage de messages à une requête RequestFactory."""
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+        return request
+
+
+class EmployeeRequiredMixinTest(PermissionMixinTestBase):
     """Tests pour EmployeeRequiredMixin."""
     
     def setUp(self):
@@ -36,26 +48,24 @@ class EmployeeRequiredMixinTest(TestCase):
             username='employee',
             password='password'
         )
-        self.employee_profile = EmployeeProfile.objects.create(
-            user=self.employee_user,
-            employee_id='EMP001',
-            department=self.dept,
-            role='employee',
-            is_active=True
-        )
+        self.employee_profile = self.employee_user.employee_profile
+        self.employee_profile.employee_id = 'EMP001'
+        self.employee_profile.department = self.dept
+        self.employee_profile.role = 'employee'
+        self.employee_profile.is_active = True
+        self.employee_profile.save()
         
         # Créer un employé inactif
         self.inactive_user = User.objects.create_user(
             username='inactive',
             password='password'
         )
-        self.inactive_profile = EmployeeProfile.objects.create(
-            user=self.inactive_user,
-            employee_id='EMP002',
-            department=self.dept,
-            role='employee',
-            is_active=False
-        )
+        self.inactive_profile = self.inactive_user.employee_profile
+        self.inactive_profile.employee_id = 'EMP002'
+        self.inactive_profile.department = self.dept
+        self.inactive_profile.role = 'employee'
+        self.inactive_profile.is_active = False
+        self.inactive_profile.save()
         
         # Créer un utilisateur sans profil (admin)
         self.admin_user = User.objects.create_superuser(
@@ -63,6 +73,10 @@ class EmployeeRequiredMixinTest(TestCase):
             password='password',
             email='admin@test.com'
         )
+        # Supprimer le profil auto-créé pour tester le cas sans profil
+        EmployeeProfile.objects.filter(user=self.admin_user).delete()
+        # Recharger l'utilisateur pour vider le cache de la relation
+        self.admin_user = User.objects.get(pk=self.admin_user.pk)
     
     def test_authenticated_active_employee(self):
         """Employé actif authentifié doit passer."""
@@ -89,6 +103,7 @@ class EmployeeRequiredMixinTest(TestCase):
         
         request = self.factory.get('/test/')
         request.user = self.inactive_user
+        request = self.add_messages_to_request(request)
         
         view = TestView.as_view()
         response = view(request)
@@ -99,17 +114,21 @@ class EmployeeRequiredMixinTest(TestCase):
     def test_user_without_profile(self):
         """Utilisateur sans profil (admin) ne doit pas passer."""
         
+        # Vérifier que le profil a bien été supprimé
+        self.assertFalse(hasattr(self.admin_user, 'employee_profile'))
+        
         class TestView(EmployeeRequiredMixin, View):
             def get(self, request):
                 return HttpResponse("OK")
         
         request = self.factory.get('/test/')
         request.user = self.admin_user
+        request = self.add_messages_to_request(request)
         
         view = TestView.as_view()
         response = view(request)
         
-        # Devrait rediriger
+        # Devrait rediriger car pas de profil employé
         self.assertEqual(response.status_code, 302)
     
     def test_anonymous_user(self):
@@ -129,7 +148,7 @@ class EmployeeRequiredMixinTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
 
-class ManagerRequiredMixinTest(TestCase):
+class ManagerRequiredMixinTest(PermissionMixinTestBase):
     """Tests pour ManagerRequiredMixin."""
     
     def setUp(self):
@@ -142,26 +161,24 @@ class ManagerRequiredMixinTest(TestCase):
             username='manager',
             password='password'
         )
-        self.manager_profile = EmployeeProfile.objects.create(
-            user=self.manager_user,
-            employee_id='EMP100',
-            department=self.dept,
-            role='manager',
-            is_active=True
-        )
+        self.manager_profile = self.manager_user.employee_profile
+        self.manager_profile.employee_id = 'EMP100'
+        self.manager_profile.department = self.dept
+        self.manager_profile.role = 'manager'
+        self.manager_profile.is_active = True
+        self.manager_profile.save()
         
         # Créer un employé simple
         self.employee_user = User.objects.create_user(
             username='employee',
             password='password'
         )
-        self.employee_profile = EmployeeProfile.objects.create(
-            user=self.employee_user,
-            employee_id='EMP001',
-            department=self.dept,
-            role='employee',
-            is_active=True
-        )
+        self.employee_profile = self.employee_user.employee_profile
+        self.employee_profile.employee_id = 'EMP001'
+        self.employee_profile.department = self.dept
+        self.employee_profile.role = 'employee'
+        self.employee_profile.is_active = True
+        self.employee_profile.save()
     
     def test_manager_can_access(self):
         """Manager doit pouvoir accéder."""
@@ -187,6 +204,7 @@ class ManagerRequiredMixinTest(TestCase):
         
         request = self.factory.get('/test/')
         request.user = self.employee_user
+        request = self.add_messages_to_request(request)
         
         view = TestView.as_view()
         response = view(request)
@@ -195,7 +213,7 @@ class ManagerRequiredMixinTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
 
-class RHRequiredMixinTest(TestCase):
+class RHRequiredMixinTest(PermissionMixinTestBase):
     """Tests pour RHRequiredMixin."""
     
     def setUp(self):
@@ -208,39 +226,36 @@ class RHRequiredMixinTest(TestCase):
             username='rh',
             password='password'
         )
-        self.rh_profile = EmployeeProfile.objects.create(
-            user=self.rh_user,
-            employee_id='EMP200',
-            department=self.dept,
-            role='rh_dg',
-            is_active=True
-        )
+        self.rh_profile = self.rh_user.employee_profile
+        self.rh_profile.employee_id = 'EMP200'
+        self.rh_profile.department = self.dept
+        self.rh_profile.role = 'rh_dg'
+        self.rh_profile.is_active = True
+        self.rh_profile.save()
         
         # Créer un manager
         self.manager_user = User.objects.create_user(
             username='manager',
             password='password'
         )
-        self.manager_profile = EmployeeProfile.objects.create(
-            user=self.manager_user,
-            employee_id='EMP100',
-            department=self.dept,
-            role='manager',
-            is_active=True
-        )
+        self.manager_profile = self.manager_user.employee_profile
+        self.manager_profile.employee_id = 'EMP100'
+        self.manager_profile.department = self.dept
+        self.manager_profile.role = 'manager'
+        self.manager_profile.is_active = True
+        self.manager_profile.save()
         
         # Créer un employé
         self.employee_user = User.objects.create_user(
             username='employee',
             password='password'
         )
-        self.employee_profile = EmployeeProfile.objects.create(
-            user=self.employee_user,
-            employee_id='EMP001',
-            department=self.dept,
-            role='employee',
-            is_active=True
-        )
+        self.employee_profile = self.employee_user.employee_profile
+        self.employee_profile.employee_id = 'EMP001'
+        self.employee_profile.department = self.dept
+        self.employee_profile.role = 'employee'
+        self.employee_profile.is_active = True
+        self.employee_profile.save()
     
     def test_rh_can_access(self):
         """RH doit pouvoir accéder."""
@@ -266,6 +281,7 @@ class RHRequiredMixinTest(TestCase):
         
         request = self.factory.get('/test/')
         request.user = self.manager_user
+        request = self.add_messages_to_request(request)
         
         view = TestView.as_view()
         response = view(request)
@@ -282,6 +298,7 @@ class RHRequiredMixinTest(TestCase):
         
         request = self.factory.get('/test/')
         request.user = self.employee_user
+        request = self.add_messages_to_request(request)
         
         view = TestView.as_view()
         response = view(request)
@@ -290,7 +307,7 @@ class RHRequiredMixinTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
 
-class PermissionHierarchyTest(TestCase):
+class PermissionHierarchyRequiredMixinTest(PermissionMixinTestBase):
     """Tests pour la hiérarchie des permissions."""
     
     def setUp(self):
@@ -299,31 +316,28 @@ class PermissionHierarchyTest(TestCase):
         
         # Créer tous les rôles
         self.employee_user = User.objects.create_user(username='employee', password='pwd')
-        EmployeeProfile.objects.create(
-            user=self.employee_user,
-            employee_id='EMP001',
-            department=self.dept,
-            role='employee',
-            is_active=True
-        )
+        employee_profile = self.employee_user.employee_profile
+        employee_profile.employee_id = 'EMP001'
+        employee_profile.department = self.dept
+        employee_profile.role = 'employee'
+        employee_profile.is_active = True
+        employee_profile.save()
         
         self.manager_user = User.objects.create_user(username='manager', password='pwd')
-        EmployeeProfile.objects.create(
-            user=self.manager_user,
-            employee_id='EMP100',
-            department=self.dept,
-            role='manager',
-            is_active=True
-        )
+        manager_profile = self.manager_user.employee_profile
+        manager_profile.employee_id = 'EMP100'
+        manager_profile.department = self.dept
+        manager_profile.role = 'manager'
+        manager_profile.is_active = True
+        manager_profile.save()
         
         self.rh_user = User.objects.create_user(username='rh', password='pwd')
-        EmployeeProfile.objects.create(
-            user=self.rh_user,
-            employee_id='EMP200',
-            department=self.dept,
-            role='rh_dg',
-            is_active=True
-        )
+        rh_profile = self.rh_user.employee_profile
+        rh_profile.employee_id = 'EMP200'
+        rh_profile.department = self.dept
+        rh_profile.role = 'rh_dg'
+        rh_profile.is_active = True
+        rh_profile.save()
     
     def test_employee_is_not_manager(self):
         """Employé n'est pas manager."""

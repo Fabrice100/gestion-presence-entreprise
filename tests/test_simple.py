@@ -49,11 +49,12 @@ class SimpleStructureTest(TestCase):
             description='Human Resources'
         )
         
-        profile = EmployeeProfile.objects.create(
-            user=user,
-            employee_id='EMP001',
-            department=dept
-        )
+        # Le profil est créé automatiquement par le signal
+        # On le récupère et le met à jour
+        profile = user.employee_profile
+        profile.employee_id = 'EMP001'
+        profile.department = dept
+        profile.save()
         
         self.assertEqual(profile.employee_id, 'EMP001')
         self.assertEqual(profile.user, user)
@@ -61,7 +62,8 @@ class SimpleStructureTest(TestCase):
         self.assertTrue(profile.can_punch)
         
         # Test de la représentation string
-        expected_str = f"{user.get_full_name()} (EMP001)"
+        # Format: "EMP001 - employee1"  (car pas de first/last name)
+        expected_str = f"EMP001 - {user.username}"
         self.assertEqual(str(profile), expected_str)
 
 
@@ -74,31 +76,30 @@ class ModelsIntegrityTest(TestCase):
         user2 = User.objects.create_user(username='user2', password='pass')
         dept = Department.objects.create(name='Test Dept')
         
-        # Créer premier profil
-        EmployeeProfile.objects.create(
-            user=user1,
-            employee_id='EMP001',
-            department=dept
-        )
+        # Récupérer les profils auto-créés et mettre à jour
+        profile1 = user1.employee_profile
+        profile1.employee_id = 'EMP001'
+        profile1.department = dept
+        profile1.save()
         
-        # Tenter de créer second profil avec même ID
+        # Tenter de mettre le même ID sur le second profil
+        profile2 = user2.employee_profile
+        profile2.employee_id = 'EMP001'  # ID en double
+        profile2.department = dept
+        
         with self.assertRaises(Exception):
-            EmployeeProfile.objects.create(
-                user=user2,
-                employee_id='EMP001',  # ID en double
-                department=dept
-            )
+            profile2.save()
     
     def test_user_profile_relationship(self):
         """Test de la relation user-profile."""
         user = User.objects.create_user(username='testuser', password='pass')
         dept = Department.objects.create(name='Test')
         
-        profile = EmployeeProfile.objects.create(
-            user=user,
-            employee_id='EMP002',
-            department=dept
-        )
+        # Récupérer le profil auto-créé
+        profile = user.employee_profile
+        profile.employee_id = 'EMP002'
+        profile.department = dept
+        profile.save()
         
         # Test relation inverse
         self.assertEqual(user.employee_profile, profile)

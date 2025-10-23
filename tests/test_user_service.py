@@ -39,11 +39,10 @@ class UserServiceEmployeeIDTest(TestCase):
         """Vérifie que les IDs générés sont uniques."""
         # Créer un utilisateur avec un ID
         user1 = User.objects.create_user(username='test1', password='password')
-        profile1 = EmployeeProfile.objects.create(
-            user=user1,
-            employee_id='EMP123',
-            department=self.dept
-        )
+        profile1 = user1.employee_profile
+        profile1.employee_id = 'EMP123'
+        profile1.department = self.dept
+        profile1.save()
         
         # Générer 10 nouveaux IDs
         generated_ids = set()

@@ -50,16 +50,13 @@ class EmployeeProfileFactory(factory.django.DjangoModelFactory):
     employee_id = factory.Sequence(lambda n: f"EMP{n:03d}")
     department = factory.SubFactory(DepartmentFactory)
     can_punch = True
-    phone = factory.Faker('phone_number')
-    position = factory.Faker('job')
     hire_date = factory.LazyFunction(lambda: date.today() - timedelta(days=30))
 
 
 class ManagerProfileFactory(EmployeeProfileFactory):
     """Factory spécialisée pour créer des managers."""
     
-    can_approve_leave = True
-    can_view_reports = True
+    role = 'manager'  # Les permissions sont basées sur le rôle
 
 
 class CompanySettingsFactory(factory.django.DjangoModelFactory):
@@ -138,9 +135,14 @@ class TestDataHelper:
             tuple: (User, EmployeeProfile)
         """
         user = UserFactory(**kwargs.get('user_kwargs', {}))
+        # Le profil est créé automatiquement par le signal
+        profile = user.employee_profile
         profile_kwargs = kwargs.get('profile_kwargs', {})
-        profile_kwargs['user'] = user
-        profile = EmployeeProfileFactory(**profile_kwargs)
+        # Mettre à jour le profil avec les kwargs fournis
+        for key, value in profile_kwargs.items():
+            if key != 'user':  # Skip user car déjà assigné
+                setattr(profile, key, value)
+        profile.save()
         return user, profile
     
     @staticmethod
