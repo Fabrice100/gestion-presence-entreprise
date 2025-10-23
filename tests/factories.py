@@ -155,7 +155,11 @@ class TestDataHelper:
         """
         department = DepartmentFactory()
         user = UserFactory()
-        profile = ManagerProfileFactory(user=user, department=department)
+        # Le profil est créé automatiquement par le signal
+        profile = user.employee_profile
+        profile.department = department
+        profile.role = 'manager'  # ManagerProfileFactory définit le rôle manager
+        profile.save()
         return user, profile, department
     
     @staticmethod

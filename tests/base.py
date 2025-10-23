@@ -35,8 +35,8 @@ class BaseTestCase(TestCase):
         """Configuration exécutée avant chaque test."""
         super().setUp()
         
-        # Configuration d'entreprise par défaut
-        self.company_settings = CompanySettingsFactory()
+        # Configuration d'entreprise par défaut (singleton)
+        self.company_settings = CompanySettings.load()
         
         # Créer un utilisateur de test standard
         self.test_user, self.test_profile = TestDataHelper.create_employee_with_profile()

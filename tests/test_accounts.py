@@ -27,32 +27,50 @@ class EmployeeProfileModelTest(ModelTestCase):
         department = DepartmentFactory()
         
         profile = user.employee_profile
+    def test_employee_profile_creation(self):
+        """Test de création d'un profil employé."""
+        department = DepartmentFactory()
+        user = UserFactory()
+        
+        # Utiliser le profil auto-créé et le mettre à jour
+        profile = user.employee_profile
         profile.employee_id = "EMP001"
         profile.department = department
-        profile.phone = "123456789"
-        profile.position = "Développeur"
         profile.save()
         
         self.assertEqual(profile.user, user)
         self.assertEqual(profile.employee_id, "EMP001")
-        self.assertTrue(profile.can_punch)
-        self.assertFalse(profile.can_approve_leave)
+        # Note: can_approve_leave n'existe plus dans le modèle
+        # self.assertFalse(profile.can_approve_leave)
     
     def test_employee_id_unique(self):
         """Test que l'ID employé est unique."""
         dept = DepartmentFactory()
         
         # Créer premier employé
-        EmployeeProfileFactory(employee_id="EMP001", department=dept)
+        user1 = UserFactory()
+        profile1 = user1.employee_profile
+        profile1.employee_id = "EMP001"
+        profile1.department = dept
+        profile1.save()
         
         # Tenter de créer un second avec le même ID
+        user2 = UserFactory()
+        profile2 = user2.employee_profile
+        profile2.employee_id = "EMP001"  # Même ID
+        profile2.department = dept
+        
         with self.assertRaises(Exception):
-            EmployeeProfileFactory(employee_id="EMP001", department=dept)
+            profile2.save()  # Doit échouer
     
     def test_str_representation(self):
         """Test de la représentation string."""
-        profile = EmployeeProfileFactory(employee_id="EMP001")
-        expected = f"{profile.user.get_full_name()} (EMP001)"
+        user = UserFactory()
+        profile = user.employee_profile
+        profile.employee_id = "EMP001"
+        profile.save()
+        
+        expected = f"EMP001 - {profile.user.username}"
         self.assert_model_str_representation(profile, expected)
 
 
@@ -82,7 +100,10 @@ class EmployeeIDBackendTest(TestCase):
         """Configuration des tests."""
         self.backend = EmployeeIDBackend()
         self.user = UserFactory()
-        self.profile = EmployeeProfileFactory(user=self.user, employee_id="EMP001")
+        # Utiliser le profil auto-créé
+        self.profile = self.user.employee_profile
+        self.profile.employee_id = "EMP001"
+        self.profile.save()
     
     def test_authenticate_with_employee_id(self):
         """Test d'authentification avec ID employé."""

@@ -136,6 +136,16 @@ DATABASES = {
     }
 }
 
+# Utiliser SQLite pour les tests (plus rapide et pas de problème de permissions)
+import sys
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+
 # Configuration SQLite (désactivée - migration terminée)
 # DATABASES = {
 #     'default': {
