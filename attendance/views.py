@@ -20,6 +20,8 @@ from django.views.generic import TemplateView, ListView, DetailView
 from django.utils import timezone
 from django.db.models import Q
 from datetime import date, timedelta
+from django_ratelimit.decorators import ratelimit
+from django.conf import settings
 
 from .models import Attendance, AttendanceAnomaly
 
@@ -73,6 +75,7 @@ class PunchView(EmployeeRequiredMixin, TemplateView):
         
         return context
     
+    @method_decorator(ratelimit(key='user', rate=settings.RATELIMIT_PUNCH_RATE, method='POST', block=True))
     def post(self, request, *args, **kwargs):
         """
         Traite le pointage via POST avec le service unifié.

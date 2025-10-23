@@ -26,6 +26,8 @@ from django.http import HttpResponseRedirect
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.conf import settings
+from django_ratelimit.decorators import ratelimit
 
 # Import du mixin centralisé (principe DRY)
 from common.mixins import (
@@ -66,13 +68,19 @@ class CustomLogoutView(View):
 
 class CustomLoginView(LoginView):
     """
-    Vue de connexion personnalisée.
+    Vue de connexion personnalisée avec protection rate limiting.
     
     Utilise le backend d'authentification personnalisé pour permettre
     la connexion avec l'ID Employé.
+    Protégée contre les attaques par force brute.
     """
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True  # Rediriger si déjà authentifié
+    
+    @method_decorator(ratelimit(key='ip', rate=settings.RATELIMIT_LOGIN_RATE, method='POST', block=True))
+    def post(self, request, *args, **kwargs):
+        """POST avec protection rate limiting."""
+        return super().post(request, *args, **kwargs)
     
     def get_success_url(self):
         """Redirige vers le tableau de bord après connexion."""

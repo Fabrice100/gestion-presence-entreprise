@@ -295,6 +295,131 @@ SESSION_COOKIE_AGE = 86400  # 24 heures
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # ===================================================================
+# CONFIGURATION RATE LIMITING
+# ===================================================================
+# Protection contre les attaques par déni de service
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+
+# Limites par défaut (peuvent être surchargées par vue)
+RATELIMIT_DEFAULT_RATE = '100/h'  # 100 requêtes par heure par IP
+RATELIMIT_DEFAULT_METHOD = 'GET,POST'
+
+# Limites spécifiques pour les vues critiques
+RATELIMIT_PUNCH_RATE = '10/m'     # 10 pointages par minute par utilisateur
+RATELIMIT_LOGIN_RATE = '5/m'      # 5 tentatives de connexion par minute par IP
+RATELIMIT_API_RATE = '60/m'       # 60 requêtes API par minute par utilisateur
+
+# Configuration du cache pour le rate limiting
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# ===================================================================
+# CONFIGURATION LOGGING STRUCTURÉ
+# ===================================================================
+import structlog
+from structlog.stdlib import LoggerFactory
+
+# Configuration structlog
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.JSONRenderer()
+    ],
+    context_class=dict,
+    logger_factory=LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
+# Configuration logging Django avec structlog
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'json': {
+            '()': structlog.stdlib.ProcessorFormatter,
+            'processor': structlog.processors.JSONRenderer(),
+        },
+        'console': {
+            '()': structlog.stdlib.ProcessorFormatter,
+            'processor': structlog.dev.ConsoleRenderer(colors=True),
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django_structured.log',
+            'formatter': 'json',
+        },
+        'security': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'formatter': 'json',
+        },
+        'attendance': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'attendance.log',
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'attendance_system.security': {
+            'handlers': ['security', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'attendance_system.attendance': {
+            'handlers': ['attendance', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'attendance_system.accounts': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# ===================================================================
 # VALIDATION AUTOMATIQUE DE LA SÉCURITÉ
 # ===================================================================
 # Validation de la configuration au démarrage de l'application

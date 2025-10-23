@@ -18,6 +18,11 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.conf import settings
+from common.validators import (
+    validate_gps_coordinate,
+    validate_gps_accuracy,
+    validate_safe_string
+)
 
 
 def get_current_date():
@@ -86,18 +91,19 @@ class Attendance(models.Model):
     
     # Informations de géolocalisation
     latitude = models.FloatField(
-        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+        validators=[MinValueValidator(-90), MaxValueValidator(90), validate_gps_coordinate],
         verbose_name="Latitude",
         help_text="Latitude GPS du pointage"
     )
     
     longitude = models.FloatField(
-        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+        validators=[MinValueValidator(-180), MaxValueValidator(180), validate_gps_coordinate],
         verbose_name="Longitude",
         help_text="Longitude GPS du pointage"
     )
     
     accuracy = models.FloatField(
+        validators=[validate_gps_accuracy],
         verbose_name="Précision GPS",
         help_text="Précision GPS en mètres"
     )

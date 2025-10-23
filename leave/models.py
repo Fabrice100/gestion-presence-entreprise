@@ -16,6 +16,11 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
+from common.validators import (
+    validate_reason_text,
+    validate_safe_string,
+    validate_email_address
+)
 
 
 class LeaveType(models.Model):
@@ -221,6 +226,7 @@ class LeaveRequest(models.Model):
     )
     
     reason = models.TextField(
+        validators=[validate_reason_text],
         verbose_name="Motif",
         help_text="Motif de la demande de congé"
     )
@@ -228,6 +234,7 @@ class LeaveRequest(models.Model):
     justification = models.TextField(
         blank=True,
         null=True,
+        validators=[validate_reason_text],
         verbose_name="Justification",
         help_text="Justification détaillée si nécessaire"
     )

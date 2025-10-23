@@ -22,6 +22,8 @@ from .attendance_service import (
     AttendanceService
 )
 from .admin_models import CompanySettings
+from common.structured_logging import structured_logger
+from common.secure_validation import secure_validator
 
 logger = logging.getLogger(__name__)
 
@@ -99,9 +101,63 @@ class PunchService:
             PunchResult: Résultat du pointage avec succès/erreur et données
         """
         try:
+            # 0. VALIDATION SÉCURISÉE DES DONNÉES ENTRANTES
+            # Sanitisation des données GPS
+            sanitized_gps = secure_validator.sanitize_gps_data(gps_data)
+            
+            # Validation sécurisée des coordonnées GPS
+            gps_validation_result = secure_validator.validate_gps_coordinates(
+                sanitized_gps.get('latitude', '0'),
+                sanitized_gps.get('longitude', '0'),
+                sanitized_gps.get('accuracy', '0')
+            )
+            
+            if not gps_validation_result['valid']:
+                # Logging de la validation échouée
+                secure_validator.log_validation_attempt(
+                    'gps_coordinates',
+                    sanitized_gps,
+                    success=False,
+                    error=gps_validation_result['error_message']
+                )
+                
+                structured_logger.log_punch_attempt(
+                    user=user,
+                    punch_type=punch_type,
+                    latitude=0,
+                    longitude=0,
+                    accuracy=0,
+                    success=False,
+                    reason=f"Validation GPS échouée: {gps_validation_result['error_message']}"
+                )
+                
+                return PunchResult(
+                    success=False,
+                    error_message=gps_validation_result['error_message']
+                )
+            
+            # Utilisation des données GPS validées
+            validated_gps_data = {
+                'latitude': gps_validation_result['latitude'],
+                'longitude': gps_validation_result['longitude'],
+                'accuracy': gps_validation_result['accuracy'],
+                'demo_mode': gps_data.get('demo_mode', False)
+            }
+            
             # 1. VALIDATION DES PERMISSIONS
             can_punch, permission_error = self.validation.can_user_punch(user)
             if not can_punch:
+                # Logging structuré de la tentative refusée
+                structured_logger.log_punch_attempt(
+                    user=user,
+                    punch_type=punch_type,
+                    latitude=validated_gps_data.get('latitude', 0),
+                    longitude=validated_gps_data.get('longitude', 0),
+                    accuracy=validated_gps_data.get('accuracy', 0),
+                    success=False,
+                    reason=permission_error
+                )
+                
                 logger.warning(
                     f"Tentative de pointage refusée - {permission_error}",
                     extra={'user_id': user.id, 'punch_type': punch_type}
@@ -123,11 +179,11 @@ class PunchService:
                     error_message=sequence_error
                 )
             
-            # 3. VALIDATION GPS
-            gps_validation = self._validate_gps_data(gps_data)
+            # 3. VALIDATION GPS AVEC SERVICE EXISTANT (pour cohérence métier)
+            gps_validation = self._validate_gps_data(validated_gps_data)
             if not gps_validation['valid']:
                 logger.warning(
-                    f"Validation GPS échouée - {gps_validation['error_message']}",
+                    f"Validation GPS métier échouée - {gps_validation['error_message']}",
                     extra={'user_id': user.id, 'punch_type': punch_type}
                 )
                 return PunchResult(
@@ -154,7 +210,24 @@ class PunchService:
                         error_message=creation_error
                     )
             
-            # 5. LOGGING DU SUCCÈS
+            # 5. LOGGING STRUCTURÉ DU SUCCÈS
+            structured_logger.log_punch_attempt(
+                user=user,
+                punch_type=punch_type,
+                latitude=gps_validation.get('latitude', 0),
+                longitude=gps_validation.get('longitude', 0),
+                accuracy=gps_validation.get('accuracy', 0),
+                success=True,
+                distance=gps_validation.get('distance')
+            )
+            
+            structured_logger.log_punch_created(
+                attendance_id=attendance.id,
+                user=user,
+                punch_type=punch_type,
+                worked_hours=getattr(attendance, 'worked_hours', None)
+            )
+            
             logger.info(
                 f"Pointage {punch_type} créé avec succès",
                 extra={
