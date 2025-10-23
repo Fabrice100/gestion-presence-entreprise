@@ -38,6 +38,15 @@ class UserFactory(factory.django.DjangoModelFactory):
     last_name = factory.Faker('last_name')
     email = factory.LazyAttribute(lambda obj: f"{obj.username}@test.com")
     is_active = True
+    
+    @factory.post_generation
+    def password(obj, create, extracted, **kwargs):
+        """Définir le mot de passe après création de l'utilisateur."""
+        if not create:
+            return
+        # Mot de passe par défaut pour les tests
+        obj.set_password(extracted or 'mot_de_passe')
+        obj.save()
 
 
 class EmployeeProfileFactory(factory.django.DjangoModelFactory):
