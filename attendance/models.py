@@ -146,6 +146,15 @@ class Attendance(models.Model):
         help_text="Notes ou commentaires sur le pointage"
     )
     
+    worked_hours = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Heures travaillées",
+        help_text="Heures travaillées calculées (pause déduite, plafonnées à 8h). NULL si sortie manquante."
+    )
+    
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Date de création"
@@ -309,6 +318,7 @@ class AttendanceAnomaly(models.Model):
         ('late_arrival', 'Arrivée en retard'),
         ('early_departure', 'Départ anticipé'),
         ('missing_punch_out', 'Oubli de sortie'),
+        ('missing_punch_in', 'Oubli d\'entrée'),
         ('outside_zone', 'Pointage hors zone'),
         ('low_accuracy', 'Précision GPS faible'),
         ('double_punch', 'Double pointage'),

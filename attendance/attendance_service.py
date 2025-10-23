@@ -329,6 +329,14 @@ class AttendanceService:
         if not can_punch:
             return None, error
         
+        # Valider la séquence de pointage (bloquer sortie sans entrée)
+        from attendance.hours_calculation_service import HoursCalculationService
+        is_valid, validation_error = HoursCalculationService.validate_punch_sequence(
+            user, timezone.now().date(), punch_type
+        )
+        if not is_valid:
+            return None, validation_error
+        
         try:
             with transaction.atomic():
                 # Créer le pointage
@@ -341,12 +349,17 @@ class AttendanceService:
                     punch_type=punch_type,
                     latitude=gps_data.get('latitude'),
                     longitude=gps_data.get('longitude'),
-                    gps_accuracy=gps_data.get('accuracy'),
+                    accuracy=gps_data.get('accuracy'),
                     distance_from_site=gps_data.get('distance'),
                     source='web',
                     ip_address=request_meta.get('ip_address') if request_meta else None,
                     user_agent=request_meta.get('user_agent') if request_meta else None
                 )
+                
+                # Si c'est une sortie, calculer automatiquement les heures travaillées
+                if punch_type == 'out':
+                    worked_hours = HoursCalculationService.update_worked_hours_on_punch_out(attendance)
+                    # Note: attendance.worked_hours est déjà mis à jour dans la méthode ci-dessus
                 
                 return attendance, None
                 

@@ -417,7 +417,13 @@ class ExcelExportService:
             present_days = attendances.count()
             absent_days = period_days - present_days
             attendance_rate = (present_days / period_days * 100) if period_days > 0 else 0
-            estimated_hours = present_days * 8  # Estimation 8h/jour
+            
+            # Calculer les heures réelles travaillées (au lieu de l'estimation)
+            from attendance.hours_calculation_service import HoursCalculationService
+            hours_data = HoursCalculationService.calculate_period_total_hours(
+                employee.user, start_date, end_date
+            )
+            total_hours = float(hours_data['total_hours'])
             
             data = [
                 employee.user.get_full_name() or employee.user.username,
@@ -425,7 +431,7 @@ class ExcelExportService:
                 present_days,
                 absent_days,
                 f"{attendance_rate:.1f}%",
-                estimated_hours
+                f"{total_hours:.2f}"  # Heures réelles au lieu de l'estimation
             ]
             
             for col, value in enumerate(data, 1):
