@@ -557,7 +557,7 @@ def rh_anomalies_export_csv(request):
     anomalies = AttendanceAnomaly.objects.filter(
         anomaly_type='missing_punch_out',
         status='pending'
-    ).select_related('attendance', 'attendance__employee', 'attendance__employee__user').order_by('-detected_at')
+    ).select_related('attendance', 'attendance__employee').order_by('-created_at')
 
     if date_filter:
         anomalies = anomalies.filter(attendance__date=date_filter)
