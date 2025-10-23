@@ -23,6 +23,8 @@ from datetime import date, timedelta
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
 from common.error_handler import handle_errors, ErrorContext, ErrorCode, ErrorSeverity
+from common.query_optimizer import query_optimizer, pagination_optimizer
+from common.intelligent_cache import intelligent_cache, CacheStrategy
 
 from .models import Attendance, AttendanceAnomaly
 
@@ -146,30 +148,52 @@ class PunchView(EmployeeRequiredMixin, TemplateView):
 
 
 class MyAttendanceView(EmployeeRequiredMixin, ListView):
-    """Vue pour consulter ses propres pointages."""
+    """Vue optimisée pour consulter ses propres pointages."""
     model = Attendance
     template_name = 'attendance/my_attendance.html'
     context_object_name = 'attendances'
     paginate_by = 20
     
     def get_queryset(self):
-        """Filtre les présences de l'utilisateur connecté."""
-        queryset = Attendance.objects.filter(
-            employee=self.request.user
-        ).order_by('-date', '-time')
+        """Filtre les présences avec optimisations de performance."""
+        # Utilisation de l'optimiseur de requêtes
+        today = timezone.now().date()
+        start_date = self.request.GET.get('date_from', today - timedelta(days=30))
+        end_date = self.request.GET.get('date_to', today)
         
-        # Filtres
-        date_from = self.request.GET.get('date_from')
-        if date_from:
-            queryset = queryset.filter(date__gte=date_from)
+        # Conversion des dates si nécessaire
+        if isinstance(start_date, str):
+            start_date = date.fromisoformat(start_date)
+        if isinstance(end_date, str):
+            end_date = date.fromisoformat(end_date)
         
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            queryset = queryset.filter(date__lte=date_to)
+        # Requête optimisée avec cache
+        queryset = query_optimizer.get_user_attendances_optimized(
+            self.request.user, start_date, end_date
+        )
         
+        # Filtres supplémentaires
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
         
         return queryset
+    
+    def get_context_data(self, **kwargs):
+        """Ajoute des données de contexte optimisées."""
+        context = super().get_context_data(**kwargs)
+        
+        # Statistiques optimisées
+        current_year = timezone.now().year
+        stats = query_optimizer.get_attendance_statistics_optimized(
+            self.request.user, current_year
+        )
+        
+        context.update({
+            'attendance_stats': stats,
+            'current_year': current_year,
+            'cache_metrics': intelligent_cache.get_metrics()
+        })
+        
+        return context
 

@@ -25,6 +25,7 @@ from .admin_models import CompanySettings
 from common.structured_logging import structured_logger
 from common.secure_validation import secure_validator
 from common.error_handler import error_handler, ErrorContext, ErrorCode, ErrorSeverity, SystemError
+from common.intelligent_cache import intelligent_cache, CacheStrategy, performance_cache
 
 logger = logging.getLogger(__name__)
 

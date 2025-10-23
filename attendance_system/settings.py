@@ -102,6 +102,11 @@ MIDDLEWARE = [
     # Middleware personnalisés pour gestion d'erreurs
     'common.middleware.RequestLoggingMiddleware',
     'common.middleware.ErrorHandlingMiddleware',
+    # Middleware d'optimisation des performances
+    'common.performance_middleware.CompressionMiddleware',
+    'common.performance_middleware.CacheHeadersMiddleware',
+    'common.performance_middleware.PerformanceMonitoringMiddleware',
+    'common.performance_middleware.SessionOptimizationMiddleware',
 ]
 
 ROOT_URLCONF = 'attendance_system.urls'
@@ -313,12 +318,42 @@ RATELIMIT_PUNCH_RATE = '10/m'     # 10 pointages par minute par utilisateur
 RATELIMIT_LOGIN_RATE = '5/m'      # 5 tentatives de connexion par minute par IP
 RATELIMIT_API_RATE = '60/m'       # 60 requêtes API par minute par utilisateur
 
-# Configuration du cache pour le rate limiting
+# ===================================================================
+# CONFIGURATION CACHE AVANCÉE
+# ===================================================================
+# Cache multi-niveaux pour optimiser les performances
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
         'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    },
+    # Cache pour les données fréquemment accédées
+    'frequent_data': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'frequent-data-cache',
+        'TIMEOUT': 1800,  # 30 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 500,
+        }
+    },
+    # Cache pour les calculs coûteux
+    'expensive_calculations': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'expensive-calculations-cache',
+        'TIMEOUT': 3600,  # 1 heure
+        'OPTIONS': {
+            'MAX_ENTRIES': 200,
+        }
+    },
+    # Cache pour les sessions utilisateur
+    'sessions': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'sessions-cache',
+        'TIMEOUT': 86400,  # 24 heures
         'OPTIONS': {
             'MAX_ENTRIES': 1000,
         }
