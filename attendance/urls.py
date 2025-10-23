@@ -57,4 +57,5 @@ urlpatterns = [
     path('rh/anomalies/', views.rh_anomalies_list, name='rh_anomalies_list'),
     path('rh/anomalies/corriger/<int:anomaly_id>/', views.rh_anomaly_correct, name='rh_anomaly_correct'),
     path('rh/anomalies/ignorer/<int:anomaly_id>/', views.rh_anomaly_ignore, name='rh_anomaly_ignore'),
+    path('rh/anomalies/export/', views.rh_anomalies_export_csv, name='rh_anomalies_export'),
 ]

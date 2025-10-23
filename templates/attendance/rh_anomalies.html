@@ -100,8 +100,11 @@
                 <button type="submit" class="btn btn-primary me-2">
                     <i class="fas fa-filter"></i> Filtrer
                 </button>
-                <a href="{% url 'attendance:rh_anomalies_list' %}" class="btn btn-secondary">
+                <a href="{% url 'attendance:rh_anomalies_list' %}" class="btn btn-secondary me-2">
                     <i class="fas fa-redo"></i> Réinitialiser
+                </a>
+                <a href="{% url 'attendance:rh_anomalies_export' %}?date={{ date_filter }}&employee={{ employee_filter }}" class="btn btn-outline-primary">
+                    <i class="fas fa-file-csv"></i> Exporter CSV
                 </a>
             </div>
         </form>
@@ -134,7 +137,7 @@
                                 </p>
                                 <p class="mb-1">
                                     <i class="fas fa-sign-in-alt text-success"></i> 
-                                    Entrée: {{ anomaly.attendance.punch_in_time|time:"H:i" }}
+                                    Entrée: {{ anomaly.attendance.time|time:"H:i" }}
                                 </p>
                                 <p class="mb-0">
                                     <i class="fas fa-sign-out-alt text-danger"></i> 

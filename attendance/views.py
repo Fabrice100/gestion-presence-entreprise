@@ -22,6 +22,8 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import date, timedelta
 import json
+import csv
+from django.http import HttpResponse
 
 from .models import Attendance, AttendanceAnomaly
 
@@ -539,3 +541,55 @@ def rh_anomaly_ignore(request, anomaly_id):
         return redirect('attendance:rh_anomalies_list')
     
     return redirect('attendance:rh_anomalies_list')
+
+
+@login_required
+@user_passes_test(is_hr_staff, login_url='/accounts/login/')
+def rh_anomalies_export_csv(request):
+    """
+    Export CSV des anomalies affichées (filtres appliqués).
+    Accessible uniquement au personnel RH.
+    """
+    # Récupérer les mêmes filtres que la liste
+    date_filter = request.GET.get('date', '')
+    employee_filter = request.GET.get('employee', '')
+
+    anomalies = AttendanceAnomaly.objects.filter(
+        anomaly_type='missing_punch_out',
+        status='pending'
+    ).select_related('attendance', 'attendance__employee', 'attendance__employee__user').order_by('-detected_at')
+
+    if date_filter:
+        anomalies = anomalies.filter(attendance__date=date_filter)
+
+    if employee_filter:
+        anomalies = anomalies.filter(
+            Q(attendance__employee__user__first_name__icontains=employee_filter) |
+            Q(attendance__employee__user__last_name__icontains=employee_filter) |
+            Q(attendance__employee__user__username__icontains=employee_filter)
+        )
+
+    # Préparer la réponse CSV
+    response = HttpResponse(content_type='text/csv')
+    filename = f"anomalies_missing_punch_out_{date.today().isoformat()}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    # Entêtes
+    writer.writerow(['employee_username', 'employee_full_name', 'date', 'entry_time', 'detected_at', 'description'])
+
+    for a in anomalies:
+        emp_user = a.attendance.employee
+        # emp_user may be a User or EmployeeProfile; try to extract username and full name
+        if hasattr(emp_user, 'user'):
+            user_obj = emp_user.user
+        else:
+            user_obj = emp_user
+
+        username = getattr(user_obj, 'username', '')
+        full_name = getattr(user_obj, 'get_full_name', lambda: '')() if hasattr(user_obj, 'get_full_name') else ''
+        entry_time = a.attendance.time.strftime('%H:%M') if a.attendance.time else ''
+        detected = a.detected_at.strftime('%Y-%m-%d %H:%M') if a.detected_at else ''
+        writer.writerow([username, full_name, a.attendance.date.isoformat(), entry_time, detected, a.description or ''])
+
+    return response
