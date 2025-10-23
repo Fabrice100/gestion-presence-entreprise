@@ -13,7 +13,7 @@ Version: 1.0
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, DetailView, CreateView
@@ -413,3 +413,129 @@ class PunchAPIView(EmployeeRequiredMixin, TemplateView):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+
+# ============================================================================
+# VUES RH - GESTION DES ANOMALIES
+# ============================================================================
+
+def is_hr_staff(user):
+    """Vérifie si l'utilisateur est membre du groupe RH."""
+    return user.is_authenticated and (user.groups.filter(name='RH').exists() or user.is_superuser)
+
+
+@login_required
+@user_passes_test(is_hr_staff, login_url='/accounts/login/')
+def rh_anomalies_list(request):
+    """
+    Vue liste des anomalies de pointage pour le personnel RH.
+    
+    Affiche uniquement les oublis de sortie (missing_punch_out) en attente.
+    Permet filtrage par date et employé.
+    """
+    # Récupérer les paramètres de filtrage
+    date_filter = request.GET.get('date', '')
+    employee_filter = request.GET.get('employee', '')
+    
+    # Requête de base : anomalies missing_punch_out en attente
+    anomalies = AttendanceAnomaly.objects.filter(
+        anomaly_type='missing_punch_out',
+        status='pending'
+    ).select_related('attendance', 'attendance__employee', 'attendance__employee__user').order_by('-detected_at')
+    
+    # Appliquer les filtres
+    if date_filter:
+        anomalies = anomalies.filter(attendance__date=date_filter)
+    
+    if employee_filter:
+        anomalies = anomalies.filter(
+            Q(attendance__employee__user__first_name__icontains=employee_filter) |
+            Q(attendance__employee__user__last_name__icontains=employee_filter) |
+            Q(attendance__employee__user__username__icontains=employee_filter)
+        )
+    
+    # Statistiques
+    total_anomalies = anomalies.count()
+    
+    context = {
+        'anomalies': anomalies,
+        'total_anomalies': total_anomalies,
+        'date_filter': date_filter,
+        'employee_filter': employee_filter,
+    }
+    
+    return render(request, 'attendance/rh_anomalies.html', context)
+
+
+@login_required
+@user_passes_test(is_hr_staff, login_url='/accounts/login/')
+def rh_anomaly_correct(request, anomaly_id):
+    """
+    Vue de correction d'une anomalie de pointage par RH.
+    
+    Permet au personnel RH de saisir les heures travaillées manuellement
+    pour corriger un oubli de sortie.
+    """
+    from .forms import AnomalyCorrectForm
+    
+    anomaly = get_object_or_404(AttendanceAnomaly, id=anomaly_id, anomaly_type='missing_punch_out')
+    attendance = anomaly.attendance
+    
+    if request.method == 'POST':
+        form = AnomalyCorrectForm(request.POST)
+        if form.is_valid():
+            worked_hours = form.cleaned_data['worked_hours']
+            comment = form.cleaned_data.get('comment', '')
+            
+            # Mettre à jour les heures travaillées
+            attendance.worked_hours = worked_hours
+            attendance.save()
+            
+            # Marquer l'anomalie comme résolue
+            anomaly.status = 'resolved'
+            anomaly.resolved_by = request.user
+            anomaly.resolved_at = timezone.now()
+            anomaly.resolution_note = f"Correction RH: {worked_hours}h travaillées. {comment}".strip()
+            anomaly.save()
+            
+            messages.success(
+                request,
+                f"Anomalie corrigée avec succès. {attendance.employee.user.get_full_name()} - {attendance.date}: {worked_hours}h"
+            )
+            return redirect('attendance:rh_anomalies_list')
+    else:
+        form = AnomalyCorrectForm()
+    
+    context = {
+        'form': form,
+        'anomaly': anomaly,
+        'attendance': attendance,
+        'employee': attendance.employee,
+    }
+    
+    return render(request, 'attendance/rh_anomaly_correct.html', context)
+
+
+@login_required
+@user_passes_test(is_hr_staff, login_url='/accounts/login/')
+def rh_anomaly_ignore(request, anomaly_id):
+    """
+    Ignorer une anomalie (marquée comme résolue sans correction).
+    
+    Utilisé quand l'anomalie est légitime (ex: employé absent, congé non déclaré).
+    """
+    anomaly = get_object_or_404(AttendanceAnomaly, id=anomaly_id)
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', 'Ignorée par RH')
+        
+        anomaly.status = 'ignored'
+        anomaly.resolved_by = request.user
+        anomaly.resolved_at = timezone.now()
+        anomaly.resolution_note = f"Ignorée: {reason}"
+        anomaly.save()
+        
+        messages.info(request, f"Anomalie ignorée: {anomaly.attendance.employee.user.get_full_name()} - {anomaly.attendance.date}")
+        return redirect('attendance:rh_anomalies_list')
+    
+    return redirect('attendance:rh_anomalies_list')

@@ -122,6 +122,23 @@
                 </div>
                 {% endif %}
                 
+                {% if user.groups.filter(name='RH').exists or user.employeeprofile.role in 'rh,dg' %}
+                <!-- Section RH - Gestion des Anomalies -->
+                <div class="nav-section">
+                    <h6 class="nav-section-title">RESSOURCES HUMAINES</h6>
+                    
+                    <a href="{% url 'attendance:rh_anomalies_list' %}" class="nav-item {% if request.resolver_match.url_name == 'rh_anomalies_list' %}active{% endif %}">
+                        <i class="bi bi-exclamation-triangle nav-icon"></i>
+                        Anomalies de Pointage
+                        {% with pending_count=user.attendance_anomalies_pending_count|default:0 %}
+                        {% if pending_count > 0 %}
+                        <span class="badge bg-danger ms-auto">{{ pending_count }}</span>
+                        {% endif %}
+                        {% endwith %}
+                    </a>
+                </div>
+                {% endif %}
+                
                 <!-- Section Paramètres -->
                 <div class="nav-section">
                     <h6 class="nav-section-title">PARAMÈTRES</h6>

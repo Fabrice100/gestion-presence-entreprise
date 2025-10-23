@@ -204,3 +204,47 @@ class PunchAPIForm(PunchForm):
             'invalid': 'Précision GPS invalide.'
         }
     )
+
+
+class AnomalyCorrectForm(forms.Form):
+    """
+    Formulaire de correction des anomalies de pointage par RH.
+    
+    Permet au personnel RH de corriger les oublis de sortie en saisissant
+    les heures travaillées manuellement.
+    """
+    
+    worked_hours = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        required=True,
+        validators=[
+            MinValueValidator(0.00, message='Les heures travaillées ne peuvent pas être négatives.'),
+            MaxValueValidator(24.00, message='Les heures travaillées ne peuvent pas dépasser 24h.')
+        ],
+        label='Heures travaillées',
+        help_text='Entrez les heures travaillées (ex: 7.5 pour 7h30)',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': '7.50',
+            'step': '0.01',
+            'min': '0',
+            'max': '24'
+        }),
+        error_messages={
+            'required': 'Les heures travaillées sont requises.',
+            'invalid': 'Format invalide. Utilisez un nombre décimal (ex: 7.5).'
+        }
+    )
+    
+    comment = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Commentaire (optionnel)',
+        help_text='Justification de la correction (max 500 caractères)',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Ex: Employé a confirmé sortie à 17h30, oubli de pointage'
+        })
+    )

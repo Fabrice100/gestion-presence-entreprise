@@ -138,3 +138,5 @@ Cette application gère la présence, les congés et des rapports pour une PME. 
 - Tableaux de bord: `templates/dashboard/*` (moderne et classique), layout `base_modern.html`.
 
 
+
+

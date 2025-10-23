@@ -52,4 +52,9 @@ urlpatterns = [
 
     # API pour les heures supplémentaires
     # path('api/overtime/stats/', overtime_views.get_overtime_stats_api, name='api_overtime_stats'),
+    
+    # Interface RH - Gestion des anomalies
+    path('rh/anomalies/', views.rh_anomalies_list, name='rh_anomalies_list'),
+    path('rh/anomalies/corriger/<int:anomaly_id>/', views.rh_anomaly_correct, name='rh_anomaly_correct'),
+    path('rh/anomalies/ignorer/<int:anomaly_id>/', views.rh_anomaly_ignore, name='rh_anomaly_ignore'),
 ]

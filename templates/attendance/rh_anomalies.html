@@ -1,0 +1,214 @@
+{% extends 'base_modern.html' %}
+{% load static %}
+
+{% block title %}Anomalies de Pointage - RH{% endblock %}
+
+{% block extra_css %}
+<style>
+    .anomaly-card {
+        border-left: 4px solid #dc3545;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .anomaly-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .badge-missing {
+        background-color: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.85rem;
+    }
+    
+    .btn-correct {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-correct:hover {
+        background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+        color: white;
+        transform: scale(1.05);
+    }
+    
+    .btn-ignore {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-ignore:hover {
+        background: #5a6268;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-exclamation-triangle text-warning"></i> Gestion des Anomalies de Pointage</h2>
+            <p class="text-muted">Interface RH pour corriger les oublis de sortie</p>
+        </div>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h5><i class="fas fa-clipboard-list"></i> Anomalies en Attente</h5>
+                <h2 class="mb-0">{{ total_anomalies }}</h2>
+                <small>Oublis de sortie à traiter</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filter-section">
+        <form method="GET" action="{% url 'attendance:rh_anomalies_list' %}" class="row g-3">
+            <div class="col-md-4">
+                <label for="date" class="form-label"><i class="fas fa-calendar"></i> Date</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ date_filter }}">
+            </div>
+            <div class="col-md-4">
+                <label for="employee" class="form-label"><i class="fas fa-user"></i> Employé</label>
+                <input type="text" class="form-control" id="employee" name="employee" value="{{ employee_filter }}" placeholder="Nom, prénom...">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'attendance:rh_anomalies_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Liste des anomalies -->
+    {% if anomalies %}
+        <div class="row">
+            {% for anomaly in anomalies %}
+            <div class="col-12 mb-3">
+                <div class="card anomaly-card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <!-- Informations employé et date -->
+                            <div class="col-md-4">
+                                <h5 class="mb-1">
+                                    <i class="fas fa-user-circle text-primary"></i> 
+                                    {{ anomaly.attendance.employee.user.get_full_name }}
+                                </h5>
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-id-badge"></i> {{ anomaly.attendance.employee.user.username }}
+                                </p>
+                            </div>
+                            
+                            <!-- Détails pointage -->
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <i class="fas fa-calendar-day"></i> 
+                                    <strong>{{ anomaly.attendance.date|date:"l d F Y" }}</strong>
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-sign-in-alt text-success"></i> 
+                                    Entrée: {{ anomaly.attendance.punch_in_time|time:"H:i" }}
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-sign-out-alt text-danger"></i> 
+                                    Sortie: <span class="badge-missing">MANQUANTE</span>
+                                </p>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="col-md-4 text-end">
+                                <p class="mb-2 small text-muted">
+                                    <i class="fas fa-clock"></i> Détecté: {{ anomaly.detected_at|date:"d/m/Y H:i" }}
+                                </p>
+                                <a href="{% url 'attendance:rh_anomaly_correct' anomaly.id %}" class="btn btn-correct btn-sm me-2">
+                                    <i class="fas fa-edit"></i> Corriger
+                                </a>
+                                <button type="button" class="btn btn-ignore btn-sm" onclick="ignoreAnomaly({{ anomaly.id }})">
+                                    <i class="fas fa-times"></i> Ignorer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle"></i> 
+            <strong>Aucune anomalie en attente !</strong>
+            {% if date_filter or employee_filter %}
+                Aucune anomalie ne correspond à vos critères de recherche.
+            {% else %}
+                Tous les pointages sont conformes.
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal Ignorer -->
+<div class="modal fade" id="ignoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ignorer l'Anomalie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="ignoreForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Raison (optionnel)</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Ex: Employé en congé, absence justifiée..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Confirmer l'Ignore</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAnomalyId = null;
+
+function ignoreAnomaly(anomalyId) {
+    currentAnomalyId = anomalyId;
+    const modal = new bootstrap.Modal(document.getElementById('ignoreModal'));
+    const form = document.getElementById('ignoreForm');
+    form.action = `/attendance/rh/anomalies/ignorer/${anomalyId}/`;
+    modal.show();
+}
+</script>
+{% endblock %}
