@@ -22,6 +22,7 @@ from django.db.models import Q
 from datetime import date, timedelta
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
+from common.error_handler import handle_errors, ErrorContext, ErrorCode, ErrorSeverity
 
 from .models import Attendance, AttendanceAnomaly
 
@@ -76,6 +77,7 @@ class PunchView(EmployeeRequiredMixin, TemplateView):
         return context
     
     @method_decorator(ratelimit(key='user', rate=settings.RATELIMIT_PUNCH_RATE, method='POST', block=True))
+    @handle_errors(error_type="punch_operation", severity=ErrorSeverity.MEDIUM)
     def post(self, request, *args, **kwargs):
         """
         Traite le pointage via POST avec le service unifié.

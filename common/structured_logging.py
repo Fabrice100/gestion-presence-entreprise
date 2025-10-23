@@ -275,6 +275,50 @@ class StructuredLogger:
             event_type="performance"
         )
 
+    def log_error(self, exception: Exception, context: dict = None, 
+                  error_type: str = "unknown", severity: str = "medium"):
+        """
+        Log une erreur système avec contexte complet.
+        
+        Args:
+            exception: Exception à logger
+            context: Contexte de l'erreur
+            error_type: Type d'erreur
+            severity: Sévérité de l'erreur
+        """
+        error_context = context or {}
+        error_context.update({
+            'exception_type': type(exception).__name__,
+            'exception_message': str(exception),
+            'error_type': error_type,
+            'severity': severity
+        })
+        
+        # Log selon la sévérité
+        if severity == "critical":
+            self.security_logger.critical(
+                "Erreur critique",
+                **error_context,
+                event_type="critical_error"
+            )
+        elif severity == "high":
+            self.security_logger.error(
+                "Erreur importante",
+                **error_context,
+                event_type="high_error"
+            )
+        else:
+            self.accounts_logger.warning(
+                "Erreur système",
+                **error_context,
+                event_type="system_error"
+            )
+
+    def _get_timestamp(self):
+        """Retourne un timestamp ISO pour les réponses d'erreur."""
+        from datetime import datetime
+        return datetime.now().isoformat()
+
 
 # Instance globale du logger structuré
 structured_logger = StructuredLogger()

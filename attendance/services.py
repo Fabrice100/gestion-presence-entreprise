@@ -24,6 +24,7 @@ from .attendance_service import (
 from .admin_models import CompanySettings
 from common.structured_logging import structured_logger
 from common.secure_validation import secure_validator
+from common.error_handler import error_handler, ErrorContext, ErrorCode, ErrorSeverity, SystemError
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,14 @@ class PunchResult:
     les données de résultat de la logique métier.
     """
     
-    def __init__(self, success=False, attendance=None, error_message=None, warning_message=None):
+    def __init__(self, success=False, attendance=None, error_message=None, warning_message=None, 
+                 error_code=None, error_severity=None):
         self.success = success
         self.attendance = attendance
         self.error_message = error_message
         self.warning_message = warning_message
+        self.error_code = error_code
+        self.error_severity = error_severity
     
     def is_success(self):
         """Vérifie si le pointage a réussi."""
@@ -100,6 +104,17 @@ class PunchService:
         Returns:
             PunchResult: Résultat du pointage avec succès/erreur et données
         """
+        # Création du contexte d'erreur
+        error_context = ErrorContext(
+            user=user,
+            request=request_meta.get('request') if request_meta else None,
+            operation='create_punch',
+            additional_data={
+                'punch_type': punch_type,
+                'gps_data_keys': list(gps_data.keys()) if gps_data else []
+            }
+        )
+        
         try:
             # 0. VALIDATION SÉCURISÉE DES DONNÉES ENTRANTES
             # Sanitisation des données GPS
@@ -250,14 +265,26 @@ class PunchService:
             )
             
         except Exception as e:
-            logger.error(
-                f"Erreur inattendue lors du pointage - {str(e)}",
-                extra={'user_id': user.id, 'punch_type': punch_type},
-                exc_info=True
-            )
+            # Gestion centralisée des erreurs
+            code, message, severity = error_handler.handle_exception(e, error_context)
+            
+            # Création d'une erreur système personnalisée si nécessaire
+            if code == ErrorCode.UNKNOWN_ERROR:
+                system_error = SystemError(
+                    code=code,
+                    message=message,
+                    severity=severity,
+                    context=error_context,
+                    original_exception=e
+                )
+                raise system_error
+            
+            # Retour d'un résultat d'erreur avec gestion centralisée
             return PunchResult(
                 success=False,
-                error_message=f"Erreur système: {str(e)}"
+                error_message=message,
+                error_code=code.value,
+                error_severity=severity.value
             )
     
     def _validate_punch_sequence(self, user, punch_type):
