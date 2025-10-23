@@ -1,7 +1,10 @@
 """
 Vues pour la configuration du système de pointage.
 
-Accessible uniquement par les administrateurs et RH/DG.
+ACCÈS RÉSERVÉ AUX ADMINISTRATEURS SYSTÈME UNIQUEMENT
+
+Les RH/DG n'ont pas accès à cette configuration pour des raisons de sécurité.
+La configuration système (GPS, horaires) doit être gérée par l'administrateur technique.
 """
 
 from django.shortcuts import render, redirect
@@ -18,8 +21,16 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
     """
     Vue pour modifier la configuration de l'entreprise.
     
-    ADMIN : Configuration complète (technique + métier)
-    RH/DG : Configuration métier uniquement (horaires)
+    RÉSERVÉ AUX ADMINISTRATEURS UNIQUEMENT
+    
+    Configuration technique et système :
+    - Paramètres GPS (géolocalisation, rayon autorisé)
+    - Horaires de travail de l'entreprise
+    - Tolérance de retard
+    
+    Politique de sécurité :
+    - Seuls les superusers (admins Django) ont accès
+    - Les RH/DG gèrent le personnel, pas les paramètres système
     """
     model = CompanySettings
     template_name = 'attendance/company_settings.html'
@@ -27,13 +38,13 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
     
     def get_form_fields(self):
         """
-        Retourne les champs selon le rôle.
+        Retourne les champs de configuration.
         
-        POLITIQUE DE SÉCURITÉ GPS :
-        - Superuser uniquement : Peut modifier les champs GPS
-        - RH/DG : Peut modifier uniquement les horaires de travail
+        POLITIQUE DE SÉCURITÉ :
+        - Superuser uniquement : Configuration complète
+        - Autres rôles : Accès refusé
         """
-        # SÉCURITÉ : Seul le superuser peut configurer le GPS
+        # SÉCURITÉ : Seul le superuser peut configurer le système
         if self.request.user.is_superuser:
             # SUPERUSER : Configuration complète (GPS + horaires)
             return [
@@ -48,26 +59,8 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
                 'gps_accuracy_max_meters',
             ]
         
-        # Vérifier si l'utilisateur a un profil employé
-        try:
-            profile = self.request.user.employee_profile
-            role = profile.role
-        except:
-            # Utilisateur sans profil = pas d'accès
-            return []
-        
-        if role == 'rh_dg':
-            # RH/DG : Uniquement champs métier (horaires)
-            # PAS d'accès aux champs GPS (sécurité)
-            return [
-                'company_name',
-                'work_start_time',
-                'work_end_time',
-                'late_tolerance_minutes',
-            ]
-        else:
-            # Autres rôles : pas d'accès
-            return []
+        # Tous les autres utilisateurs : pas d'accès
+        return []
     
     @property
     def fields(self):
@@ -78,32 +71,22 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
         """
         Vérifier les permissions d'accès.
         
-        Accès autorisé à :
-        - Superuser (admin Django) : accès complet GPS + horaires
-        - RH/DG : accès horaires uniquement
+        Accès autorisé uniquement à :
+        - Superuser (admin Django) : accès complet
+        
+        Tous les autres utilisateurs (y compris RH/DG) :
+        - Redirection vers dashboard avec message d'erreur
         """
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         
-        # Superuser a toujours accès
+        # Seul le superuser a accès
         if request.user.is_superuser:
             return super().dispatch(request, *args, **kwargs)
         
-        # Vérifier le rôle pour les autres utilisateurs
-        try:
-            profile = request.user.employee_profile
-            if profile.role == 'rh_dg':
-                # RH/DG a accès aux horaires
-                return super().dispatch(request, *args, **kwargs)
-            else:
-                messages.error(request, 'Accès refusé. Réservé aux administrateurs et RH.')
-                return redirect('dashboard:dashboard')
-        except:
-            # Utilisateur sans profil = pas d'accès
-            messages.error(request, 'Accès refusé.')
-            return redirect('dashboard:dashboard')
-        
-        return super().dispatch(request, *args, **kwargs)
+        # Tous les autres : accès refusé
+        messages.error(request, '⚠️ Accès refusé. Configuration réservée aux administrateurs système.')
+        return redirect('dashboard:dashboard')
     
     def get_object(self, queryset=None):
         """Récupère ou crée la configuration unique."""

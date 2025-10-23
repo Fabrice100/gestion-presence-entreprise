@@ -126,10 +126,10 @@
                 <div class="nav-section">
                     <h6 class="nav-section-title">PARAMÈTRES</h6>
                     
-                    {% if user.employeeprofile.role in 'rh,dg' %}
+                    {% if user.is_superuser %}
                     <a href="{% url 'attendance:company_settings' %}" class="nav-item">
                         <i class="bi bi-gear nav-icon"></i>
-                        Entreprise
+                        Configuration système
                     </a>
                     {% endif %}
                     

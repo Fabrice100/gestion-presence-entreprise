@@ -108,11 +108,11 @@
                     {% endif %}
                     
                     
-                    {% if user.employee_profile.role == 'rh_dg' %}
+                    {% if user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'attendance:company_settings' %}">
                             <i class="bi bi-sliders"></i>
-                            <span>Configuration</span>
+                            <span>Configuration système</span>
                         </a>
                     </li>
                     {% endif %}
