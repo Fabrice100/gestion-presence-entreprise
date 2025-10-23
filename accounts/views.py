@@ -72,6 +72,7 @@ class CustomLoginView(LoginView):
     la connexion avec l'ID Employé.
     """
     template_name = 'accounts/login.html'
+    redirect_authenticated_user = True  # Rediriger si déjà authentifié
     
     def get_success_url(self):
         """Redirige vers le tableau de bord après connexion."""

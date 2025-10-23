@@ -223,14 +223,31 @@ class EmployeeRequiredMixinTest(AuthenticatedTestCase):
     
     def test_mixin_rejects_user_without_profile(self):
         """Test que le mixin rejette un utilisateur sans profil."""
-        # Créer un utilisateur sans profil employé
-        user = UserFactory()
-        self.login_user(user)
+        from django.test import RequestFactory
         
-        # Tenter d'accéder à une vue protégée
-        response = self.client.get(reverse('accounts:profile'))
-        # Doit rediriger ou retourner 403
-        self.assertIn(response.status_code, [302, 403])
+        # Créer un utilisateur et supprimer son profil auto-créé
+        user = UserFactory()
+        if hasattr(user, 'employee_profile'):
+            user.employee_profile.delete()
+            # Rafraîchir l'utilisateur depuis la BD
+            user.refresh_from_db()
+        
+        # Vérifier que l'utilisateur n'a plus de profil
+        self.assertFalse(hasattr(user, 'employee_profile'),
+                        "Le profil aurait dû être supprimé")
+        
+        # Créer une requête simulée
+        factory = RequestFactory()
+        request = factory.get('/test/')
+        request.user = user
+        
+        # Créer une instance du mixin pour tester test_func
+        mixin = EmployeeRequiredMixin()
+        mixin.request = request
+        
+        # Vérifier que test_func retourne False
+        self.assertFalse(mixin.test_func(),
+                        "test_func devrait retourner False pour un utilisateur sans profil")
 
 
 class PasswordChangeTest(AuthenticatedTestCase):
