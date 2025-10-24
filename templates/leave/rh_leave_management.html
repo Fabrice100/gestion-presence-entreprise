@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Gestion des Congés - RH/DG{% endblock %}
 
@@ -242,8 +243,8 @@
                                         <div>
                                             <h6 class="mb-0">{{ request.employee.get_full_name|default:request.employee.username }}</h6>
                                             <small class="text-muted">
-                                                {{ request.employee.employee_profile.department.name|default:"N/A" }}
-                                                - {{ request.employee.employee_profile.employee_id|default:"N/A" }}
+                                                {{ request.employee.employee_profile.department.name|default:"Non défini" }}
+                                                - {{ request.employee.employee_profile.employee_id|default:"Non défini" }}
                                             </small>
                                         </div>
                                     </div>
@@ -266,7 +267,7 @@
                                 
                                 <p class="mb-2">
                                     <i class="fas fa-clock"></i> 
-                                    <strong>{{ request.duration_days }} jour{{ request.duration_days|pluralize }}</strong>
+                                    <strong>{{ request.duration_days|format_days }} jour{{ request.duration_days|pluralize }}</strong>
                                 </p>
                                 
                                 <p class="mb-2">
@@ -288,19 +289,9 @@
                                     
                                     <div class="action-buttons">
                                         <a href="{% url 'leave:leave_approval_detail' request.id %}" 
-                                           class="btn btn-outline-info btn-sm">
-                                            <i class="fas fa-eye"></i>
+                                           class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye"></i> Voir
                                         </a>
-                                        {% if request.status == 'pending' %}
-                                        <a href="{% url 'leave:leave_approval_process' request.id %}?action=approve" 
-                                           class="btn btn-success btn-sm">
-                                            <i class="fas fa-check"></i>
-                                        </a>
-                                        <a href="{% url 'leave:leave_approval_process' request.id %}?action=reject" 
-                                           class="btn btn-danger btn-sm">
-                                            <i class="fas fa-times"></i>
-                                        </a>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

@@ -47,6 +47,16 @@ urlpatterns = [
     path('holidays/', views.HolidayListView.as_view(), name='holiday_list'),
     path('holidays/<int:pk>/', views.HolidayDetailView.as_view(), name='holiday_detail'),
     
+    # Détails et actions
+    path('requests/<int:pk>/', views.LeaveRequestDetailView.as_view(), name='leave_request_detail'),
+    path('requests/<int:pk>/edit/', views.LeaveRequestEditView.as_view(), name='leave_request_edit'),
+    path('requests/<int:pk>/cancel/', views.LeaveRequestCancelView.as_view(), name='leave_request_cancel'),
+    path('balances/<int:pk>/', views.LeaveBalanceDetailView.as_view(), name='leave_balance_detail'),
+    
+    # Calendrier et rapports
+    path('calendar/', views.LeaveCalendarView.as_view(), name='leave_calendar'),
+    path('reports/', views.LeaveReportView.as_view(), name='leave_report'),
+    
     # API
     path('api/statistics/', workflow_views.leave_statistics_api, name='leave_statistics_api'),
 ]

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Mes demandes de congés{% endblock %}
 
@@ -71,7 +72,7 @@
                     </td>
                     <td>
                         <span class="ds-badge ds-badge-primary">
-                            {{ request.duration_days }} jour{{ request.duration_days|pluralize }}
+                            {{ request.duration_days|format_days }} jour{{ request.duration_days|pluralize }}
                         </span>
                     </td>
                     <td>
@@ -108,11 +109,13 @@
                         </span>
                     </td>
                     <td class="ds-text-center">
-                        <a href="{% url 'leave:leave_approval_detail' request.id %}" 
-                           class="ds-btn ds-btn-sm ds-btn-outline-primary"
-                           title="Voir détails">
-                            <i class="bi bi-eye"></i>
-                        </a>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'leave:leave_request_detail' request.id %}" 
+                               class="ds-btn ds-btn-sm ds-btn-primary"
+                               title="Voir détails">
+                                <i class="bi bi-eye"></i> Voir
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

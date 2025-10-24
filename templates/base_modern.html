@@ -1,3 +1,4 @@
+{% load user_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -122,7 +123,7 @@
                 </div>
                 {% endif %}
                 
-                {% if user.groups.filter(name='RH').exists or user.employeeprofile.role in 'rh,dg' %}
+                {% if user|has_group:'RH' or user|has_role:'rh,dg' %}
                 <!-- Section RH - Gestion des Anomalies -->
                 <div class="nav-section">
                     <h6 class="nav-section-title">RESSOURCES HUMAINES</h6>

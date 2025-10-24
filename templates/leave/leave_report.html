@@ -1,0 +1,421 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapports des Congés{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-left: 4px solid #17a2b8;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .chart-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table th {
+        background-color: #495057;
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        border-color: #dee2e6;
+    }
+    
+    .badge-status {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .status-pending { background-color: #ffc107; color: #000; }
+    .status-approved { background-color: #28a745; color: #fff; }
+    .status-rejected { background-color: #dc3545; color: #fff; }
+    .status-cancelled { background-color: #6c757d; color: #fff; }
+    
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .export-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-line text-info"></i> Rapports des Congés</h2>
+                    <p class="text-muted">Analysez les données de congés de votre organisation</p>
+                </div>
+                <div class="export-buttons">
+                    <button class="btn btn-success" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-danger" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button class="btn btn-info" onclick="printReport()">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="year" class="form-label">Année</label>
+                <select name="year" id="year" class="form-select">
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="department" class="form-label">Département</label>
+                <select name="department" id="department" class="form-select">
+                    <option value="">Tous les départements</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if request.GET.department == dept.id|stringformat:"s" %}selected{% endif %}>
+                        {{ dept.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="leave_type" class="form-label">Type de Congé</label>
+                <select name="leave_type" id="leave_type" class="form-select">
+                    <option value="">Tous les types</option>
+                    {% for type in leave_types %}
+                    <option value="{{ type.id }}" {% if request.GET.leave_type == type.id|stringformat:"s" %}selected{% endif %}>
+                        {{ type.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary mt-4">
+                    <i class="fas fa-filter"></i> Appliquer
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_requests }}</div>
+            <div class="stat-label">Total Demandes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ approved_requests }}</div>
+            <div class="stat-label">Approuvées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ pending_requests }}</div>
+            <div class="stat-label">En Attente</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ rejected_requests }}</div>
+            <div class="stat-label">Rejetées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_days_taken }}</div>
+            <div class="stat-label">Jours Pris</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ average_duration|floatformat:1 }}</div>
+            <div class="stat-label">Durée Moyenne</div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-chart-pie text-primary"></i> Répartition par Statut</h5>
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-chart-bar text-primary"></i> Congés par Mois</h5>
+                <canvas id="monthlyChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des employés -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card report-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users text-info"></i> Détail par Employé
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Employé</th>
+                                    <th>Département</th>
+                                    <th>Total Demandes</th>
+                                    <th>Jours Pris</th>
+                                    <th>Jours Restants</th>
+                                    <th>Taux d'Appro.</th>
+                                    <th>Dernière Demande</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employee_stats %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-2">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ employee.full_name }}</div>
+                                                <small class="text-muted">{{ employee.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ employee.department }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ employee.total_requests }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ employee.days_taken }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ employee.days_remaining }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress-bar-custom me-2" style="width: 100px;">
+                                                <div class="progress-fill" style="width: {{ employee.approval_rate }}%;"></div>
+                                            </div>
+                                            <span class="small">{{ employee.approval_rate }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ employee.last_request|date:"d/m/Y" }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top des types de congés -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy text-warning"></i> Top Types de Congés
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for type in top_leave_types %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="badge me-2" style="background-color: {{ type.color }}; color: white;">
+                                {{ type.name }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="progress-bar-custom me-2" style="width: 100px;">
+                                <div class="progress-fill" style="width: {% widthratio type.count max_count 100 %}%;"></div>
+                            </div>
+                            <span class="badge bg-primary">{{ type.count }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar text-info"></i> Congés par Département
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for dept in department_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-bold">{{ dept.name }}</span>
+                            <small class="text-muted d-block">{{ dept.employee_count }} employé{{ dept.employee_count|pluralize }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="badge bg-info">{{ dept.total_requests }} demandes</div>
+                            <div class="small text-muted">{{ dept.days_taken }} jours pris</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Graphique des statuts
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Approuvées', 'En Attente', 'Rejetées', 'Annulées'],
+            datasets: [{
+                data: [{{ approved_requests }}, {{ pending_requests }}, {{ rejected_requests }}, {{ cancelled_requests }}],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#6c757d'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Graphique mensuel
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ monthly_labels|safe }},
+            datasets: [{
+                label: 'Congés par mois',
+                data: {{ monthly_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Fonctions d'export
+    function exportToExcel() {
+        // Implémentation de l'export Excel
+        alert('Export Excel en cours de développement');
+    }
+
+    function exportToPDF() {
+        // Implémentation de l'export PDF
+        alert('Export PDF en cours de développement');
+    }
+
+    function printReport() {
+        window.print();
+    }
+
+    // Auto-submit du formulaire de filtrage
+    document.getElementById('year').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('department').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('leave_type').addEventListener('change', function() {
+        this.form.submit();
+    });
+</script>
+{% endblock %}

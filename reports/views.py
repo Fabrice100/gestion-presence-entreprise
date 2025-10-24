@@ -50,22 +50,3 @@ class ReportTemplateListView(ManagerRequiredMixin, ListView):
     template_name = 'reports/report_template_list.html'
 
 
-# Vues temporaires pour éviter les erreurs 404
-class ReportGenerateView(ManagerRequiredMixin, TemplateView):
-    template_name = 'reports/placeholder.html'
-
-
-class ReportDownloadView(ManagerRequiredMixin, TemplateView):
-    template_name = 'reports/placeholder.html'
-
-
-class SystemSettingEditView(ManagerRequiredMixin, TemplateView):
-    template_name = 'reports/placeholder.html'
-
-
-class ReportTemplateDetailView(ManagerRequiredMixin, TemplateView):
-    template_name = 'reports/placeholder.html'
-
-
-class ReportTemplateCreateView(ManagerRequiredMixin, TemplateView):
-    template_name = 'reports/placeholder.html'

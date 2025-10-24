@@ -2,36 +2,13 @@
 {% load static %}
 {% load format_filters %}
 
-{% block title %}Validation de la Demande de Congé{% endblock %}
+{% block title %}Détail de la Demande de Congé{% endblock %}
 
 {% block extra_css %}
 <style>
-    .approval-card {
-        border-left: 4px solid #ffc107;
+    .detail-card {
+        border-left: 4px solid #007bff;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    
-    .employee-info {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .leave-details {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .validation-section {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
     }
     
     .status-badge {
@@ -42,6 +19,9 @@
     .status-pending { background-color: #ffc107; color: #000; }
     .status-approved_manager { background-color: #17a2b8; color: #fff; }
     .status-approved_rh { background-color: #28a745; color: #fff; }
+    .status-rejected_manager { background-color: #dc3545; color: #fff; }
+    .status-rejected_rh { background-color: #dc3545; color: #fff; }
+    .status-cancelled { background-color: #6c757d; color: #fff; }
     
     .priority-badge {
         font-size: 0.9rem;
@@ -53,17 +33,11 @@
     .priority-low { background-color: #28a745; color: #fff; }
     .priority-urgent { background-color: #6f42c1; color: #fff; }
     
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    
-    .balance-info {
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
+    .info-section {
+        background-color: #f8f9fa;
         border-radius: 8px;
-        padding: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
     }
     
     .timeline {
@@ -99,12 +73,10 @@
         box-shadow: 0 0 0 2px #dee2e6;
     }
     
-    .timeline-item.completed::before {
-        background-color: #28a745;
-    }
-    
-    .timeline-item.rejected::before {
-        background-color: #dc3545;
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 </style>
 {% endblock %}
@@ -116,31 +88,34 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2><i class="fas fa-check-circle text-warning"></i> Validation de la Demande de Congé</h2>
-                    <p class="text-muted">Examinez et validez cette demande de congé</p>
-    </div>
+                    <h2><i class="fas fa-calendar-alt text-primary"></i> Détail de la Demande de Congé</h2>
+                    <p class="text-muted">Informations complètes sur la demande</p>
+                </div>
                 <div class="btn-group">
-                    <a href="{% url 'leave:leave_approval_list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'leave:leave_request_list' %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left"></i> Retour à la Liste
                     </a>
-                    {% if user.employee_profile.role == 'manager' %}
-                    <a href="{% url 'leave:manager_validation' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-tasks"></i> Mes Validations
+                    {% if leave_request.status == 'pending' %}
+                    <a href="{% url 'leave:leave_request_edit' leave_request.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <a href="{% url 'leave:leave_request_cancel' leave_request.id %}" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Annuler
                     </a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <!-- Informations principales -->
         <div class="col-md-8">
-            <div class="card approval-card">
+            <div class="card detail-card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
-                            <i class="fas fa-user"></i> Demande de {{ leave_request.employee.get_full_name|default:leave_request.employee.username }}
+                            <i class="fas fa-user"></i> {{ leave_request.employee.get_full_name|default:leave_request.employee.username }}
                         </h5>
                         <div>
                             <span class="badge status-{{ leave_request.status }} status-badge">
@@ -151,30 +126,11 @@
                             </span>
                         </div>
                     </div>
-            </div>
+                </div>
                 <div class="card-body">
-                    <!-- Informations employé -->
-            <div class="employee-info">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6><i class="fas fa-user-circle"></i> Informations Employé</h6>
-                                <p class="mb-1"><strong>Nom :</strong> {{ leave_request.employee.get_full_name|default:leave_request.employee.username }}</p>
-                                <p class="mb-1"><strong>Email :</strong> {{ leave_request.employee.email }}</p>
-                                <p class="mb-0"><strong>Département :</strong> {{ leave_request.employee.employee_profile.department.name|default:"Non défini" }}</p>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="balance-info">
-                                    <h6 class="mb-2">Solde Disponible</h6>
-                                    <div class="h4 mb-0">{{ remaining_days }}</div>
-                                    <small>jour{{ remaining_days|pluralize }} restant{{ remaining_days|pluralize }}</small>
-                                </div>
-                            </div>
-            </div>
-        </div>
-        
-                    <!-- Détails du congé -->
-                    <div class="leave-details">
-                        <h6><i class="fas fa-calendar-alt text-primary"></i> Détails du Congé</h6>
+                    <!-- Informations de base -->
+                    <div class="info-section">
+                        <h6><i class="fas fa-info-circle text-primary"></i> Informations Générales</h6>
                         <div class="row">
                             <div class="col-md-6">
                                 <p><strong>Type de congé :</strong> 
@@ -192,15 +148,15 @@
                             <div class="col-md-6">
                                 <p><strong>Date de demande :</strong> {{ leave_request.created_at|date:"d/m/Y H:i" }}</p>
                                 <p><strong>Dernière modification :</strong> {{ leave_request.updated_at|date:"d/m/Y H:i" }}</p>
-                                {% if leave_request.leave_type.requires_rh_approval %}
-                                <p><strong>Validation RH requise :</strong> <span class="badge bg-warning">Oui</span></p>
+                                {% if leave_request.manager %}
+                                <p><strong>Manager :</strong> {{ leave_request.manager.get_full_name|default:leave_request.manager.username }}</p>
                                 {% endif %}
                             </div>
                         </div>
-            </div>
-            
+                    </div>
+
                     <!-- Motif et justification -->
-                    <div class="leave-details">
+                    <div class="info-section">
                         <h6><i class="fas fa-comment text-primary"></i> Motif et Justification</h6>
                         <p><strong>Motif :</strong></p>
                         <p class="border p-3 rounded bg-light">{{ leave_request.reason }}</p>
@@ -209,40 +165,11 @@
                         <p><strong>Justification :</strong></p>
                         <p class="border p-3 rounded bg-light">{{ leave_request.justification }}</p>
                         {% endif %}
-            </div>
-            
-                    <!-- Section de validation -->
-                    {% if leave_request.status == 'pending' or leave_request.status == 'approved_manager' %}
-                    <div class="validation-section">
-                        <h6><i class="fas fa-gavel text-warning"></i> Action de Validation</h6>
-                        <form method="post" id="approvalForm">
-                            {% csrf_token %}
-                            
-                            <div class="mb-3">
-                                <label for="id_comment" class="form-label">Commentaire (optionnel)</label>
-                                <textarea class="form-control" 
-                                          id="id_comment" 
-                                          name="comment" 
-                                          rows="3" 
-                                          placeholder="Ajoutez un commentaire pour l'employé..."></textarea>
-                                <div class="form-text">Ce commentaire sera visible par l'employé.</div>
-            </div>
-            
-                            <div class="action-buttons">
-                                <button type="submit" name="action" value="approve" class="btn btn-success">
-                                    <i class="fas fa-check"></i> Approuver
-                                </button>
-                                <button type="submit" name="action" value="reject" class="btn btn-danger">
-                                    <i class="fas fa-times"></i> Rejeter
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                    {% endif %}
 
-                    <!-- Commentaires existants -->
+                    <!-- Commentaires de validation -->
                     {% if leave_request.manager_comment or leave_request.rh_comment %}
-                    <div class="leave-details">
+                    <div class="info-section">
                         <h6><i class="fas fa-comments text-primary"></i> Commentaires de Validation</h6>
                         {% if leave_request.manager_comment %}
                         <p><strong>Commentaire Manager :</strong></p>
@@ -257,49 +184,92 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Panneau latéral -->
-        <div class="col-md-4">
 
-            <!-- Historique des validations -->
+        <!-- Actions et historique -->
+        <div class="col-md-4">
+            <!-- Actions disponibles -->
+            {% if leave_request.status == 'pending' and user.employee_profile.role == 'manager' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tasks text-warning"></i> Actions Manager</h6>
+                </div>
+                <div class="card-body">
+                    <div class="action-buttons">
+                        <a href="{% url 'leave:leave_approval_process' leave_request.id %}?action=approve" 
+                           class="btn btn-success btn-sm">
+                            <i class="fas fa-check"></i> Approuver
+                        </a>
+                        <a href="{% url 'leave:leave_approval_process' leave_request.id %}?action=reject" 
+                           class="btn btn-danger btn-sm">
+                            <i class="fas fa-times"></i> Rejeter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if leave_request.status == 'approved_manager' and user.employee_profile.role == 'rh_dg' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tasks text-success"></i> Actions RH/DG</h6>
+                </div>
+                <div class="card-body">
+                    <div class="action-buttons">
+                        <a href="{% url 'leave:leave_approval_process' leave_request.id %}?action=approve" 
+                           class="btn btn-success btn-sm">
+                            <i class="fas fa-check"></i> Approuver Final
+                        </a>
+                        <a href="{% url 'leave:leave_approval_process' leave_request.id %}?action=reject" 
+                           class="btn btn-danger btn-sm">
+                            <i class="fas fa-times"></i> Rejeter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Historique des modifications -->
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-history text-info"></i> Historique des Validations</h6>
-        </div>
+                    <h6 class="mb-0"><i class="fas fa-history text-info"></i> Historique</h6>
+                </div>
                 <div class="card-body">
                     <div class="timeline">
-                        <div class="timeline-item completed">
+                        <div class="timeline-item">
                             <h6 class="mb-1">Demande créée</h6>
                             <small class="text-muted">{{ leave_request.created_at|date:"d/m/Y H:i" }}</small>
-    </div>
-    
+                        </div>
+                        
                         {% if leave_request.manager_approved_at %}
-                        <div class="timeline-item completed">
+                        <div class="timeline-item">
                             <h6 class="mb-1">Approuvée par Manager</h6>
                             <small class="text-muted">{{ leave_request.manager_approved_at|date:"d/m/Y H:i" }}</small>
                         </div>
-                        {% elif leave_request.manager_rejected_at %}
-                        <div class="timeline-item rejected">
-                            <h6 class="mb-1">Rejetée par Manager</h6>
-                            <small class="text-muted">{{ leave_request.manager_rejected_at|date:"d/m/Y H:i" }}</small>
-        </div>
-        {% endif %}
-        
+                        {% endif %}
+                        
                         {% if leave_request.rh_approved_at %}
-                        <div class="timeline-item completed">
+                        <div class="timeline-item">
                             <h6 class="mb-1">Approuvée par RH/DG</h6>
                             <small class="text-muted">{{ leave_request.rh_approved_at|date:"d/m/Y H:i" }}</small>
                         </div>
-                        {% elif leave_request.rh_rejected_at %}
-                        <div class="timeline-item rejected">
-                            <h6 class="mb-1">Rejetée par RH/DG</h6>
-                            <small class="text-muted">{{ leave_request.rh_rejected_at|date:"d/m/Y H:i" }}</small>
-        </div>
-        {% endif %}
-        
+                        {% endif %}
+                        
+                        {% if leave_request.status in 'rejected_manager,rejected_rh' %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Rejetée</h6>
+                            <small class="text-muted">
+                                {% if leave_request.manager_rejected_at %}
+                                    {{ leave_request.manager_rejected_at|date:"d/m/Y H:i" }}
+                                {% elif leave_request.rh_rejected_at %}
+                                    {{ leave_request.rh_rejected_at|date:"d/m/Y H:i" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
                         {% if leave_request.status == 'cancelled' %}
-                        <div class="timeline-item rejected">
-                            <h6 class="mb-1">Annulée par l'employé</h6>
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Annulée</h6>
                             <small class="text-muted">{{ leave_request.updated_at|date:"d/m/Y H:i" }}</small>
                         </div>
                         {% endif %}
@@ -314,22 +284,6 @@
 {% block extra_js %}
 <script>
     // Confirmation pour les actions
-    document.getElementById('approvalForm').addEventListener('submit', function(e) {
-        const action = e.submitter.value;
-        const comment = document.getElementById('id_comment').value.trim();
-        
-        if (action === 'approve') {
-            if (!confirm('Êtes-vous sûr de vouloir approuver cette demande de congé ?')) {
-                e.preventDefault();
-            }
-        } else if (action === 'reject') {
-            if (!confirm('Êtes-vous sûr de vouloir rejeter cette demande de congé ?')) {
-                e.preventDefault();
-            }
-        }
-    });
-    
-    // Confirmation pour les actions rapides
     document.querySelectorAll('a[href*="action=approve"]').forEach(function(link) {
         link.addEventListener('click', function(e) {
             if (!confirm('Êtes-vous sûr de vouloir approuver cette demande ?')) {
@@ -345,5 +299,13 @@
             }
         });
     });
-        </script>
+    
+    document.querySelectorAll('a[href*="cancel"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            if (!confirm('Êtes-vous sûr de vouloir annuler cette demande ?')) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
 {% endblock %}

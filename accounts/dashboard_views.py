@@ -87,7 +87,12 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             employee=user
         ).order_by('-created_at')[:5]
         
-        # Soldes de congés
+        # Soldes de congés - Initialiser si nécessaire
+        from leave.leave_balance_service import leave_balance_service
+        
+        # S'assurer que les soldes sont initialisés pour l'année courante
+        leave_balance_service.initialize_employee_balance(user, today.year)
+        
         leave_balances = LeaveBalance.objects.filter(
             employee=user,
             year=today.year

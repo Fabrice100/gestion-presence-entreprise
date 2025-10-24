@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load format_filters %}
+
+{% block title %}Traitement de la Demande de Congé{% endblock %}
+
+{% block extra_css %}
+<style>
+    .process-card {
+        border-left: 4px solid #17a2b8;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .action-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .request-summary {
+        background-color: #e9ecef;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .status-pending { background-color: #ffc107; color: #000; }
+    .status-approved_manager { background-color: #17a2b8; color: #fff; }
+    .status-approved_rh { background-color: #28a745; color: #fff; }
+    
+    .priority-badge {
+        font-size: 0.9rem;
+        padding: 0.3rem 0.8rem;
+    }
+    
+    .priority-high { background-color: #dc3545; color: #fff; }
+    .priority-normal { background-color: #ffc107; color: #000; }
+    .priority-low { background-color: #28a745; color: #fff; }
+    .priority-urgent { background-color: #6f42c1; color: #fff; }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .warning-section {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-section {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-cogs text-info"></i> Traitement de la Demande de Congé</h2>
+                    <p class="text-muted">Traitez cette demande de congé</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'leave:leave_approval_detail' leave_request.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Voir les Détails
+                    </a>
+                    <a href="{% url 'leave:leave_approval_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Retour à la Liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card process-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i> Demande de {{ object.employee.get_full_name|default:object.employee.username }}
+                    </h5>
+                    <small class="text-muted">Action en cours : 
+                        <span class="badge bg-info">
+                            {% if request.GET.action == 'approve' %}Approbation{% else %}Rejet{% endif %}
+                        </span>
+                    </small>
+                </div>
+                <div class="card-body">
+                    <!-- Résumé de la demande -->
+                    <div class="request-summary">
+                        <h6><i class="fas fa-info-circle text-primary"></i> Résumé de la Demande</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type de congé :</strong> 
+                                    <span class="badge" style="background-color: {{ object.leave_type.color }}; color: white;">
+                                        {{ object.leave_type.name }}
+                                    </span>
+                                </p>
+                                <p><strong>Période :</strong> 
+                                    {{ object.start_date|date:"d/m/Y" }} - {{ object.end_date|date:"d/m/Y" }}
+                                </p>
+                                <p><strong>Durée :</strong> 
+                                    <span class="badge bg-info">{{ object.duration_days|format_days }} jour{{ object.duration_days|pluralize }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Statut actuel :</strong> 
+                                    <span class="badge status-{{ object.status }} status-badge">
+                                        {{ object.get_status_display }}
+                                    </span>
+                                </p>
+                                <p><strong>Priorité :</strong> 
+                                    <span class="badge priority-{{ object.priority }} priority-badge">
+                                        {{ object.get_priority_display }}
+                                    </span>
+                                </p>
+                                <p><strong>Date de demande :</strong> {{ object.created_at|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <p><strong>Motif :</strong></p>
+                            <p class="border p-3 rounded bg-light">{{ object.reason }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Avertissement pour les approbations -->
+                    {% if request.GET.action == 'approve' %}
+                    <div class="warning-section">
+                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Attention !</h6>
+                        <p class="mb-0">
+                            Vous êtes sur le point d'approuver cette demande de congé. Cette action :
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>Déduira <strong>{{ object.duration_days|format_days }} jour{{ object.duration_days|pluralize }}</strong> du solde de l'employé</li>
+                            <li>Enverra une notification à l'employé</li>
+                            {% if object.leave_type.requires_rh_approval and user.employee_profile.role == 'manager' %}
+                            <li>Transmettra la demande aux RH/DG pour validation finale</li>
+                            {% endif %}
+                            <li>Marquera la demande comme approuvée</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Avertissement pour les rejets -->
+                    {% if request.GET.action == 'reject' %}
+                    <div class="warning-section">
+                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Attention !</h6>
+                        <p class="mb-0">
+                            Vous êtes sur le point de rejeter cette demande de congé. Cette action :
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>Marquera la demande comme rejetée</li>
+                            <li>Enverra une notification à l'employé</li>
+                            <li>Libérera les jours de congé dans le solde de l'employé</li>
+                            <li>Nécessite un commentaire explicatif</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Formulaire de traitement -->
+                    <form method="post" id="processForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="{{ request.GET.action }}">
+                        
+                        <div class="action-section">
+                            <h6><i class="fas fa-gavel text-primary"></i> Action de Validation</h6>
+                            
+                            <div class="mb-3">
+                                <label for="id_comment" class="form-label">
+                                    Commentaire {% if request.GET.action == 'reject' %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <textarea class="form-control" 
+                                          id="id_comment" 
+                                          name="comment" 
+                                          rows="4" 
+                                          placeholder="{% if request.GET.action == 'approve' %}Ajoutez un commentaire pour l'employé (optionnel)...{% else %}Expliquez pourquoi vous rejetez cette demande...{% endif %}"
+                                          {% if request.GET.action == 'reject' %}required{% endif %}></textarea>
+                                <div class="form-text">
+                                    {% if request.GET.action == 'approve' %}
+                                    Ce commentaire sera visible par l'employé et ajouté à l'historique.
+                                    {% else %}
+                                    Ce commentaire est obligatoire et sera visible par l'employé.
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn {% if request.GET.action == 'approve' %}btn-success{% else %}btn-danger{% endif %}">
+                                    <i class="fas {% if request.GET.action == 'approve' %}fa-check{% else %}fa-times{% endif %}"></i> 
+                                    {% if request.GET.action == 'approve' %}Approuver{% else %}Rejeter{% endif %}
+                                </button>
+                                <a href="{% url 'leave:leave_approval_detail' leave_request.id %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Retour
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau latéral -->
+        <div class="col-md-4">
+            <!-- Informations sur l'employé -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user text-info"></i> Informations Employé</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nom :</strong> {{ object.employee.get_full_name|default:object.employee.username }}</p>
+                    <p><strong>Email :</strong> {{ object.employee.email }}</p>
+                    <p><strong>Département :</strong> {{ object.employee.employee_profile.department.name|default:"Non défini" }}</p>
+                </div>
+            </div>
+
+            <!-- Solde de congés -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-calendar-check text-success"></i> Solde de Congés</h6>
+                </div>
+                <div class="card-body">
+                    <div class="info-section text-center">
+                        <div class="h4 mb-2">{{ remaining_days|format_days }}</div>
+                        <small>jour{{ remaining_days|pluralize }} restant{{ remaining_days|pluralize }}</small>
+                    </div>
+                    
+                    {% if request.GET.action == 'approve' %}
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Après approbation : <strong>{{ remaining_days|add:object.duration_days|format_days }}</strong> jours
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Règles de validation -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle text-info"></i> Règles de Validation</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="fas fa-check text-success"></i> Vérifier la disponibilité</li>
+                        <li><i class="fas fa-check text-success"></i> Contrôler le solde</li>
+                        <li><i class="fas fa-check text-success"></i> Valider la période</li>
+                        {% if object.leave_type.requires_rh_approval %}
+                        <li><i class="fas fa-exclamation-triangle text-warning"></i> Validation RH requise</li>
+                        {% endif %}
+                        <li><i class="fas fa-bell text-info"></i> Notification automatique</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Confirmation finale
+    document.getElementById('processForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const action = '{{ request.GET.action }}';
+        const comment = document.getElementById('id_comment').value.trim();
+        
+        if (action === 'reject' && comment.length < 10) {
+            alert('Veuillez fournir un commentaire plus détaillé pour le rejet (au moins 10 caractères).');
+            return;
+        }
+        
+        let confirmMessage = '';
+        if (action === 'approve') {
+            confirmMessage = 'Êtes-vous sûr de vouloir approuver cette demande de congé ?\n\nCette action déduira ' + 
+                           '{{ object.duration_days|format_days }} jour{{ object.duration_days|pluralize }} du solde de l\'employé.';
+        } else {
+            confirmMessage = 'Êtes-vous sûr de vouloir rejeter cette demande de congé ?\n\nCette action est définitive.';
+        }
+        
+        if (confirm(confirmMessage)) {
+            if (confirm('Dernière confirmation : ' + (action === 'approve' ? 'Approuver' : 'Rejeter') + ' cette demande ?')) {
+                this.submit();
+            }
+        }
+    });
+    
+    // Validation en temps réel
+    document.getElementById('id_comment').addEventListener('input', function() {
+        const submitButton = document.querySelector('button[type="submit"]');
+        const action = '{{ request.GET.action }}';
+        
+        if (action === 'reject' && this.value.trim().length < 10) {
+            submitButton.disabled = true;
+            submitButton.title = 'Commentaire requis (minimum 10 caractères)';
+        } else {
+            submitButton.disabled = false;
+            submitButton.title = '';
+        }
+    });
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        const commentField = document.getElementById('id_comment');
+        const submitButton = document.querySelector('button[type="submit"]');
+        const action = '{{ request.GET.action }}';
+        
+        if (action === 'reject' && commentField.value.trim().length < 10) {
+            submitButton.disabled = true;
+            submitButton.title = 'Commentaire requis (minimum 10 caractères)';
+        }
+    });
+</script>
+{% endblock %}

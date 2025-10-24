@@ -187,7 +187,7 @@ class EmployeeProfileForm(forms.ModelForm):
         model = EmployeeProfile
         fields = [
             'department', 'manager', 'role', 'employee_type', 
-            'status', 'hire_date', 'contract_end_date', 
+            'hire_date', 'contract_end_date', 
             'is_active', 'can_punch'
         ]
         widgets = {
@@ -201,9 +201,6 @@ class EmployeeProfileForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'employee_type': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'status': forms.Select(attrs={
                 'class': 'form-control'
             }),
             'hire_date': forms.DateInput(attrs={

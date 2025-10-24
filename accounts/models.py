@@ -101,13 +101,6 @@ class EmployeeProfile(models.Model):
         ('intern', 'Stagiaire'),
     ]
     
-    # Choix pour les statuts
-    STATUS_CHOICES = [
-        ('active', 'Actif'),
-        ('inactive', 'Inactif'),
-        ('suspended', 'Suspendu'),
-    ]
-    
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -161,21 +154,6 @@ class EmployeeProfile(models.Model):
         default='monthly',
         verbose_name="Type d'employé",
         help_text="Type de contrat de l'employé"
-    )
-    
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='active',
-        verbose_name="Statut",
-        help_text="Statut de l'employé"
-    )
-    
-    address = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Adresse",
-        help_text="Adresse de l'employé"
     )
     
     hire_date = models.DateField(

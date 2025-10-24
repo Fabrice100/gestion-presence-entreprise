@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Tableau de bord - Manager{% endblock %}
 
@@ -125,7 +126,7 @@
                                     <br>
                                     <small class="ds-text-muted">
                                         {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
-                                        ({{ request.duration_days }} jour{{ request.duration_days|pluralize }})
+                                        ({{ request.duration_days|format_days }} jour{{ request.duration_days|pluralize }})
                                     </small>
                                 </div>
                                 <span class="ds-badge ds-badge-warning">En attente</span>

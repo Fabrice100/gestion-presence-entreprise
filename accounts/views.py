@@ -111,7 +111,7 @@ class ProfileEditView(EnhancedLoginRequiredMixin, UpdateView):
     """
     model = EmployeeProfile
     template_name = 'accounts/profile_edit.html'
-    fields = ['phone', 'address']
+    fields = ['phone']
     success_url = reverse_lazy('accounts:profile')
     
     def get_object(self):
@@ -190,7 +190,7 @@ class UserEditView(AdminRequiredMixin, UpdateView):
     """
     model = EmployeeProfile
     template_name = 'accounts/user_edit.html'
-    fields = ['role', 'department', 'manager', 'employee_type', 'status', 'can_punch']
+    fields = ['role', 'department', 'manager', 'employee_type', 'can_punch']
     success_url = reverse_lazy('accounts:user_list')
     
     def get_object(self):

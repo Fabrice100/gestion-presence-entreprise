@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Tableau de bord - RH/DG{% endblock %}
 
@@ -124,7 +125,7 @@
                                     <strong>{{ leave_request.employee.get_full_name }}</strong>
                                     <br>
                                     <small class="ds-text-muted">
-                                        {{ leave_request.leave_type.name }} - {{ leave_request.duration_days }} jour{{ leave_request.duration_days|pluralize }}
+                                        {{ leave_request.leave_type.name }} - {{ leave_request.duration_days|format_days }} jour{{ leave_request.duration_days|pluralize }}
                                     </small>
                                 </div>
                                 <span class="ds-badge ds-badge-warning">En attente</span>

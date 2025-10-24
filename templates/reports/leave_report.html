@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Rapport de congés{% endblock %}
 
@@ -210,7 +211,7 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="font-medium">{{ request.duration_days }} jour{{ request.duration_days|pluralize }}</span>
+                                <span class="font-medium">{{ request.duration_days|format_days }} jour{{ request.duration_days|pluralize }}</span>
                             </td>
                             <td>
                                 {% if request.status == 'pending' %}

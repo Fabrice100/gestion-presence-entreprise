@@ -13,27 +13,18 @@ Version: 1.0
 """
 
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView, ListView
+from django.views.generic import TemplateView, ListView, DetailView, UpdateView
 from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.urls import reverse
 
 from .models import LeaveRequest, LeaveBalance, LeaveType, Holiday
+from accounts.models import Department
 
 # Import du mixin centralisé (principe DRY)
 from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
-
-
-class LeaveRequestListView(EmployeeRequiredMixin, ListView):
-    """Vue pour lister les demandes de congés."""
-    model = LeaveRequest
-    template_name = 'leave/leave_request_list.html'
-    context_object_name = 'leave_requests'
-    
-    def get_queryset(self):
-        return LeaveRequest.objects.filter(employee=self.request.user)
 
 
 class LeaveRequestCreateView(EmployeeRequiredMixin, TemplateView):
@@ -284,42 +275,161 @@ class HolidayListView(EnhancedLoginRequiredMixin, ListView):
     context_object_name = 'holidays'
 
 
-# Vues temporaires pour éviter les erreurs 404
-class LeaveRequestDetailView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+# Vues détaillées avec templates complets
+class LeaveRequestDetailView(EmployeeRequiredMixin, DetailView):
+    model = LeaveRequest
+    template_name = 'leave/leave_request_detail.html'
+    context_object_name = 'leave_request'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .leave_balance_service import leave_balance_service
+        context['remaining_days'] = leave_balance_service.get_remaining_balance(self.request.user)
+        return context
 
 
-class LeaveRequestEditView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+class LeaveRequestEditView(EmployeeRequiredMixin, UpdateView):
+    model = LeaveRequest
+    template_name = 'leave/leave_request_edit.html'
+    context_object_name = 'leave_request'
+    fields = ['leave_type', 'start_date', 'end_date', 'reason', 'justification', 'priority']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .leave_balance_service import leave_balance_service
+        context['remaining_days'] = leave_balance_service.get_remaining_balance(self.request.user)
+        context['leave_types'] = LeaveType.objects.filter(is_active=True)
+        return context
+    
+    def get_success_url(self):
+        return reverse('leave:leave_request_detail', kwargs={'pk': self.object.pk})
 
 
-class LeaveRequestCancelView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+class LeaveRequestCancelView(EmployeeRequiredMixin, UpdateView):
+    model = LeaveRequest
+    template_name = 'leave/leave_request_cancel.html'
+    context_object_name = 'leave_request'
+    fields = []
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .leave_balance_service import leave_balance_service
+        context['remaining_days'] = leave_balance_service.get_remaining_balance(self.request.user)
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        cancellation_reason = request.POST.get('cancellation_reason', '')
+        
+        if cancellation_reason:
+            self.object.status = 'cancelled'
+            self.object.manager_comment = f"Annulé par l'employé: {cancellation_reason}"
+            self.object.save()
+            messages.success(request, 'Demande de congé annulée avec succès.')
+            return redirect('leave:leave_request_list')
+        
+        return self.form_invalid()
+    
+    def get_success_url(self):
+        return reverse('leave:leave_request_list')
 
 
-class LeaveApprovalView(EnhancedLoginRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
 
 
-class LeaveRejectionView(EnhancedLoginRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+class LeaveBalanceDetailView(EmployeeRequiredMixin, DetailView):
+    model = LeaveBalance
+    template_name = 'leave/leave_balance_detail.html'
+    context_object_name = 'leave_balance'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['remaining_days'] = self.object.remaining_balance
+        return context
 
 
-class LeaveBalanceDetailView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+class LeaveTypeDetailView(EnhancedLoginRequiredMixin, DetailView):
+    model = LeaveType
+    template_name = 'leave/leave_type_detail.html'
+    context_object_name = 'leave_type'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Statistiques d'utilisation
+        context['total_requests'] = LeaveRequest.objects.filter(leave_type=self.object).count()
+        context['approved_requests'] = LeaveRequest.objects.filter(leave_type=self.object, status__in=['approved_manager', 'approved_rh']).count()
+        return context
 
 
-class LeaveTypeDetailView(EnhancedLoginRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
-
-
-class HolidayDetailView(EnhancedLoginRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+class HolidayDetailView(EnhancedLoginRequiredMixin, DetailView):
+    model = Holiday
+    template_name = 'leave/holiday_detail.html'
+    context_object_name = 'holiday'
 
 
 class LeaveReportView(EnhancedLoginRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+    template_name = 'leave/leave_report.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .leave_balance_service import leave_balance_service
+        
+        # Filtres
+        year = self.request.GET.get('year', timezone.now().year)
+        department = self.request.GET.get('department')
+        leave_type = self.request.GET.get('leave_type')
+        
+        # Statistiques globales
+        queryset = LeaveRequest.objects.filter(start_date__year=year)
+        if department:
+            queryset = queryset.filter(employee__employee_profile__department_id=department)
+        if leave_type:
+            queryset = queryset.filter(leave_type_id=leave_type)
+        
+        context.update({
+            'selected_year': int(year),
+            'available_years': range(2020, timezone.now().year + 2),
+            'departments': Department.objects.all(),
+            'leave_types': LeaveType.objects.filter(is_active=True),
+            'total_requests': queryset.count(),
+            'approved_requests': queryset.filter(status__in=['approved_manager', 'approved_rh']).count(),
+            'pending_requests': queryset.filter(status='pending').count(),
+            'rejected_requests': queryset.filter(status__in=['rejected_manager', 'rejected_rh']).count(),
+            'cancelled_requests': queryset.filter(status='cancelled').count(),
+        })
+        
+        return context
 
 
 class LeaveCalendarView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/placeholder.html'
+    template_name = 'leave/leave_calendar.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .holiday_service import holiday_service
+        from .leave_balance_service import leave_balance_service
+        
+        # Paramètres du calendrier
+        year = int(self.request.GET.get('year', timezone.now().year))
+        month = int(self.request.GET.get('month', timezone.now().month))
+        employee = self.request.GET.get('employee')
+        
+        # Générer le calendrier
+        calendar_data = holiday_service.get_leave_calendar(year, month)
+        
+        context.update({
+            'current_year': year,
+            'current_month': month,
+            'current_month_name': timezone.datetime(year, month, 1).strftime('%B'),
+            'calendar_days': calendar_data['calendar'],
+            'holidays_list': calendar_data['holidays_list'],
+            'total_holidays': len(calendar_data['holidays_list']),
+            'total_leaves': sum(1 for day in calendar_data['calendar'] if day['leaves']),
+            'working_days': sum(1 for day in calendar_data['calendar'] if not day['is_weekend'] and not day['is_holiday']),
+            'remaining_days': leave_balance_service.get_remaining_balance(self.request.user),
+            'available_years': range(2020, timezone.now().year + 2),
+            'months': {i: timezone.datetime(year, i, 1).strftime('%B') for i in range(1, 13)},
+            'employees': User.objects.filter(leave_requests__isnull=False).distinct(),
+            'today': timezone.now().date(),
+        })
+        
+        return context

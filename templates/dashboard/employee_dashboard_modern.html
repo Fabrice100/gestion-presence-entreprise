@@ -1,5 +1,6 @@
 {% extends 'base_modern.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Dashboard Employé - PresencePro{% endblock %}
 {% block page_title %}Mon Dashboard{% endblock %}
@@ -48,7 +49,17 @@
     <div class="stat-card">
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <div class="stat-number">{{ leave_balance|default:"0" }}</div>
+                <div class="stat-number">
+                    {% if leave_balances %}
+                        {% for balance in leave_balances %}
+                            {% if balance.leave_type.name == "Congé Annuel" or balance.leave_type.name == "Congés payés" %}
+                                {{ balance.remaining_balance|format_days }}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        0
+                    {% endif %}
+                </div>
                 <div class="stat-label">Jours de congé restants</div>
             </div>
             <i class="bi bi-calendar-plus stat-icon"></i>
@@ -95,8 +106,18 @@
         </div>
         
         <div class="col-md-3 col-sm-6">
-            <a href="{% url 'accounts:profile' %}" class="action-card">
+            <a href="{% url 'leave:leave_balance_list' %}" class="action-card">
                 <div class="action-icon bg-warning">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <h5>Mes soldes</h5>
+                <p>Consulter mes soldes de congés</p>
+            </a>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <a href="{% url 'accounts:profile' %}" class="action-card">
+                <div class="action-icon bg-secondary">
                     <i class="bi bi-person"></i>
                 </div>
                 <h5>Mon profil</h5>

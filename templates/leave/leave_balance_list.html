@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Mes soldes de congés{% endblock %}
 
@@ -32,27 +33,27 @@
                     <div class="row text-center">
                         <div class="col-4">
                             <div class="border-end">
-                                <h3 class="text-success mb-0">{{ balance.available_days }}</h3>
+                                <h3 class="text-success mb-0">{{ balance.remaining_balance|format_days }}</h3>
                                 <small class="text-muted">Disponibles</small>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="border-end">
-                                <h3 class="text-warning mb-0">{{ balance.used_days }}</h3>
+                                <h3 class="text-warning mb-0">{{ balance.taken_balance|format_days }}</h3>
                                 <small class="text-muted">Utilisés</small>
                             </div>
                         </div>
                         <div class="col-4">
-                            <h3 class="text-info mb-0">{{ balance.total_days }}</h3>
+                            <h3 class="text-info mb-0">{{ balance.allocated_balance|format_days }}</h3>
                             <small class="text-muted">Total</small>
                         </div>
                     </div>
                     
                     <div class="progress mt-3" style="height: 8px;">
                         <div class="progress-bar bg-success" role="progressbar" 
-                             style="width: {{ balance.available_percentage }}%"></div>
+                             style="width: {% widthratio balance.remaining_balance balance.allocated_balance 100 %}%"></div>
                         <div class="progress-bar bg-warning" role="progressbar" 
-                             style="width: {{ balance.used_percentage }}%"></div>
+                             style="width: {% widthratio balance.taken_balance balance.allocated_balance 100 %}%"></div>
                     </div>
                     
                     <div class="mt-3">

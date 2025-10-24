@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load format_filters %}
+
+{% block title %}Détail du Solde de Congés{% endblock %}
+
+{% block extra_css %}
+<style>
+    .balance-card {
+        border-left: 4px solid #28a745;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .balance-summary {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .balance-details {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .leave-type-badge {
+        background-color: var(--leave-type-color, #007bff);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 1rem;
+    }
+    
+    .stat-card {
+        background-color: #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.75rem;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #007bff;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    
+    .timeline-item.positive::before {
+        background-color: #28a745;
+    }
+    
+    .timeline-item.negative::before {
+        background-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-calendar-check text-success"></i> Détail du Solde de Congés</h2>
+                    <p class="text-muted">Historique détaillé de votre solde de congés</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'leave:leave_balance_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour à la Liste
+                    </a>
+                    <a href="{% url 'leave:leave_request_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouvelle Demande
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-md-8">
+            <div class="card balance-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i> {{ leave_balance.employee.get_full_name|default:leave_balance.employee.username }}
+                    </h5>
+                    <small class="text-muted">Année {{ leave_balance.year }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Résumé du solde -->
+                    <div class="balance-summary">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4><i class="fas fa-calendar-alt"></i> {{ leave_balance.leave_type.name }}</h4>
+                                <p class="mb-0">Solde restant pour l'année {{ leave_balance.year }}</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="h1 mb-0">{{ leave_balance.remaining_balance|format_days }}</div>
+                                <small>jour{{ leave_balance.remaining_balance|pluralize }} restant{{ leave_balance.remaining_balance|pluralize }}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détails du solde -->
+                    <div class="balance-details">
+                        <h6><i class="fas fa-chart-pie text-primary"></i> Répartition du Solde</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number text-success">{{ leave_balance.allocated_balance|format_days }}</div>
+                                    <div class="stat-label">Alloué</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number text-info">{{ leave_balance.carried_over_balance }}</div>
+                                    <div class="stat-label">Reporté</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number text-warning">{{ leave_balance.taken_balance|format_days }}</div>
+                                    <div class="stat-label">Pris</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number text-primary">{{ leave_balance.remaining_balance|format_days }}</div>
+                                    <div class="stat-label">Restant</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations sur le type de congé -->
+                    <div class="balance-details">
+                        <h6><i class="fas fa-info-circle text-primary"></i> Informations sur le Type de Congé</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type :</strong> 
+                                    <span class="leave-type-badge" style="--leave-type-color: {{ leave_balance.leave_type.color }}">
+                                        {{ leave_balance.leave_type.name }}
+                                    </span>
+                                </p>
+                                <p><strong>Description :</strong> {{ leave_balance.leave_type.description|default:"Aucune description" }}</p>
+                                <p><strong>Rémunéré :</strong> 
+                                    {% if leave_balance.leave_type.is_paid %}
+                                        <span class="badge bg-success">Oui</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Type d'allocation :</strong> {{ leave_balance.leave_type.get_allocation_type_display }}</p>
+                                <p><strong>Montant d'allocation :</strong> {{ leave_balance.leave_type.allocation_amount }} jours</p>
+                                <p><strong>Validation RH requise :</strong> 
+                                    {% if leave_balance.leave_type.requires_rh_approval %}
+                                        <span class="badge bg-warning">Oui</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Non</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historique des modifications -->
+                    <div class="balance-details">
+                        <h6><i class="fas fa-history text-primary"></i> Historique des Modifications</h6>
+                        <div class="timeline">
+                            <div class="timeline-item positive">
+                                <h6 class="mb-1">Solde initial alloué</h6>
+                                <p class="mb-1">+{{ leave_balance.allocated_balance|format_days }} jour{{ leave_balance.allocated_balance|pluralize }}</p>
+                                <small class="text-muted">{{ leave_balance.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            
+                            {% if leave_balance.carried_over_balance > 0 %}
+                            <div class="timeline-item positive">
+                                <h6 class="mb-1">Solde reporté de l'année précédente</h6>
+                                <p class="mb-1">+{{ leave_balance.carried_over_balance }} jour{{ leave_balance.carried_over_balance|pluralize }}</p>
+                                <small class="text-muted">Report automatique</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if leave_balance.taken_balance > 0 %}
+                            <div class="timeline-item negative">
+                                <h6 class="mb-1">Congés pris</h6>
+                                <p class="mb-1">-{{ leave_balance.taken_balance|format_days }} jour{{ leave_balance.taken_balance|pluralize }}</p>
+                                <small class="text-muted">Déduit des demandes approuvées</small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="timeline-item">
+                                <h6 class="mb-1">Dernière mise à jour</h6>
+                                <p class="mb-1">Solde actuel : {{ leave_balance.remaining_balance|format_days }} jour{{ leave_balance.remaining_balance|pluralize }}</p>
+                                <small class="text-muted">{{ leave_balance.updated_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau latéral -->
+        <div class="col-md-4">
+
+            <!-- Statistiques de l'année -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie text-info"></i> Statistiques {{ leave_balance.year }}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Utilisation :</span>
+                            <span>{{ leave_balance.taken_balance|format_days }}/{{ leave_balance.allocated_balance|format_days }}</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {% widthratio leave_balance.taken_balance leave_balance.allocated_balance 100 %}%">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Restant :</span>
+                            <span class="text-success">{{ leave_balance.remaining_balance|format_days }} jours</span>
+                        </div>
+                    </div>
+                    
+                    {% if leave_balance.carried_over_balance > 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Reporté :</span>
+                            <span class="text-info">{{ leave_balance.carried_over_balance|format_days }} jours</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations utiles -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle text-info"></i> Informations Utiles</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="fas fa-check text-success"></i> Solde mis à jour automatiquement</li>
+                        <li><i class="fas fa-calendar text-info"></i> Calculé sur l'année civile</li>
+                        <li><i class="fas fa-arrow-right text-primary"></i> Report possible jusqu'à 5 jours</li>
+                        <li><i class="fas fa-bell text-warning"></i> Notifications automatiques</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

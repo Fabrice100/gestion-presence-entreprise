@@ -75,6 +75,12 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         """Passe l'utilisateur au formulaire."""
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        
+        # Initialiser les soldes si nécessaire
+        from .leave_balance_service import leave_balance_service
+        from django.utils import timezone
+        leave_balance_service.initialize_employee_balance(self.request.user, timezone.now().year)
+        
         return kwargs
     
     def form_valid(self, form):
@@ -207,7 +213,18 @@ class LeaveApprovalDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['approval_form'] = LeaveApprovalForm()
+        context['remaining_days'] = self.get_remaining_balance(self.object.employee)
         return context
+    
+    def post(self, request, *args, **kwargs):
+        """Redirige vers la vue de traitement."""
+        leave_request = self.get_object()
+        return redirect('leave:leave_approval_process', pk=leave_request.pk)
+    
+    def get_remaining_balance(self, user):
+        """Calcule le solde restant de l'employé."""
+        from .leave_balance_service import leave_balance_service
+        return leave_balance_service.get_remaining_balance(user)
 
 
 class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
@@ -215,7 +232,15 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
     Traitement d'une demande de congé (approbation/rejet).
     """
     model = LeaveRequest
-    template_name = 'leave/leave_approval_detail.html'
+    template_name = 'leave/leave_approval_process.html'
+    context_object_name = 'leave_request'
+    
+    def get(self, request, *args, **kwargs):
+        """Affiche le formulaire de traitement d'approbation."""
+        leave_request = self.get_object()
+        context = self.get_context_data(object=leave_request)
+        context['remaining_days'] = self.get_remaining_balance(leave_request.employee)
+        return render(request, self.template_name, context)
     
     def post(self, request, *args, **kwargs):
         leave_request = self.get_object()
@@ -225,6 +250,11 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             return self.process_approval(leave_request, form)
         else:
             return self.form_invalid(leave_request, form)
+    
+    def get_remaining_balance(self, user):
+        """Calcule le solde restant de l'employé."""
+        from .leave_balance_service import leave_balance_service
+        return leave_balance_service.get_remaining_balance(user)
     
     def process_approval(self, leave_request, form):
         user = self.request.user

@@ -99,14 +99,8 @@ class EmployeeProfileInline(admin.StackedInline):
                 'employee_id',
                 'role',
                 'employee_type',
-                'status',
                 'department',
                 'manager'
-            )
-        }),
-        ('Informations personnelles', {
-            'fields': (
-                'address',
             )
         }),
         ('Contrat', {
@@ -176,7 +170,6 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
         'role',
         'department',
         'employee_type',
-        'status',
         'can_punch_display',
         'hire_date'
     ]
@@ -184,7 +177,6 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
     list_filter = [
         'role',
         'employee_type',
-        'status',
         'department',
         'can_punch',
         'is_active',
@@ -209,10 +201,7 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
             'fields': ('role', 'department', 'manager')
         }),
         ('Type et statut', {
-            'fields': ('employee_type', 'status')
-        }),
-        ('Informations personnelles', {
-            'fields': ('address',)
+            'fields': ('employee_type',)
         }),
         ('Contrat', {
             'fields': ('hire_date', 'contract_end_date')
