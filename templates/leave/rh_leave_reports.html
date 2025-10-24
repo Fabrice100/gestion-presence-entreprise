@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapports des Congés - RH/DG{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .chart-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #17a2b8;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .month-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-bar text-info"></i> Rapports des Congés - RH/DG</h2>
+                    <p class="text-muted">Analyse et statistiques des demandes de congés</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'leave:rh_leave_management' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> Gestion
+                    </a>
+                    <button class="btn btn-outline-success" onclick="exportReport()">
+                        <i class="fas fa-download"></i> Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques par mois -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="report-card">
+                <div class="card-body">
+                    <h4><i class="fas fa-calendar-alt"></i> Évolution des Demandes (12 derniers mois)</h4>
+                    <div class="row">
+                        {% for month_stat in monthly_stats %}
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="month-card">
+                                <h6 class="text-center">{{ month_stat.month_name }}</h6>
+                                <div class="text-center">
+                                    <div class="stat-number">{{ month_stat.total }}</div>
+                                    <div class="stat-label">Total</div>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="text-success">{{ month_stat.approved }} approuvées</span>
+                                        <span class="text-danger">{{ month_stat.rejected }} rejetées</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="text-warning">{{ month_stat.pending }} en attente</span>
+                                    </div>
+                                </div>
+                                {% if month_stat.total > 0 %}
+                                <div class="mt-2">
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" style="width: {{ month_stat.approved|floatformat:0|add:0|mul:100|div:month_stat.total }}%"></div>
+                                        <div class="progress-bar bg-danger" style="width: {{ month_stat.rejected|floatformat:0|add:0|mul:100|div:month_stat.total }}%"></div>
+                                        <div class="progress-bar bg-warning" style="width: {{ month_stat.pending|floatformat:0|add:0|mul:100|div:month_stat.total }}%"></div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques détaillées -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number">{{ monthly_stats.0.total|default:0 }}</div>
+            <div class="stat-label">Demandes ce mois</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ monthly_stats.0.approved|default:0 }}</div>
+            <div class="stat-label">Approuvées ce mois</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ monthly_stats.0.rejected|default:0 }}</div>
+            <div class="stat-label">Rejetées ce mois</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ monthly_stats.0.pending|default:0 }}</div>
+            <div class="stat-label">En attente ce mois</div>
+        </div>
+    </div>
+
+    <!-- Top des types de congés -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h4><i class="fas fa-pie-chart"></i> Types de Congés les Plus Demandés</h4>
+                {% if top_leave_types %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Type de Congé</th>
+                                    <th>Nombre de Demandes</th>
+                                    <th>Pourcentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for type_stat in top_leave_types %}
+                                <tr>
+                                    <td>{{ type_stat.leave_type__name }}</td>
+                                    <td>{{ type_stat.count }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" style="width: {{ type_stat.count|floatformat:0|add:0|mul:100|div:top_leave_types.0.count }}%">
+                                                {{ type_stat.count|floatformat:0|add:0|mul:100|div:top_leave_types.0.count|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Aucune donnée disponible</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top des employés -->
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h4><i class="fas fa-users"></i> Employés avec le Plus de Congés</h4>
+                {% if top_employees %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Employé</th>
+                                    <th>Total Demandes</th>
+                                    <th>Approuvées</th>
+                                    <th>Taux d'Approbation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp_stat in top_employees %}
+                                <tr>
+                                    <td>{{ emp_stat.get_full_name|default:emp_stat.username }}</td>
+                                    <td>{{ emp_stat.total_leaves }}</td>
+                                    <td>{{ emp_stat.approved_leaves }}</td>
+                                    <td>
+                                        {% if emp_stat.total_leaves > 0 %}
+                                            {% widthratio emp_stat.approved_leaves emp_stat.total_leaves 100 %}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Aucune donnée disponible</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyse des tendances -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h4><i class="fas fa-trending-up"></i> Analyse des Tendances</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-primary">Moyenne Mensuelle</h5>
+                            <h3>{{ monthly_stats|length|add:0|mul:1|div:12|floatformat:1 }}</h3>
+                            <small class="text-muted">demandes par mois</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-success">Taux d'Approbation</h5>
+                            <h3>
+                                {% if monthly_stats.0.total > 0 %}
+                                    {% widthratio monthly_stats.0.approved monthly_stats.0.total 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h3>
+                            <small class="text-muted">ce mois</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-warning">Demandes en Attente</h5>
+                            <h3>{{ monthly_stats.0.pending|default:0 }}</h3>
+                            <small class="text-muted">à traiter</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommandations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-lightbulb"></i> Recommandations</h5>
+                <ul class="mb-0">
+                    {% if monthly_stats.0.pending > 5 %}
+                    <li><strong>Attention :</strong> {{ monthly_stats.0.pending }} demandes en attente nécessitent un traitement urgent.</li>
+                    {% endif %}
+                    {% if monthly_stats.0.rejected > monthly_stats.0.approved %}
+                    <li><strong>Analyse :</strong> Le taux de rejet est élevé ce mois. Vérifiez les critères d'approbation.</li>
+                    {% endif %}
+                    {% if top_leave_types.0.count > 10 %}
+                    <li><strong>Optimisation :</strong> Le type "{{ top_leave_types.0.leave_type__name }}" représente {{ top_leave_types.0.count|floatformat:0|add:0|mul:100|div:top_leave_types.0.count|floatformat:1 }}% des demandes. Considérez une politique spécifique.</li>
+                    {% endif %}
+                    <li><strong>Général :</strong> Surveillez les tendances mensuelles pour anticiper les pics de demandes.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function exportReport() {
+        // Fonction pour exporter le rapport (à implémenter)
+        alert('Fonction d\'exportation à implémenter');
+    }
+    
+    // Animation des statistiques
+    document.addEventListener('DOMContentLoaded', function() {
+        const statNumbers = document.querySelectorAll('.stat-number');
+        statNumbers.forEach(function(stat) {
+            const finalValue = parseInt(stat.textContent);
+            let currentValue = 0;
+            const increment = finalValue / 50;
+            
+            const timer = setInterval(function() {
+                currentValue += increment;
+                if (currentValue >= finalValue) {
+                    stat.textContent = finalValue;
+                    clearInterval(timer);
+                } else {
+                    stat.textContent = Math.floor(currentValue);
+                }
+            }, 20);
+        });
+    });
+</script>
+{% endblock %}

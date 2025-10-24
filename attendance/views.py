@@ -156,7 +156,12 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
     
     def get_queryset(self):
         """Filtre les présences avec optimisations de performance."""
-        # Utilisation de l'optimiseur de requêtes
+        # Requête de base optimisée
+        queryset = Attendance.objects.filter(
+            employee=self.request.user
+        ).select_related('employee').order_by('-date', '-time')
+        
+        # Filtres de date
         today = timezone.now().date()
         start_date = self.request.GET.get('date_from', today - timedelta(days=30))
         end_date = self.request.GET.get('date_to', today)
@@ -167,10 +172,7 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
         if isinstance(end_date, str):
             end_date = date.fromisoformat(end_date)
         
-        # Requête optimisée avec cache
-        queryset = query_optimizer.get_user_attendances_optimized(
-            self.request.user, start_date, end_date
-        )
+        queryset = queryset.filter(date__range=[start_date, end_date])
         
         # Filtres supplémentaires
         status = self.request.GET.get('status')
@@ -183,16 +185,14 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
         """Ajoute des données de contexte optimisées."""
         context = super().get_context_data(**kwargs)
         
-        # Statistiques optimisées
+        # Statistiques de base
         current_year = timezone.now().year
-        stats = query_optimizer.get_attendance_statistics_optimized(
-            self.request.user, current_year
-        )
+        attendances_count = self.get_queryset().count()
         
         context.update({
-            'attendance_stats': stats,
+            'attendance_count': attendances_count,
             'current_year': current_year,
-            'cache_metrics': intelligent_cache.get_metrics()
+            'today': timezone.now().date()
         })
         
         return context

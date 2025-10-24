@@ -30,6 +30,9 @@ class StructuredLogger:
         self.attendance_logger = structlog.get_logger('attendance_system.attendance')
         self.accounts_logger = structlog.get_logger('attendance_system.accounts')
         self.system_logger = structlog.get_logger('attendance_system.system')
+        # Logger général utilisé pour les messages applicatifs génériques
+        # (utilisé par le middleware et autres composants)
+        self.general_logger = structlog.get_logger('attendance_system.general')
     
     # ===================================================================
     # LOGGING SÉCURITÉ

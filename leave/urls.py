@@ -28,6 +28,14 @@ urlpatterns = [
     path('approvals/<int:pk>/', workflow_views.LeaveApprovalDetailView.as_view(), name='leave_approval_detail'),
     path('approvals/<int:pk>/process/', workflow_views.LeaveApprovalUpdateView.as_view(), name='leave_approval_process'),
     
+    # Vues Manager
+    path('manager/my-requests/', views.ManagerLeaveRequestsView.as_view(), name='manager_my_requests'),
+    path('manager/validation/', views.ManagerLeaveValidationView.as_view(), name='manager_validation'),
+    
+    # Vues RH/DG
+    path('rh/management/', views.RHLeaveManagementView.as_view(), name='rh_leave_management'),
+    path('rh/reports/', views.RHLeaveReportsView.as_view(), name='rh_leave_reports'),
+    
     # Soldes de congés
     path('balances/', workflow_views.LeaveBalanceListView.as_view(), name='leave_balance_list'),
     
