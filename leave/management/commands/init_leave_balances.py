@@ -102,3 +102,4 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS('Tous les soldes ont été initialisés avec succès!')
             )
+

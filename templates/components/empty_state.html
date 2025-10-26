@@ -1,0 +1,39 @@
+{# État vide réutilisable #}
+{# Usage: {% include 'components/empty_state.html' with icon='bi-calendar' title='Aucun congé' message='Créez votre première demande' action_url='leave:leave_request_create' action_text='Nouvelle demande' %} #}
+
+<div class="text-center py-12">
+    {% if icon_svg %}
+    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {{ icon_svg|safe }}
+    </svg>
+    {% elif icon %}
+    <i class="{{ icon }} text-6xl text-gray-400 mb-4"></i>
+    {% else %}
+    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+    </svg>
+    {% endif %}
+    
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        {{ title|default:'Aucune donnée' }}
+    </h3>
+    
+    {% if message %}
+    <p class="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+        {{ message }}
+    </p>
+    {% endif %}
+    
+    {% if action_url %}
+    <a href="{% url action_url %}" 
+       class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+        {% if action_icon %}
+        <i class="{{ action_icon }} mr-2"></i>
+        {% endif %}
+        {{ action_text|default:'Commencer' }}
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+    </a>
+    {% endif %}
+</div>

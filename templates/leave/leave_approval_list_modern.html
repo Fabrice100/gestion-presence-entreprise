@@ -1,0 +1,657 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+{% load format_filters %}
+
+{% block title %}Validation des Congés - PresencePro{% endblock %}
+{% block page_title %}Validation des Congés{% endblock %}
+{% block page_subtitle %}Examinez et validez les demandes de congés de vos équipes{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'leave:leave_calendar' %}" class="btn-modern btn-outline">
+        <i class="bi bi-calendar3"></i>
+        Calendrier
+    </a>
+    <a href="{% url 'reports:reports_dashboard' %}" class="btn-modern btn-outline">
+        <i class="bi bi-bar-chart"></i>
+        Rapports
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .validation-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-2xl);
+    }
+    
+    .stat-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        text-align: center;
+        transition: var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-color);
+    }
+    
+    .stat-card.warning::before {
+        background: var(--warning-color);
+    }
+    
+    .stat-card.success::before {
+        background: var(--success-color);
+    }
+    
+    .stat-card.danger::before {
+        background: var(--danger-color);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .filter-section {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        margin-bottom: var(--spacing-xl);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-lg);
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+        font-size: 0.875rem;
+    }
+    
+    .filter-select {
+        background: var(--bg-primary);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        font-size: 0.875rem;
+        transition: var(--transition-normal);
+    }
+    
+    .filter-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        outline: none;
+    }
+    
+    .requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: var(--spacing-lg);
+    }
+    
+    .request-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        transition: var(--transition-normal);
+        position: relative;
+    }
+    
+    .request-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .request-card.priority-high {
+        border-left: 4px solid var(--danger-color);
+    }
+    
+    .request-card.priority-normal {
+        border-left: 4px solid var(--warning-color);
+    }
+    
+    .request-card.priority-low {
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .request-header {
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .employee-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .employee-avatar {
+        width: 50px;
+        height: 50px;
+        background: var(--primary-bg);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: var(--primary-color);
+    }
+    
+    .employee-details h6 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .employee-details small {
+        color: var(--text-secondary);
+    }
+    
+    .request-badges {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+    }
+    
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-type {
+        background: rgba(74, 144, 226, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .badge-priority {
+        font-weight: 600;
+    }
+    
+    .badge-priority-high {
+        background: rgba(231, 76, 60, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .badge-priority-normal {
+        background: rgba(243, 156, 18, 0.1);
+        color: var(--warning-color);
+    }
+    
+    .badge-priority-low {
+        background: rgba(46, 204, 113, 0.1);
+        color: var(--success-color);
+    }
+    
+    .request-body {
+        padding: var(--spacing-lg);
+    }
+    
+    .request-details {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+    
+    .detail-value {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+    }
+    
+    .request-reason {
+        background: var(--bg-light);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .reason-text {
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        line-height: 1.5;
+        margin: 0;
+    }
+    
+    .request-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        justify-content: flex-end;
+    }
+    
+    .btn-action {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition-normal);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+    
+    .btn-primary-action {
+        background: var(--primary-color);
+        color: var(--text-white);
+        border: none;
+    }
+    
+    .btn-primary-action:hover {
+        background: var(--primary-dark);
+        color: var(--text-white);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-action {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+    
+    .btn-outline-action:hover {
+        background: var(--bg-light);
+        color: var(--text-primary);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-2xl);
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        color: var(--text-muted);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .empty-description {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: var(--spacing-2xl);
+    }
+    
+    .pagination {
+        display: flex;
+        gap: var(--spacing-xs);
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .page-item {
+        display: flex;
+    }
+    
+    .page-link {
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: var(--transition-normal);
+        font-size: 0.875rem;
+    }
+    
+    .page-link:hover {
+        background: var(--primary-color);
+        color: var(--text-white);
+        border-color: var(--primary-color);
+    }
+    
+    .page-item.active .page-link {
+        background: var(--primary-color);
+        color: var(--text-white);
+        border-color: var(--primary-color);
+    }
+    
+    @media (max-width: 768px) {
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .requests-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .request-actions {
+            flex-direction: column;
+        }
+        
+        .btn-action {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="validation-container">
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card warning">
+            <div class="stat-number">{{ leave_requests|length }}</div>
+            <div class="stat-label">En Attente</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-number">{{ approved_count|default:0 }}</div>
+            <div class="stat-label">Approuvées</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-number">{{ rejected_count|default:0 }}</div>
+            <div class="stat-label">Rejetées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_this_month|default:0 }}</div>
+            <div class="stat-label">Ce Mois</div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filter-section">
+        <h5 class="mb-3">
+            <i class="bi bi-funnel text-primary me-2"></i>
+            Filtres de Recherche
+        </h5>
+        <form method="get" class="filter-grid">
+            <div class="filter-group">
+                <label class="filter-label">Priorité</label>
+                <select name="priority" class="filter-select">
+                    <option value="">Toutes les priorités</option>
+                    <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Haute</option>
+                    <option value="normal" {% if request.GET.priority == 'normal' %}selected{% endif %}>Normale</option>
+                    <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Basse</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Type de Congé</label>
+                <select name="leave_type" class="filter-select">
+                    <option value="">Tous les types</option>
+                    {% for type in leave_types %}
+                    <option value="{{ type.id }}" {% if request.GET.leave_type == type.id|stringformat:"s" %}selected{% endif %}>
+                        {{ type.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Employé</label>
+                <select name="employee" class="filter-select">
+                    <option value="">Tous les employés</option>
+                    {% for emp in employees %}
+                    <option value="{{ emp.id }}" {% if request.GET.employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                        {{ emp.get_full_name|default:emp.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <button type="submit" class="btn-modern btn-primary">
+                    <i class="bi bi-search"></i>
+                    Filtrer
+                </button>
+            </div>
+            
+            <div class="filter-group">
+                <a href="{% url 'leave:leave_approval_list' %}" class="btn-modern btn-outline">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Effacer
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Liste des demandes -->
+    {% if leave_requests %}
+    <div class="requests-grid">
+        {% for request in leave_requests %}
+        <div class="request-card priority-{{ request.priority }}">
+            <div class="request-header">
+                <div class="employee-info">
+                    <div class="employee-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="employee-details">
+                        <h6>{{ request.employee.get_full_name|default:request.employee.username }}</h6>
+                        <small>
+                            <i class="bi bi-building me-1"></i>
+                            {{ request.employee.employee_profile.department.name|default:"Département non défini" }}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="request-badges">
+                    <span class="badge badge-type">{{ request.leave_type.name }}</span>
+                    <span class="badge badge-priority badge-priority-{{ request.priority }}">
+                        {{ request.get_priority_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="request-body">
+                <div class="request-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Période</span>
+                        <span class="detail-value">
+                            {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Durée</span>
+                        <span class="detail-value">
+                            {{ request.duration_days|format_days }} jour{{ request.duration_days|pluralize }}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date demande</span>
+                        <span class="detail-value">
+                            {{ request.created_at|date:"d/m/Y H:i" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="request-reason">
+                    <strong class="text-muted small">Motif :</strong>
+                    <p class="reason-text">{{ request.reason|truncatechars:120 }}</p>
+                </div>
+                
+                <div class="request-actions">
+                    <a href="{% url 'leave:leave_approval_detail' request.pk %}" 
+                       class="btn-action btn-primary-action">
+                        <i class="bi bi-eye"></i>
+                        Voir Détails
+                    </a>
+                    <a href="{% url 'leave:leave_approval_process' request.pk %}?action=approve" 
+                       class="btn-action btn-outline-action">
+                        <i class="bi bi-check"></i>
+                        Valider
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.leave_type %}&leave_type={{ request.GET.leave_type }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.leave_type %}&leave_type={{ request.GET.leave_type }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.leave_type %}&leave_type={{ request.GET.leave_type }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.leave_type %}&leave_type={{ request.GET.leave_type }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- État vide -->
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="bi bi-check-circle"></i>
+        </div>
+        <h3 class="empty-title">Aucune demande en attente</h3>
+        <p class="empty-description">
+            Toutes les demandes ont été traitées ou aucune demande n'est en attente de validation.
+        </p>
+        <a href="{% url 'leave:leave_calendar' %}" class="btn-modern btn-primary">
+            <i class="bi bi-calendar3"></i>
+            Voir le Calendrier
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit des filtres
+    const filterSelects = document.querySelectorAll('.filter-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+    
+    // Confirmation pour les actions rapides
+    document.querySelectorAll('a[href*="action=approve"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            if (!confirm('Êtes-vous sûr de vouloir approuver cette demande ?')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Animation des cartes
+    const cards = document.querySelectorAll('.request-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

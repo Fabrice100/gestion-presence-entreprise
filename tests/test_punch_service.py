@@ -319,3 +319,4 @@ class PunchServiceIntegrationTest(TestCase):
         # 4. Vérifier les pointages du jour
         attendances = service.get_today_attendances(self.user)
         self.assertEqual(attendances.count(), 2)
+

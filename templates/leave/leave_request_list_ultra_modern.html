@@ -1,0 +1,418 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Mes demandes de congé{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .leave-card {
+        animation: slideInUp 0.4s ease-out;
+    }
+    
+    /* Transition hover */
+    .leave-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .leave-card:hover {
+        transform: translateY(-4px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6" x-data="{
+    filterStatus: 'all',
+    searchQuery: '',
+    viewMode: 'grid',
+    filterLeaves(status) {
+        const cards = document.querySelectorAll('.leave-card');
+        cards.forEach(card => {
+            const cardStatus = card.dataset.status;
+            const cardText = card.textContent.toLowerCase();
+            const matchesStatus = status === 'all' || cardStatus === status;
+            const matchesSearch = this.searchQuery === '' || cardText.includes(this.searchQuery.toLowerCase());
+            
+            if (matchesStatus && matchesSearch) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+}">
+    <!-- En-tête -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
+                    <span class="mr-3">📋</span>
+                    Mes demandes de congé
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Consultez et gérez vos demandes de congé
+                </p>
+            </div>
+            <a href="{% url 'leave:leave_request_create' %}" 
+               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Nouvelle demande
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- Total -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">Total</p>
+                    <h3 class="text-3xl font-bold">{{ page_obj.paginator.count }}</h3>
+                    <p class="text-blue-100 text-xs mt-1">demandes au total</p>
+                </div>
+                <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- En attente -->
+        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-amber-100 text-sm font-medium mb-1">En attente</p>
+                    <h3 class="text-3xl font-bold">{{ pending_count }}</h3>
+                    <p class="text-amber-100 text-xs mt-1">en cours de traitement</p>
+                </div>
+                <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approuvées -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium mb-1">Approuvées</p>
+                    <h3 class="text-3xl font-bold">{{ approved_count }}</h3>
+                    <p class="text-green-100 text-xs mt-1">demandes validées</p>
+                </div>
+                <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refusées -->
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm font-medium mb-1">Refusées</p>
+                    <h3 class="text-3xl font-bold">{{ rejected_count }}</h3>
+                    <p class="text-red-100 text-xs mt-1">non approuvées</p>
+                </div>
+                <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de filtres et recherche -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Recherche -->
+            <div class="flex-1 w-full md:w-auto">
+                <div class="relative">
+                    <input type="text" 
+                           x-model="searchQuery"
+                           @input="filterLeaves(filterStatus)"
+                           placeholder="Rechercher une demande..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Filtres par statut -->
+            <div class="flex items-center space-x-2 flex-wrap">
+                <button @click="filterStatus = 'all'; filterLeaves('all')" 
+                        :class="filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 hover:bg-blue-500 hover:text-white">
+                    Toutes
+                </button>
+                <button @click="filterStatus = 'pending'; filterLeaves('pending')" 
+                        :class="filterStatus === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 hover:bg-amber-500 hover:text-white">
+                    En attente
+                </button>
+                <button @click="filterStatus = 'approved'; filterLeaves('approved')" 
+                        :class="filterStatus === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 hover:bg-green-500 hover:text-white">
+                    Approuvées
+                </button>
+                <button @click="filterStatus = 'rejected'; filterLeaves('rejected')" 
+                        :class="filterStatus === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                        class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 hover:bg-red-500 hover:text-white">
+                    Refusées
+                </button>
+            </div>
+
+            <!-- Mode d'affichage -->
+            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button @click="viewMode = 'grid'" 
+                        :class="viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow' : ''"
+                        class="p-2 rounded transition-colors duration-200">
+                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                </button>
+                <button @click="viewMode = 'list'" 
+                        :class="viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow' : ''"
+                        class="p-2 rounded transition-colors duration-200">
+                    <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des demandes -->
+    {% if leave_requests %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" x-show="viewMode === 'grid'">
+        {% for request in leave_requests %}
+        <div class="leave-card bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 border-l-4 
+                    {% if request.status == 'pending' %}border-amber-500{% elif 'approved' in request.status %}border-green-500{% elif 'rejected' in request.status %}border-red-500{% else %}border-gray-500{% endif %}"
+             data-status="{% if request.status == 'pending' %}pending{% elif 'approved' in request.status %}approved{% elif 'rejected' in request.status %}rejected{% else %}other{% endif %}">
+            
+            <!-- En-tête de la carte -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                {% if request.status == 'pending' %}bg-amber-100 dark:bg-amber-900/30{% elif 'approved' in request.status %}bg-green-100 dark:bg-green-900/30{% elif 'rejected' in request.status %}bg-red-100 dark:bg-red-900/30{% else %}bg-gray-100 dark:bg-gray-900/30{% endif %}">
+                        <span class="text-2xl">
+                            {% if request.status == 'pending' %}⏳{% elif 'approved' in request.status %}✅{% elif 'rejected' in request.status %}❌{% else %}📋{% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ request.leave_type.name }}</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ request.created_at|date:"d M Y" }}
+                        </p>
+                    </div>
+                </div>
+                
+                <span class="px-3 py-1 rounded-full text-xs font-semibold
+                            {% if request.status == 'pending' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400{% elif 'approved' in request.status %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif 'rejected' in request.status %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400{% endif %}">
+                    {% if request.status == 'pending' %}En attente
+                    {% elif request.status == 'approved_manager' %}Approuvé Manager
+                    {% elif request.status == 'approved_rh' %}Approuvé RH
+                    {% elif request.status == 'rejected_manager' %}Refusé Manager
+                    {% elif request.status == 'rejected_rh' %}Refusé RH
+                    {% else %}{{ request.get_status_display }}
+                    {% endif %}
+                </span>
+            </div>
+
+            <!-- Dates -->
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm">
+                    <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-gray-600 dark:text-gray-400">Début:</span>
+                    <span class="ml-auto font-medium text-gray-900 dark:text-white">{{ request.start_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex items-center text-sm">
+                    <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-gray-600 dark:text-gray-400">Fin:</span>
+                    <span class="ml-auto font-medium text-gray-900 dark:text-white">{{ request.end_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex items-center text-sm bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-gray-600 dark:text-gray-400">Durée:</span>
+                    <span class="ml-auto font-bold text-blue-600 dark:text-blue-400">{{ request.days }} jour(s)</span>
+                </div>
+            </div>
+
+            <!-- Motif -->
+            {% if request.reason %}
+            <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Motif:</p>
+                <p class="text-sm text-gray-900 dark:text-white line-clamp-2">{{ request.reason }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <a href="{% url 'leave:leave_request_detail' request.pk %}" 
+                   class="inline-flex items-center px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Détails
+                </a>
+                {% if request.status == 'pending' %}
+                <a href="{% url 'leave:leave_request_cancel' request.pk %}" 
+                   class="inline-flex items-center px-3 py-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium transition-colors duration-200"
+                   onclick="return confirm('Voulez-vous vraiment annuler cette demande ?')">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Annuler
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Vue liste -->
+    <div class="space-y-4" x-show="viewMode === 'list'" style="display: none;">
+        {% for request in leave_requests %}
+        <div class="leave-card bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg p-6 flex items-center justify-between border-l-4
+                    {% if request.status == 'pending' %}border-amber-500{% elif 'approved' in request.status %}border-green-500{% elif 'rejected' in request.status %}border-red-500{% else %}border-gray-500{% endif %}"
+             data-status="{% if request.status == 'pending' %}pending{% elif 'approved' in request.status %}approved{% elif 'rejected' in request.status %}rejected{% else %}other{% endif %}">
+            
+            <div class="flex items-center space-x-4 flex-1">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center
+                            {% if request.status == 'pending' %}bg-amber-100 dark:bg-amber-900/30{% elif 'approved' in request.status %}bg-green-100 dark:bg-green-900/30{% elif 'rejected' in request.status %}bg-red-100 dark:bg-red-900/30{% else %}bg-gray-100 dark:bg-gray-900/30{% endif %}">
+                    <span class="text-2xl">
+                        {% if request.status == 'pending' %}⏳{% elif 'approved' in request.status %}✅{% elif 'rejected' in request.status %}❌{% else %}📋{% endif %}
+                    </span>
+                </div>
+                
+                <div class="flex-1">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-1">{{ request.leave_type.name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Du {{ request.start_date|date:"d/m/Y" }} au {{ request.end_date|date:"d/m/Y" }} • {{ request.days }} jour(s)
+                    </p>
+                </div>
+
+                <span class="px-4 py-2 rounded-full text-sm font-semibold
+                            {% if request.status == 'pending' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400{% elif 'approved' in request.status %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% elif 'rejected' in request.status %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400{% endif %}">
+                    {% if request.status == 'pending' %}En attente
+                    {% elif request.status == 'approved_manager' %}Approuvé Manager
+                    {% elif request.status == 'approved_rh' %}Approuvé RH
+                    {% elif request.status == 'rejected_manager' %}Refusé Manager
+                    {% elif request.status == 'rejected_rh' %}Refusé RH
+                    {% else %}{{ request.get_status_display }}
+                    {% endif %}
+                </span>
+                
+                <div class="flex items-center space-x-2">
+                    <a href="{% url 'leave:leave_request_detail' request.pk %}" 
+                       class="p-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg transition-colors duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </a>
+                    {% if request.status == 'pending' %}
+                    <a href="{% url 'leave:leave_request_cancel' request.pk %}" 
+                       class="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg transition-colors duration-200"
+                       onclick="return confirm('Voulez-vous vraiment annuler cette demande ?')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-8 flex items-center justify-center">
+        <nav class="flex items-center space-x-2">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            {% endif %}
+            
+            <span class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">
+                Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                </svg>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- État vide -->
+    <div class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Aucune demande de congé
+        </h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">
+            Vous n'avez pas encore créé de demande de congé
+        </p>
+        <a href="{% url 'leave:leave_request_create' %}" 
+           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Créer ma première demande
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

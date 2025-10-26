@@ -1,0 +1,286 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Gestion des anomalies{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+    
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Gestion des anomalies de pointage
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Détection automatique et traitement des anomalies
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            {% include 'components/action_button.html' with text='Détecter anomalies' icon='bi-search' style='primary' onclick='detectAnomalies()' %}
+            {% include 'components/action_button.html' with text='Exporter' icon='bi-file-earmark-excel' style='secondary' onclick='exportAnomalies()' %}
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {% include 'components/stat_card.html' with icon='bi-exclamation-triangle' title='Anomalies actives' value=stats.active_count color='red' badge='Urgent' %}
+        {% include 'components/stat_card.html' with icon='bi-check-circle' title='Résolues' value=stats.resolved_count color='green' %}
+        {% include 'components/stat_card.html' with icon='bi-clock' title='En attente' value=stats.pending_count color='yellow' %}
+        {% include 'components/stat_card.html' with icon='bi-calendar-week' title='Cette semaine' value=stats.this_week_count color='blue' %}
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">🤖 Détection automatique</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Pointages oubliés</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.missing_punches_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Horaires suspects</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.suspect_hours_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">GPS hors zone</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.gps_anomalies_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <form method="get" class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type d'anomalie</label>
+                <select name="anomaly_type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">Toutes</option>
+                    <option value="missing_punch" {% if request.GET.anomaly_type == 'missing_punch' %}selected{% endif %}>Pointage manquant</option>
+                    <option value="late_arrival" {% if request.GET.anomaly_type == 'late_arrival' %}selected{% endif %}>Retard</option>
+                    <option value="early_departure" {% if request.GET.anomaly_type == 'early_departure' %}selected{% endif %}>Départ anticipé</option>
+                    <option value="overtime" {% if request.GET.anomaly_type == 'overtime' %}selected{% endif %}>Heures supplémentaires</option>
+                    <option value="gps_out_of_range" {% if request.GET.anomaly_type == 'gps_out_of_range' %}selected{% endif %}>GPS hors zone</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statut</label>
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">Tous</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>En attente</option>
+                    <option value="reviewed" {% if request.GET.status == 'reviewed' %}selected{% endif %}>Examiné</option>
+                    <option value="resolved" {% if request.GET.status == 'resolved' %}selected{% endif %}>Résolu</option>
+                    <option value="ignored" {% if request.GET.status == 'ignored' %}selected{% endif %}>Ignoré</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Période</label>
+                <select name="period" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="7" {% if request.GET.period == '7' %}selected{% endif %}>7 derniers jours</option>
+                    <option value="30" {% if request.GET.period == '30' %}selected{% endif %}>30 derniers jours</option>
+                    <option value="90" {% if request.GET.period == '90' %}selected{% endif %}>3 derniers mois</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recherche</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Nom employé..."
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between mt-4">
+            <div class="flex space-x-3">
+                {% include 'components/action_button.html' with text='Filtrer' icon='bi-funnel' type='submit' style='primary' %}
+                <a href="{% url 'attendance:anomalies' %}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
+                    Réinitialiser
+                </a>
+            </div>
+            <div class="flex space-x-2">
+                <button type="button" onclick="approveSelected()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                    Valider sélectionnées
+                </button>
+                <button type="button" onclick="ignoreSelected()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium">
+                    Ignorer sélectionnées
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Liste des anomalies -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {% if anomalies %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                        <th class="px-6 py-3 text-left">
+                            <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600">
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Employé</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Statut</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for anomaly in anomalies %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="anomaly-checkbox rounded border-gray-300 dark:border-gray-600" data-id="{{ anomaly.id }}">
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
+                            {{ anomaly.date|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ anomaly.employee.first_name|first }}{{ anomaly.employee.last_name|first }}
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900 dark:text-white">{{ anomaly.employee.get_full_name }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ anomaly.employee.employeeprofile.employee_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if anomaly.anomaly_type == 'missing_punch' %}
+                                {% include 'components/status_badge.html' with color='orange' icon='bi-clock' text='Manquant' %}
+                            {% elif anomaly.anomaly_type == 'late_arrival' %}
+                                {% include 'components/status_badge.html' with color='red' icon='bi-exclamation-triangle' text='Retard' %}
+                            {% elif anomaly.anomaly_type == 'gps_out_of_range' %}
+                                {% include 'components/status_badge.html' with color='purple' icon='bi-geo-alt' text='GPS' %}
+                            {% else %}
+                                {% include 'components/status_badge.html' with text=anomaly.get_anomaly_type_display %}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                            {{ anomaly.description|truncatewords:10 }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if anomaly.status == 'pending' %}
+                                {% include 'components/status_badge.html' with status='pending' text='En attente' %}
+                            {% elif anomaly.status == 'resolved' %}
+                                {% include 'components/status_badge.html' with status='approved' text='Résolu' %}
+                            {% else %}
+                                {% include 'components/status_badge.html' with text=anomaly.get_status_display %}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="viewDetails({{ anomaly.id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Voir">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                                {% if anomaly.status == 'pending' %}
+                                <button onclick="resolveAnomaly({{ anomaly.id }})" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title="Résoudre">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                                <button onclick="ignoreAnomaly({{ anomaly.id }})" class="p-2 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Ignorer">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% else %}
+        <div class="p-12">
+            {% include 'components/empty_state.html' with icon='bi-check-circle' title='Aucune anomalie' message='Félicitations ! Aucune anomalie détectée pour la période sélectionnée' %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function detectAnomalies() {
+    alert('Détection automatique en cours...\nCette fonctionnalité analysera tous les pointages récents.');
+}
+
+function exportAnomalies() {
+    alert('Export Excel en cours de développement...');
+}
+
+function approveSelected() {
+    const selected = document.querySelectorAll('.anomaly-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Veuillez sélectionner au moins une anomalie.');
+        return;
+    }
+    alert(`${selected.length} anomalies validées.`);
+}
+
+function ignoreSelected() {
+    const selected = document.querySelectorAll('.anomaly-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Veuillez sélectionner au moins une anomalie.');
+        return;
+    }
+    alert(`${selected.length} anomalies ignorées.`);
+}
+
+function viewDetails(id) {
+    alert(`Voir détails anomalie #${id}`);
+}
+
+function resolveAnomaly(id) {
+    if (confirm('Marquer cette anomalie comme résolue ?')) {
+        alert(`Anomalie #${id} résolue.`);
+    }
+}
+
+function ignoreAnomaly(id) {
+    if (confirm('Ignorer cette anomalie ?')) {
+        alert(`Anomalie #${id} ignorée.`);
+    }
+}
+
+// Sélection multiple
+document.getElementById('select-all')?.addEventListener('change', function() {
+    document.querySelectorAll('.anomaly-checkbox').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

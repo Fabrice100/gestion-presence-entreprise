@@ -33,6 +33,8 @@ urlpatterns = [
     
     # Consultation des présences
     path('my-attendance/', views.MyAttendanceView.as_view(), name='my_attendance'),
+    path('team-attendance/', views.TeamAttendanceView.as_view(), name='team_attendance'),
+    path('anomalies/', views.AnomaliesManagementView.as_view(), name='anomalies'),
     
     
     # Diagnostic GPS

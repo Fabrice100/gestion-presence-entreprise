@@ -1,0 +1,177 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Présences de l'équipe{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+    
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Présences de l'équipe
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Consultez et gérez les pointages de votre équipe
+            </p>
+        </div>
+        {% include 'components/action_button.html' with text='Exporter Excel' icon='bi-file-earmark-excel' style='success' onclick='exportToExcel()' %}
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {% include 'components/stat_card.html' with icon='bi-people' title='Total pointages' value=total_attendances color='blue' %}
+        {% include 'components/stat_card.html' with icon='bi-box-arrow-in-right' title='Entrées' value=punch_in_count color='green' %}
+        {% include 'components/stat_card.html' with icon='bi-box-arrow-left' title='Sorties' value=punch_out_count color='orange' %}
+    </div>
+
+    <!-- Filtres -->
+    <form method="get" class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Date début -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date début</label>
+                <input type="date" name="date_from" value="{{ request.GET.date_from|default:seven_days_ago|date:'Y-m-d' }}"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            
+            <!-- Date fin -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date fin</label>
+                <input type="date" name="date_to" value="{{ request.GET.date_to|default:today|date:'Y-m-d' }}"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            
+            <!-- Département (RH/DG seulement) -->
+            {% if departments %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Département</label>
+                <select name="department" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">Tous</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <!-- Type de pointage -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+                <select name="type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">Tous</option>
+                    <option value="in" {% if request.GET.type == 'in' %}selected{% endif %}>Entrée</option>
+                    <option value="out" {% if request.GET.type == 'out' %}selected{% endif %}>Sortie</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-3 mt-4">
+            {% include 'components/action_button.html' with text='Filtrer' icon='bi-funnel' type='submit' style='primary' %}
+            <a href="{% url 'attendance:team_attendance' %}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
+                Réinitialiser
+            </a>
+        </div>
+    </form>
+
+    <!-- Tableau des présences -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {% if attendances %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Employé</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Heure</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Département</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Localisation</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for attendance in attendances %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ attendance.employee.first_name|first }}{{ attendance.employee.last_name|first }}
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900 dark:text-white">{{ attendance.employee.get_full_name }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ attendance.employee.employeeprofile.employee_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-900 dark:text-white font-medium">
+                            📅 {{ attendance.date|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-gray-900 dark:text-white font-semibold">
+                            🕐 {{ attendance.time|time:"H:i" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if attendance.punch_type == 'in' %}
+                                {% include 'components/status_badge.html' with color='green' icon='bi-box-arrow-in-right' text='Entrée' %}
+                            {% else %}
+                                {% include 'components/status_badge.html' with color='orange' icon='bi-box-arrow-left' text='Sortie' %}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
+                            {{ attendance.employee.employeeprofile.department|default:'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            {% if attendance.latitude and attendance.longitude %}
+                            <a href="https://www.google.com/maps?q={{ attendance.latitude }},{{ attendance.longitude }}" target="_blank" 
+                               class="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                                📍 Voir carte
+                            </a>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                </p>
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-500">
+                        ← Précédent
+                    </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-500">
+                        Suivant →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="p-12">
+            {% include 'components/empty_state.html' with icon='bi-calendar-x' title='Aucun pointage' message='Aucun pointage trouvé pour les critères sélectionnés' %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function exportToExcel() {
+    alert('Export Excel en cours de développement...');
+    // TODO: Implémenter l'export Excel
+}
+</script>
+{% endblock %}

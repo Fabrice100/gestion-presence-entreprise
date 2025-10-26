@@ -391,3 +391,4 @@ def handle_errors(error_type: str = "unknown",
         
         return wrapper
     return decorator
+

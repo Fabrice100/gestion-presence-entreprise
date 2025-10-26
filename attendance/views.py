@@ -34,7 +34,7 @@ from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
 
 class PunchView(EmployeeRequiredMixin, TemplateView):
     """Vue principale pour le pointage."""
-    template_name = 'attendance/punch.html'
+    template_name = 'attendance/punch_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -150,7 +150,7 @@ class PunchView(EmployeeRequiredMixin, TemplateView):
 class MyAttendanceView(EmployeeRequiredMixin, ListView):
     """Vue optimisée pour consulter ses propres pointages."""
     model = Attendance
-    template_name = 'attendance/my_attendance.html'
+    template_name = 'attendance/my_attendance_ultra_modern.html'
     context_object_name = 'attendances'
     paginate_by = 20
     
@@ -196,4 +196,178 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
         })
         
         return context
+
+
+class TeamAttendanceView(EnhancedLoginRequiredMixin, ListView):
+    """
+    Vue pour les managers: visualiser les pointages de toute l'équipe
+    Filtres: département, date, statut
+    Export: Excel
+    """
+    model = Attendance
+    template_name = 'attendance/team_attendance_ultra_modern.html'
+    context_object_name = 'attendances'
+    paginate_by = 50
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Vérifier que l'utilisateur est manager ou RH/DG"""
+        if not hasattr(request.user, 'employeeprofile'):
+            messages.error(request, 'Vous n\'avez pas de profil employé.')
+            return redirect('dashboard:main')
+        
+        profile = request.user.employeeprofile
+        if profile.role not in ['manager', 'rh', 'dg']:
+            messages.error(request, 'Accès réservé aux managers et RH.')
+            return redirect('dashboard:main')
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """Filtre les présences selon le rôle et les filtres"""
+        profile = self.request.user.employeeprofile
+        
+        # Base queryset selon le rôle
+        if profile.role == 'manager':
+            # Manager ne voit que son département
+            queryset = Attendance.objects.filter(
+                employee__employeeprofile__department=profile.department
+            )
+        else:
+            # RH/DG voit tout
+            queryset = Attendance.objects.all()
+        
+        queryset = queryset.select_related('employee', 'employee__employeeprofile').order_by('-date', '-time')
+        
+        # Filtres de date
+        today = timezone.now().date()
+        start_date = self.request.GET.get('date_from', today - timedelta(days=7))
+        end_date = self.request.GET.get('date_to', today)
+        
+        if isinstance(start_date, str):
+            from datetime import datetime
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        if isinstance(end_date, str):
+            from datetime import datetime
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        queryset = queryset.filter(date__range=[start_date, end_date])
+        
+        # Filtre par département
+        department = self.request.GET.get('department')
+        if department:
+            queryset = queryset.filter(employee__employeeprofile__department=department)
+        
+        # Filtre par employé
+        employee_id = self.request.GET.get('employee')
+        if employee_id:
+            queryset = queryset.filter(employee__employeeprofile__employee_id=employee_id)
+        
+        # Filtre par type de pointage
+        punch_type = self.request.GET.get('type')
+        if punch_type:
+            queryset = queryset.filter(punch_type=punch_type)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Statistiques
+        attendances = self.get_queryset()
+        context.update({
+            'total_attendances': attendances.count(),
+            'punch_in_count': attendances.filter(punch_type='in').count(),
+            'punch_out_count': attendances.filter(punch_type='out').count(),
+            'today': timezone.now().date(),
+            'seven_days_ago': timezone.now().date() - timedelta(days=7),
+        })
+        
+        # Liste des départements pour le filtre
+        from accounts.models import EmployeeProfile
+        if self.request.user.employeeprofile.role in ['rh', 'dg']:
+            context['departments'] = EmployeeProfile.objects.values_list('department', flat=True).distinct()
+        
+        return context
+
+
+class AnomaliesManagementView(EnhancedLoginRequiredMixin, ListView):
+    """
+    Vue RH/DG pour gérer les anomalies de pointage
+    Détection automatique, filtres, actions en masse
+    """
+    model = AttendanceAnomaly
+    template_name = 'attendance/anomalies_management_ultra_modern.html'
+    context_object_name = 'anomalies'
+    paginate_by = 30
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Vérifier que l'utilisateur est RH/DG"""
+        if not hasattr(request.user, 'employeeprofile'):
+            messages.error(request, 'Vous n\'avez pas de profil employé.')
+            return redirect('dashboard:main')
+        
+        profile = request.user.employeeprofile
+        if profile.role not in ['rh', 'dg']:
+            messages.error(request, 'Accès réservé aux RH et DG.')
+            return redirect('dashboard:main')
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """Filtre les anomalies selon les critères"""
+        queryset = AttendanceAnomaly.objects.all().select_related(
+            'employee', 'employee__employeeprofile', 'attendance'
+        ).order_by('-created_at')
+        
+        # Filtre par type d'anomalie
+        anomaly_type = self.request.GET.get('anomaly_type')
+        if anomaly_type:
+            queryset = queryset.filter(anomaly_type=anomaly_type)
+        
+        # Filtre par statut
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filtre par période
+        period = self.request.GET.get('period', '7')
+        try:
+            days = int(period)
+            from_date = timezone.now().date() - timedelta(days=days)
+            queryset = queryset.filter(date__gte=from_date)
+        except:
+            pass
+        
+        # Recherche par nom
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(employee__first_name__icontains=search) |
+                Q(employee__last_name__icontains=search) |
+                Q(employee__employeeprofile__employee_id__icontains=search)
+            )
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Statistiques
+        all_anomalies = AttendanceAnomaly.objects.all()
+        context['stats'] = {
+            'active_count': all_anomalies.filter(status='pending').count(),
+            'resolved_count': all_anomalies.filter(status='resolved').count(),
+            'pending_count': all_anomalies.filter(status='reviewed').count(),
+            'this_week_count': all_anomalies.filter(
+                created_at__gte=timezone.now() - timedelta(days=7)
+            ).count(),
+            'missing_punches_count': all_anomalies.filter(anomaly_type='missing_punch').count(),
+            'suspect_hours_count': all_anomalies.filter(
+                anomaly_type__in=['late_arrival', 'early_departure']
+            ).count(),
+            'gps_anomalies_count': all_anomalies.filter(anomaly_type='gps_out_of_range').count(),
+        }
+        
+        return context
+
 

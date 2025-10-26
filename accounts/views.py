@@ -74,7 +74,7 @@ class CustomLoginView(LoginView):
     la connexion avec l'ID Employé.
     Protégée contre les attaques par force brute.
     """
-    template_name = 'accounts/login.html'
+    template_name = 'accounts/login_ultra_modern.html'
     redirect_authenticated_user = True  # Rediriger si déjà authentifié
     
     @method_decorator(ratelimit(key='ip', rate=settings.RATELIMIT_LOGIN_RATE, method='POST', block=True))

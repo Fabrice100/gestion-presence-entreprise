@@ -63,8 +63,9 @@ class DashboardView(EnhancedLoginRequiredMixin, TemplateView):
 class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
     """
     Tableau de bord pour les employés.
+    Affiche les informations de présence et congés personnelles.
     """
-    template_name = 'dashboard/employee_dashboard.html'
+    template_name = 'dashboard/employee_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -109,10 +110,19 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
         # Calcul des statistiques
         total_work_days = month_attendance.filter(punch_type='in').count()
         total_hours = 0
+        today_hours = 0
+        
+        # Calcul des heures du mois
         for attendance in month_attendance.filter(punch_type='out'):
             duration = attendance.get_duration_with_previous()
             if duration:
                 total_hours += duration
+        
+        # Calcul des heures d'aujourd'hui
+        for attendance in today_attendance.filter(punch_type='out'):
+            duration = attendance.get_duration_with_previous()
+            if duration:
+                today_hours += duration
         
         # Anomalies en attente
         pending_anomalies = AttendanceAnomaly.objects.filter(
@@ -120,15 +130,55 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             status='pending'
         ).count()
         
+        # Solde total de congés (somme de tous les types)
+        total_leave_balance = sum([lb.remaining_balance for lb in leave_balances])
+        
+        # Statut actuel (dernier pointage)
+        last_punch = today_attendance.last() if today_attendance.exists() else None
+        current_status = 'present' if last_punch and last_punch.punch_type == 'in' else 'absent'
+        last_punch_time = last_punch.timestamp if last_punch else None
+        
+        # Pointages d'aujourd'hui pour la timeline
+        today_punches = today_attendance.all()
+        
+        # Calcul des heures par jour pour le graphique hebdomadaire
+        from datetime import timedelta
+        week_start = today - timedelta(days=today.weekday())  # Lundi de cette semaine
+        week_hours = []
+        week_labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+        
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            day_attendance = Attendance.objects.filter(
+                employee=user,
+                date=day,
+                punch_type='out'
+            )
+            
+            day_total = 0
+            for att in day_attendance:
+                duration = att.get_duration_with_previous()
+                if duration:
+                    day_total += duration
+            
+            week_hours.append(round(day_total, 1))
+        
         context.update({
             'today_attendance': today_attendance,
             'recent_attendance': recent_attendance,
             'recent_leave_requests': recent_leave_requests,
             'leave_balances': leave_balances,
             'total_work_days': total_work_days,
-            'total_hours': round(total_hours, 1),
+            'month_hours': round(total_hours, 1),
+            'today_hours': round(today_hours, 1),
             'pending_anomalies': pending_anomalies,
+            'leave_balance': total_leave_balance,
+            'current_status': current_status,
+            'last_punch_time': last_punch_time,
+            'today_punches': today_punches,
             'today': today,
+            'week_hours': week_hours,  # Nouvelles données pour le graphique
+            'week_labels': week_labels,
         })
         
         return context
@@ -138,7 +188,7 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
     """
     Tableau de bord pour les managers.
     """
-    template_name = 'dashboard/manager_dashboard.html'
+    template_name = 'dashboard/manager_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -206,7 +256,7 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
     """
     Tableau de bord pour les RH et DG.
     """
-    template_name = 'dashboard/rh_dg_dashboard.html'
+    template_name = 'dashboard/rh_dg_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

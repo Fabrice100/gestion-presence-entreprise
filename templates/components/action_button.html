@@ -1,0 +1,29 @@
+{# Bouton d'action réutilisable #}
+{# Usage: {% include 'components/action_button.html' with text='Pointer' icon='bi-clock' url='attendance:punch' style='primary' %} #}
+
+{% if url %}
+<a href="{% url url %}" 
+{% else %}
+<button type="{{ type|default:'button' }}" {% if onclick %}onclick="{{ onclick }}"{% endif %}
+{% endif %}
+   class="inline-flex items-center justify-center px-6 py-3 
+        {% if style == 'primary' %}bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white
+        {% elif style == 'success' %}bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white
+        {% elif style == 'danger' %}bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white
+        {% elif style == 'warning' %}bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white
+        {% elif style == 'secondary' %}bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white
+        {% elif style == 'outline' %}border-2 border-{{ color|default:'blue' }}-600 text-{{ color|default:'blue' }}-600 hover:bg-{{ color|default:'blue' }}-50 dark:hover:bg-{{ color|default:'blue' }}-900/20
+        {% else %}bg-blue-600 hover:bg-blue-700 text-white{% endif %}
+        rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200
+        {% if disabled %}opacity-50 cursor-not-allowed{% endif %}
+        {% if full_width %}w-full{% endif %}
+        {{ class }}"
+   {% if disabled %}disabled{% endif %}>
+    {% if icon %}
+    <i class="{{ icon }} mr-2 text-lg"></i>
+    {% endif %}
+    {{ text|default:'Action' }}
+    {% if icon_right %}
+    <i class="{{ icon_right }} ml-2 text-lg"></i>
+    {% endif %}
+{% if url %}</a>{% else %}</button>{% endif %}

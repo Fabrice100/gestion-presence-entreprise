@@ -1,0 +1,44 @@
+{# Carte statistique réutilisable (dashboards) #}
+{# Usage: {% include 'components/stat_card.html' with icon='bi-calendar' title='Congés' value='15' subtitle='En attente' color='blue' %} #}
+
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center justify-between">
+        <div class="flex-1">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="p-3 bg-gradient-to-br from-{{ color|default:'blue' }}-500 to-{{ color|default:'blue' }}-600 rounded-xl shadow-lg">
+                    <i class="{{ icon|default:'bi-bar-chart' }} text-white text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ title }}</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white">{{ value }}</h3>
+                </div>
+            </div>
+            {% if subtitle %}
+            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                {% if trend %}
+                    {% if trend == 'up' %}
+                    <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    {% elif trend == 'down' %}
+                    <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 13.586V6a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    {% endif %}
+                {% endif %}
+                {{ subtitle }}
+            </p>
+            {% endif %}
+        </div>
+        {% if badge %}
+        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-{{ color|default:'blue' }}-100 text-{{ color|default:'blue' }}-800 dark:bg-{{ color|default:'blue' }}-900/30 dark:text-{{ color|default:'blue' }}-400">
+            {{ badge }}
+        </span>
+        {% endif %}
+    </div>
+    {% if link_url %}
+    <a href="{{ link_url }}" class="mt-4 block text-sm text-{{ color|default:'blue' }}-600 hover:text-{{ color|default:'blue' }}-700 dark:text-{{ color|default:'blue' }}-400 font-medium">
+        {{ link_text|default:'Voir détails' }} →
+    </a>
+    {% endif %}
+</div>

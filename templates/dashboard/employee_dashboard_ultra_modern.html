@@ -1,0 +1,450 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboard - PresencePro{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Dashboard Grid Layout -->
+<div class="space-y-6">
+    
+    <!-- Welcome Section avec Quick Actions -->
+    <div class="bg-gradient-to-r from-primary-500 via-primary-600 to-blue-600 rounded-2xl p-8 text-white shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-6 md:mb-0">
+                <h2 class="text-3xl font-bold mb-2">
+                    👋 Bonjour, {{ user.get_full_name }} !
+                </h2>
+                <p class="text-primary-100 text-lg">
+                    {% now "l j F Y" %}
+                </p>
+            </div>
+            
+            <!-- Quick Punch Card -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div class="text-center">
+                    <div class="text-5xl font-bold mb-2" id="current-time">--:--:--</div>
+                    <div class="text-primary-100 mb-4">Heure actuelle</div>
+                    
+                    <a href="{% url 'attendance:punch' %}" 
+                       class="inline-flex items-center space-x-2 px-6 py-3 bg-white text-primary-600 rounded-lg font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Pointer maintenant</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Heures travaillées ce mois -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                    +12.5%
+                </span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ month_hours|default:"0"|floatformat:1 }}h
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Heures ce mois
+                </div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                    Sur 160h prévues
+                </div>
+            </div>
+            <!-- Mini progress bar -->
+            <div class="mt-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500" 
+                     style="width: {% widthratio month_hours|default:"0"|floatformat:0 160 100 %}%"></div>
+            </div>
+        </div>
+        
+        <!-- Heures aujourd'hui -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                {% if today_hours >= 8 %}
+                <span class="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                    Objectif atteint
+                </span>
+                {% endif %}
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ today_hours|default:"0"|floatformat:1 }}h
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Heures aujourd'hui
+                </div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                    Objectif: 8h/jour
+                </div>
+            </div>
+            <!-- Mini progress bar -->
+            <div class="mt-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500" 
+                     style="width: {% widthratio today_hours|default:"0"|floatformat:0 8 100 %}%"></div>
+            </div>
+        </div>
+        
+        <!-- Solde de congés -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ leave_balance|default:"25"|floatformat:0 }} jours
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Solde de congés
+                </div>
+                <div class="mt-2">
+                    <a href="{% url 'leave:leave_request_create' %}" 
+                       class="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 font-medium">
+                        Demander un congé →
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statut actuel -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                {% if current_status == 'present' %}
+                <span class="flex items-center space-x-1 text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span>En ligne</span>
+                </span>
+                {% else %}
+                <span class="flex items-center space-x-1 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                    <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                    <span>Hors ligne</span>
+                </span>
+                {% endif %}
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {% if current_status == 'present' %}
+                        Présent
+                    {% else %}
+                        Absent
+                    {% endif %}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Statut actuel
+                </div>
+                {% if last_punch_time %}
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                    Dernière action: {{ last_punch_time|time:"H:i" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Timeline des pointages - 2 colonnes -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Historique d'aujourd'hui</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Vos pointages de la journée</p>
+                    </div>
+                    <a href="{% url 'attendance:my_attendance' %}" 
+                       class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">
+                        Voir tout →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                {% if today_punches %}
+                <div class="space-y-4">
+                    {% for punch in today_punches %}
+                    <div class="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <!-- Icon -->
+                        <div class="flex-shrink-0">
+                            {% if punch.punch_type == 'in' %}
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                </svg>
+                            </div>
+                            {% else %}
+                            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {% if punch.punch_type == 'in' %}Arrivée{% else %}Départ{% endif %}
+                                </h4>
+                                <span class="text-lg font-bold text-gray-900 dark:text-white">
+                                    {{ punch.timestamp|time:"H:i" }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ punch.timestamp|date:"l j F Y" }}
+                            </p>
+                            {% if punch.notes %}
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-500 italic">
+                                "{{ punch.notes }}"
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Aucun pointage aujourd'hui</p>
+                    <a href="{% url 'attendance:punch' %}" 
+                       class="inline-flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>Faire votre premier pointage</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions & Stats - 1 colonne -->
+        <div class="space-y-6">
+            
+            <!-- Quick Actions Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Actions rapides</h3>
+                
+                <!-- Alerte anomalies si présentes -->
+                {% if pending_anomalies > 0 %}
+                <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-red-900 dark:text-red-100">
+                                {{ pending_anomalies }} anomalie{{ pending_anomalies|pluralize }} en attente
+                            </p>
+                            <p class="text-xs text-red-700 dark:text-red-300 mt-1">
+                                Vérifiez vos pointages
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="space-y-3">
+                    <a href="{% url 'attendance:punch' %}" 
+                       class="flex items-center space-x-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors group">
+                        <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                                Pointer
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">
+                                Enregistrer votre présence
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    
+                    <a href="{% url 'leave:leave_request_create' %}" 
+                       class="flex items-center space-x-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors group">
+                        <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                                Demander un congé
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">
+                                Gérer vos absences
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    
+                    <a href="{% url 'attendance:my_attendance' %}" 
+                       class="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group">
+                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                Historique
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">
+                                Voir tous vos pointages
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Graphique hebdomadaire -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Cette semaine</h3>
+                <canvas id="weekChart" height="200"></canvas>
+            </div>
+            
+            <!-- Demandes de congés récentes -->
+            {% if recent_leave_requests %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Congés récents</h3>
+                    <a href="{% url 'leave:leave_request_list' %}" 
+                       class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">
+                        Voir tout →
+                    </a>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for request in recent_leave_requests|slice:":3" %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ request.leave_type.name }}
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {{ request.start_date|date:"d/m" }} - {{ request.end_date|date:"d/m" }}
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                            {% if request.status == 'approved' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                            {% elif request.status == 'rejected' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                            {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+                            {% endif %}">
+                            {% if request.status == 'approved' %}Approuvé
+                            {% elif request.status == 'rejected' %}Refusé
+                            {% else %}En attente
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Scripts -->
+<script>
+    // Horloge en temps réel
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const clockElement = document.getElementById('current-time');
+        if (clockElement) {
+            clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+    }
+    
+    updateClock();
+    setInterval(updateClock, 1000);
+    
+    // Graphique hebdomadaire
+    const ctx = document.getElementById('weekChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ week_labels|safe }},
+                datasets: [{
+                    label: 'Heures',
+                    data: {{ week_hours|safe }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        ticks: {
+                            callback: function(value) {
+                                return value + 'h';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+{% endblock %}

@@ -67,3 +67,4 @@ class Command(BaseCommand):
                 f'\nRésumé: {total_created} jours fériés créés, {total_updated} mis à jour au total'
             )
         )
+

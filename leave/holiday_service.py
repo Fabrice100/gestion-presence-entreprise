@@ -393,3 +393,4 @@ class HolidayService:
 
 # Instance globale du service
 holiday_service = HolidayService()
+

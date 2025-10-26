@@ -22,3 +22,4 @@ def has_role(user, roles):
         roles = [roles]
     
     return user_role in roles
+

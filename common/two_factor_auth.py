@@ -489,3 +489,4 @@ class SecureSessionManager:
 # Instances globales des services de sécurité
 two_factor_service = TwoFactorAuthService()
 secure_session_manager = SecureSessionManager()
+

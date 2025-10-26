@@ -360,3 +360,4 @@ try:
     from django.db import connection
 except ImportError:
     connection = None
+

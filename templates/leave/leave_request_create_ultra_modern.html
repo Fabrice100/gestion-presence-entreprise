@@ -1,0 +1,538 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Nouvelle demande de congé{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations pour les champs de formulaire */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .form-card {
+        animation: slideInUp 0.5s ease-out;
+    }
+    
+    /* Style personnalisé pour les date pickers */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.5);
+        cursor: pointer;
+    }
+    
+    .dark input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.7);
+    }
+    
+    /* Animation du bouton de soumission */
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto" x-data="{
+    submitting: false,
+    startDate: '',
+    endDate: '',
+    calculateDays() {
+        if (this.startDate && this.endDate) {
+            const start = new Date(this.startDate);
+            const end = new Date(this.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays;
+        }
+        return 0;
+    },
+    submitForm(event) {
+        this.submitting = true;
+    }
+}">
+    <!-- En-tête avec breadcrumb -->
+    <div class="mb-6">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'dashboard:employee' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        Tableau de bord
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <a href="{% url 'leave:leave_request_list' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">
+                            Mes congés
+                        </a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">
+                            Nouvelle demande
+                        </span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    ✈️ Nouvelle demande de congé
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Remplissez le formulaire pour soumettre votre demande de congé
+                </p>
+            </div>
+            <a href="{% url 'leave:leave_request_list' %}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages d'alerte -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800{% elif message.tags == 'error' %}bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800{% else %}bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800{% endif %}">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 {% if message.tags == 'success' %}text-green-600 dark:text-green-400{% elif message.tags == 'error' %}text-red-600 dark:text-red-400{% else %}text-blue-600 dark:text-blue-400{% endif %} mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    {% if message.tags == 'success' %}
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    {% else %}
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    {% endif %}
+                </svg>
+                <p class="{% if message.tags == 'success' %}text-green-800 dark:text-green-300{% elif message.tags == 'error' %}text-red-800 dark:text-red-300{% else %}text-blue-800 dark:text-blue-300{% endif %}">
+                    {{ message }}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+                {% for error in form.non_field_errors %}
+                <p class="text-red-800 dark:text-red-300">{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formulaire principal -->
+    <form method="post" @submit="submitForm" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Colonne gauche - Formulaire -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Type de congé -->
+                <div class="form-card bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+                                Type de congé
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Sélectionnez le type de votre demande
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {{ form.leave_type }}
+                    
+                    {% if form.leave_type.errors %}
+                    <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{ form.leave_type.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Dates -->
+                <div class="form-card bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+                                Période de congé
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Sélectionnez les dates de début et de fin
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Date de début -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                📅 Date de début
+                            </label>
+                            <div class="relative">
+                                {{ form.start_date }}
+                            </div>
+                            {% if form.start_date.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                {{ form.start_date.errors.0 }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Date de fin -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                📅 Date de fin
+                            </label>
+                            <div class="relative">
+                                {{ form.end_date }}
+                            </div>
+                            {% if form.end_date.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                {{ form.end_date.errors.0 }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Calcul automatique de durée -->
+                    <div class="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                📊 Durée calculée :
+                            </span>
+                            <span x-text="calculateDays() > 0 ? calculateDays() + ' jour(s)' : 'Sélectionnez les dates'" 
+                                  class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motif -->
+                <div class="form-card bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+                                Motif de la demande
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Expliquez la raison de votre demande de congé
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {{ form.reason }}
+                    
+                    {% if form.reason.errors %}
+                    <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{ form.reason.errors.0 }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Colonne droite - Informations et aide -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Solde de congés -->
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl shadow-md p-6 border border-green-200 dark:border-green-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Solde disponible</span>
+                        </div>
+                    </div>
+                    <div class="text-center py-4">
+                        <div class="text-5xl font-bold text-green-600 dark:text-green-400 mb-2">
+                            {{ leave_balance|default:"25"|floatformat:0 }}
+                        </div>
+                        <div class="text-lg text-gray-700 dark:text-gray-300">
+                            jours de congé
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                            <span>Jours demandés</span>
+                            <span class="font-semibold" x-text="calculateDays()">0</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
+                            <span>Reste après demande</span>
+                            <span class="font-semibold text-green-600 dark:text-green-400" x-text="Math.max({{ leave_balance|default:'25' }} - calculateDays(), 0)">{{ leave_balance|default:"25" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Carte d'aide -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-md p-6 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Aide & Conseils
+                        </h3>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <span class="text-blue-500 mr-2">✓</span>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                Soumettez votre demande <strong>au moins 2 semaines à l'avance</strong>
+                            </p>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-blue-500 mr-2">✓</span>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                Vérifiez votre <strong>solde de congés</strong> avant de soumettre
+                            </p>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-blue-500 mr-2">✓</span>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                Expliquez clairement le <strong>motif</strong> de votre demande
+                            </p>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-blue-500 mr-2">✓</span>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                Les demandes sont traitées par ordre de priorité
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statut du processus -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        Processus de validation
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                1
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    Soumission
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Vous remplissez le formulaire
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                2
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    Validation Manager
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Examen par votre responsable
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                3
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    Validation RH
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Approbation finale RH/DG
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                ✓
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    Approuvé
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Vous recevez une notification
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Champs obligatoires -->
+                <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-amber-800 dark:text-amber-300">
+                                Tous les champs marqués d'un <span class="text-red-500">*</span> sont obligatoires
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-t-4 border-blue-500">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Prêt à soumettre votre demande ?</span>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'leave:leave_request_list' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all duration-200 transform hover:scale-105">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Annuler
+                    </a>
+                    
+                    <button type="submit" 
+                            :disabled="submitting"
+                            class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:cursor-not-allowed disabled:transform-none">
+                        <span x-show="!submitting" class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            Soumettre la demande
+                        </span>
+                        <span x-show="submitting" class="flex items-center">
+                            <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Envoi en cours...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Appliquer les classes Tailwind aux champs de formulaire générés par Django
+        const selectFields = document.querySelectorAll('select');
+        selectFields.forEach(field => {
+            field.classList.add('w-full', 'px-4', 'py-3', 'border', 'border-gray-300', 'dark:border-gray-600', 
+                               'rounded-lg', 'focus:ring-2', 'focus:ring-blue-500', 'focus:border-transparent',
+                               'bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white',
+                               'transition-all', 'duration-200', 'cursor-pointer', 'hover:border-blue-400');
+        });
+        
+        const dateFields = document.querySelectorAll('input[type="date"]');
+        dateFields.forEach(field => {
+            field.classList.add('w-full', 'px-4', 'py-3', 'border', 'border-gray-300', 'dark:border-gray-600',
+                               'rounded-lg', 'focus:ring-2', 'focus:ring-purple-500', 'focus:border-transparent',
+                               'bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white',
+                               'transition-all', 'duration-200', 'hover:border-purple-400');
+            
+            // Bind Alpine.js x-model pour le calcul de durée
+            if (field.name === 'start_date') {
+                field.setAttribute('x-model', 'startDate');
+            } else if (field.name === 'end_date') {
+                field.setAttribute('x-model', 'endDate');
+            }
+        });
+        
+        const textareaFields = document.querySelectorAll('textarea');
+        textareaFields.forEach(field => {
+            field.classList.add('w-full', 'px-4', 'py-3', 'border', 'border-gray-300', 'dark:border-gray-600',
+                               'rounded-lg', 'focus:ring-2', 'focus:ring-green-500', 'focus:border-transparent',
+                               'bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white',
+                               'transition-all', 'duration-200', 'resize-y', 'min-h-[120px]',
+                               'hover:border-green-400');
+            field.setAttribute('placeholder', 'Décrivez la raison de votre demande de congé...');
+        });
+    });
+</script>
+{% endblock %}

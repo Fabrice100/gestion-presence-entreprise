@@ -19,9 +19,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.decorators import method_decorator
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.urls import reverse_lazy, reverse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum, F
 from django.http import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from datetime import date, timedelta
@@ -38,7 +38,7 @@ class LeaveRequestListView(LoginRequiredMixin, ListView):
     Liste des demandes de congés pour l'utilisateur connecté.
     """
     model = LeaveRequest
-    template_name = 'leave/leave_request_list.html'
+    template_name = 'leave/leave_request_list_ultra_modern.html'
     context_object_name = 'leave_requests'
     paginate_by = 20
     
@@ -68,8 +68,25 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
     """
     model = LeaveRequest
     form_class = LeaveRequestForm
-    template_name = 'leave/leave_request_create.html'
+    template_name = 'leave/leave_request_create_ultra_modern.html'
     success_url = reverse_lazy('leave:leave_request_list')
+    
+    def get_context_data(self, **kwargs):
+        """Ajoute le solde de congés au contexte."""
+        context = super().get_context_data(**kwargs)
+        
+        # Calculer le solde total de congés
+        from django.utils import timezone
+        year = timezone.now().year
+        total_balance = LeaveBalance.objects.filter(
+            employee=self.request.user,
+            year=year
+        ).aggregate(
+            total=Sum(F('allocated_balance') - F('taken_balance'))
+        )['total'] or 25
+        
+        context['leave_balance'] = total_balance
+        return context
     
     def get_form_kwargs(self):
         """Passe l'utilisateur au formulaire."""
@@ -418,3 +435,36 @@ def leave_statistics_api(request):
         stats['rejected_requests'] = leave_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count()
     
     return JsonResponse(stats)
+
+
+# =====================================
+# VUE UNIFIÉE DES CONGÉS (3 en 1)
+# =====================================
+class LeaveUnifiedView(LoginRequiredMixin, TemplateView):
+    """
+    Vue unifiée pour la gestion des congés employé
+    Regroupe en un seul endroit:
+    - Liste des demandes récentes (5 dernières)
+    - Soldes de congés par type
+    - Lien vers le calendrier complet
+    
+    Inspiré de Clockify/BambooHR: une seule page, plusieurs onglets
+    """
+    template_name = 'leave/leave_unified.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Demandes récentes (5 dernières)
+        context['recent_leave_requests'] = LeaveRequest.objects.filter(
+            employee=self.request.user
+        ).select_related('leave_type').order_by('-created_at')[:5]
+        
+        # Soldes de congés
+        current_year = timezone.now().year
+        context['leave_balances'] = LeaveBalance.objects.filter(
+            employee=self.request.user,
+            year=current_year
+        ).select_related('leave_type')
+        
+        return context

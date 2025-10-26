@@ -29,7 +29,7 @@ from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
 
 class LeaveRequestCreateView(EmployeeRequiredMixin, TemplateView):
     """Vue pour créer une demande de congé."""
-    template_name = 'leave/leave_request_create.html'
+    template_name = 'leave/leave_request_create_ultra_modern.html'
 
 
 class LeaveBalanceListView(EmployeeRequiredMixin, ListView):
@@ -45,14 +45,14 @@ class LeaveBalanceListView(EmployeeRequiredMixin, ListView):
 class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
     """Vue pour que les RH/DG gèrent toutes les demandes de congés."""
     model = LeaveRequest
-    template_name = 'leave/rh_leave_management.html'
+    template_name = 'leave/rh_leave_management_ultra_modern.html'
     context_object_name = 'leave_requests'
-    paginate_by = 15
+    paginate_by = 20
     
     def get_queryset(self):
         """Filtre toutes les demandes pour les RH/DG."""
         queryset = LeaveRequest.objects.all().select_related(
-            'employee', 'leave_type', 'employee__employee_profile__department'
+            'employee', 'leave_type', 'employee__employeeprofile'
         ).order_by('-created_at')
         
         # Filtres
@@ -66,11 +66,15 @@ class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
             
         department = self.request.GET.get('department')
         if department:
-            queryset = queryset.filter(employee__employee_profile__department_id=department)
-            
-        priority = self.request.GET.get('priority')
-        if priority:
-            queryset = queryset.filter(priority=priority)
+            queryset = queryset.filter(employee__employeeprofile__department=department)
+        
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(employee__first_name__icontains=search) |
+                Q(employee__last_name__icontains=search) |
+                Q(employee__employeeprofile__employee_id__icontains=search)
+            )
         
         return queryset
     
@@ -80,34 +84,20 @@ class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
         
         # Statistiques globales
         all_requests = LeaveRequest.objects.all()
-        context['total_requests'] = all_requests.count()
-        context['pending_requests'] = all_requests.filter(status='pending').count()
-        context['approved_requests'] = all_requests.filter(status='approved').count()
-        context['rejected_requests'] = all_requests.filter(status='rejected').count()
-        context['this_month_requests'] = all_requests.filter(
-            created_at__month=timezone.now().month,
-            created_at__year=timezone.now().year
-        ).count()
+        context['stats'] = {
+            'pending_count': all_requests.filter(status='approved_manager').count(),
+            'approved_count': all_requests.filter(status='approved_rh').count(),
+            'rejected_count': all_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count(),
+            'this_month_count': all_requests.filter(
+                created_at__month=timezone.now().month,
+                created_at__year=timezone.now().year
+            ).count(),
+        }
         
-        # Statistiques par département
-        from accounts.models import Department
-        departments = Department.objects.all()
-        context['department_stats'] = [
-            {
-                'department': dept,
-                'total': all_requests.filter(employee__employee_profile__department=dept).count(),
-                'pending': all_requests.filter(employee__employee_profile__department=dept, status='pending').count(),
-                'approved': all_requests.filter(employee__employee_profile__department=dept, status='approved').count(),
-            }
-            for dept in departments
-        ]
-        
-        # Données pour les filtres
-        context['leave_types'] = LeaveType.objects.filter(is_active=True)
-        context['departments'] = departments
-        context['employees'] = User.objects.filter(
-            leave_requests__isnull=False
-        ).distinct().select_related('employee_profile')
+        # Départements et types de congés pour filtres
+        from accounts.models import EmployeeProfile
+        context['departments'] = EmployeeProfile.objects.values_list('department', flat=True).distinct()
+        context['leave_types'] = LeaveType.objects.all()
         
         return context
 
@@ -164,7 +154,7 @@ class RHLeaveReportsView(EnhancedLoginRequiredMixin, TemplateView):
 class ManagerLeaveRequestsView(EnhancedLoginRequiredMixin, ListView):
     """Vue pour que le manager voie ses propres demandes."""
     model = LeaveRequest
-    template_name = 'leave/manager_my_requests.html'
+    template_name = 'leave/manager_my_requests_ultra_modern.html'
     context_object_name = 'leave_requests'
     paginate_by = 12
     
@@ -213,7 +203,7 @@ class ManagerLeaveRequestsView(EnhancedLoginRequiredMixin, ListView):
 class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
     """Vue pour que le manager valide les demandes des autres."""
     model = LeaveRequest
-    template_name = 'leave/manager_validation.html'
+    template_name = 'leave/manager_validation_ultra_modern.html'
     context_object_name = 'leave_requests'
     paginate_by = 12
     
@@ -247,7 +237,7 @@ class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
         context['pending_count'] = all_requests.filter(status='pending').count()
         context['approved_count'] = all_requests.filter(status='approved').count()
         context['rejected_count'] = all_requests.filter(status='rejected').count()
-        context['total_this_month'] = all_requests.filter(
+        context['monthly_count'] = all_requests.filter(
             created_at__month=timezone.now().month,
             created_at__year=timezone.now().year
         ).count()
@@ -401,7 +391,7 @@ class LeaveReportView(EnhancedLoginRequiredMixin, TemplateView):
 
 
 class LeaveCalendarView(EmployeeRequiredMixin, TemplateView):
-    template_name = 'leave/leave_calendar.html'
+    template_name = 'leave/leave_calendar_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -1,0 +1,237 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Pointage - PresencePro{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+    <div class="max-w-2xl mx-auto">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                Pointage
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Enregistrez votre présence en un clic
+            </p>
+        </div>
+        
+        <!-- Horloge en temps réel -->
+        <div class="bg-gradient-to-r from-primary-500 to-primary-600 rounded-3xl shadow-2xl p-8 mb-8 text-white">
+            <div class="text-center" x-data="{ 
+                time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                date: new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            }" x-init="setInterval(() => { 
+                const now = new Date();
+                time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                date = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }, 1000)">
+                <div class="text-7xl font-bold mb-2 font-mono" x-text="time"></div>
+                <div class="text-xl opacity-90 capitalize" x-text="date"></div>
+            </div>
+        </div>
+        
+        <!-- Bouton de pointage principal -->
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 mb-6">
+            {% if next_punch_type == 'in' %}
+                <!-- Pointage Entrée -->
+                <form method="post" action="{% url 'attendance:punch' %}" 
+                      x-data="{ loading: false }"
+                      @submit="loading = true"
+                      class="space-y-6">
+                    {% csrf_token %}
+                    <input type="hidden" name="punch_type" value="in">
+                    
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+                            <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            Pointer l'entrée
+                        </h2>
+                        <p class="text-gray-600 dark:text-gray-400">
+                            Marquez votre arrivée au travail
+                        </p>
+                    </div>
+                    
+                    <button type="submit" 
+                            :disabled="loading"
+                            class="w-full py-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3">
+                        <span x-show="!loading">Pointer mon entrée</span>
+                        <span x-show="loading" class="flex items-center space-x-2">
+                            <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Pointage en cours...</span>
+                        </span>
+                        <svg x-show="!loading" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </button>
+                </form>
+            {% else %}
+                <!-- Pointage Sortie -->
+                <form method="post" action="{% url 'attendance:punch' %}"
+                      x-data="{ loading: false }"
+                      @submit="loading = true"
+                      class="space-y-6">
+                    {% csrf_token %}
+                    <input type="hidden" name="punch_type" value="out">
+                    
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-24 h-24 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                            <svg class="w-12 h-12 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            Pointer la sortie
+                        </h2>
+                        <p class="text-gray-600 dark:text-gray-400">
+                            Marquez votre départ du travail
+                        </p>
+                    </div>
+                    
+                    <button type="submit"
+                            :disabled="loading"
+                            class="w-full py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl font-bold text-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3">
+                        <span x-show="!loading">Pointer ma sortie</span>
+                        <span x-show="loading" class="flex items-center space-x-2">
+                            <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Pointage en cours...</span>
+                        </span>
+                        <svg x-show="!loading" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        
+        <!-- Dernier pointage -->
+        {% if last_attendance %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0">
+                    {% if last_attendance.punch_type == 'in' %}
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                    {% else %}
+                        <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                        Dernier pointage
+                    </h3>
+                    <p class="text-lg font-bold text-gray-900 dark:text-white">
+                        {% if last_attendance.punch_type == 'in' %}Entrée{% else %}Sortie{% endif %}
+                        - {{ last_attendance.time|time:"H:i" }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ last_attendance.date|date:"l j F Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Pointages du jour -->
+        {% if today_attendance %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+                <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Pointages d'aujourd'hui</span>
+            </h3>
+            
+            <div class="space-y-3">
+                {% for attendance in today_attendance %}
+                <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <!-- Icône -->
+                    <div class="flex-shrink-0">
+                        {% if attendance.punch_type == 'in' %}
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                </svg>
+                            </div>
+                        {% else %}
+                            <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-900 dark:text-white">
+                            {% if attendance.punch_type == 'in' %}Entrée{% else %}Sortie{% endif %}
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            {{ attendance.time|time:"H:i:s" }}
+                        </div>
+                    </div>
+                    
+                    <!-- Badge statut -->
+                    <div>
+                        {% if attendance.punch_type == 'in' %}
+                            <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs font-semibold rounded-full">
+                                Entrée
+                            </span>
+                        {% else %}
+                            <span class="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-semibold rounded-full">
+                                Sortie
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- Aucun pointage aujourd'hui -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 text-center">
+            <svg class="w-16 h-16 text-blue-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">
+                Aucun pointage aujourd'hui
+            </h3>
+            <p class="text-blue-700 dark:text-blue-400">
+                Commencez votre journée en pointant votre entrée
+            </p>
+        </div>
+        {% endif %}
+        
+        <!-- Bouton retour -->
+        <div class="mt-8 text-center">
+            <a href="{% url 'dashboard:dashboard' %}" 
+               class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Retour au tableau de bord</span>
+            </a>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

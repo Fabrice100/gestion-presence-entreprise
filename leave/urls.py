@@ -19,6 +19,9 @@ from . import workflow_views
 app_name = 'leave'
 
 urlpatterns = [
+    # PAGE UNIFIÉE DES CONGÉS (3 en 1: demandes + soldes + calendrier)
+    path('my-leaves/', workflow_views.LeaveUnifiedView.as_view(), name='leave_unified'),
+    
     # Demandes de congés (workflow)
     path('requests/', workflow_views.LeaveRequestListView.as_view(), name='leave_request_list'),
     path('requests/create/', workflow_views.LeaveRequestCreateView.as_view(), name='leave_request_create'),

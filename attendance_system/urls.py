@@ -24,6 +24,9 @@ urlpatterns = [
     # Landing page
     path('', TemplateView.as_view(template_name='landing.html'), name='landing'),
     
+    # Test Frontend Complet
+    path('test-ultra-simple/', TemplateView.as_view(template_name='test_ultra_simple.html'), name='test_ultra_simple'),
+    
     # Interface utilisateur
     path('accounts/', include('accounts.urls')),
     path('attendance/', include('attendance.urls')),
