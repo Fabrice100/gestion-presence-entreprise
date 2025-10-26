@@ -346,8 +346,19 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
         return leave_request.leave_type.requires_rh_approval
     
     def _deduct_leave_balance(self, leave_request):
-        """Déduit les jours de congé du solde de l'employé."""
-        days_requested = (leave_request.end_date - leave_request.start_date).days + 1
+        """
+        Déduit les jours de congé du solde de l'employé.
+        
+        BUG CORRIGÉ : Exclut automatiquement les jours fériés pour conformité légale.
+        """
+        from leave.holiday_service import HolidayService
+        holiday_service = HolidayService()
+        
+        # Calculer jours OUVRABLES (excluant automatiquement jours fériés)
+        working_days = holiday_service.get_working_days_in_period(
+            leave_request.start_date,
+            leave_request.end_date
+        )
         
         balance, created = LeaveBalance.objects.get_or_create(
             employee=leave_request.employee,
@@ -356,7 +367,8 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             defaults={'allocated_balance': leave_request.leave_type.allocation_amount, 'taken_balance': 0}
         )
         
-        balance.taken_balance += days_requested
+        # Déduire seulement les jours OUVRABLES (jours fériés exclus)
+        balance.taken_balance += working_days
         balance.save()
 
 

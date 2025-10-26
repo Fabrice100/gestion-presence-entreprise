@@ -124,14 +124,25 @@ class LeaveApprovalForm(forms.Form):
         help_text="Ajoutez un commentaire pour expliquer votre décision."
     )
     
+    def clean(self):
+        """
+        Validation globale du formulaire.
+        Force le commentaire obligatoire lors d'un rejet (BUG CORRIGÉ).
+        """
+        cleaned_data = super().clean()
+        action = cleaned_data.get('action')
+        comment = cleaned_data.get('comment', '')
+        
+        # Exiger un commentaire OBLIGATOIRE pour les rejets
+        if action == 'reject' and not comment.strip():
+            raise ValidationError({
+                'comment': 'Un motif de rejet est obligatoire pour assurer la transparence et la traçabilité.'
+            })
+        
+        return cleaned_data
+    
     def clean_comment(self):
         comment = self.cleaned_data.get('comment', '')
-        action = self.cleaned_data.get('action')
-        
-        # Exiger un commentaire pour les rejets
-        if action == 'reject' and not comment.strip():
-            raise ValidationError('Un commentaire est obligatoire pour rejeter une demande.')
-        
         return comment
 
 

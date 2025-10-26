@@ -2,6 +2,7 @@
 Service pour la logique métier du pointage (attendance).
 
 Ce module contient les services pour :
+
 - Validation GPS et géolocalisation
 - Calcul de distance (formule Haversine)
 - Création de pointages
@@ -267,6 +268,21 @@ class AttendanceBusinessRules:
         # Vérifier si actif
         if not profile.is_active:
             return False, 'Votre compte est inactif.'
+        
+        # Vérifier si l'utilisateur est en congé approuvé (BUG CORRIGÉ)
+        from leave.models import LeaveRequest
+        from datetime import date
+        today = date.today()
+        
+        approved_leave = LeaveRequest.objects.filter(
+            employee=user,
+            status='approved_rh',
+            start_date__lte=today,
+            end_date__gte=today
+        ).exists()
+        
+        if approved_leave:
+            return False, 'Vous êtes en congé approuvé, le pointage est bloqué pendant cette période.'
         
         return True, None
     
