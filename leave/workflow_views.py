@@ -156,14 +156,16 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             # Calculer la durée
             leave_request.duration_days = days_requested
             
-            # Déterminer le niveau de validation nécessaire
+            # Déterminer le niveau de validation nécessaire (BUG CORRIGÉ)
             profile = self.request.user.employee_profile
             if profile.role == 'employee':
-                # Employé : validation par manager puis RH/DG
+                # Employé : validation par manager puis RH/DG (workflow complet)
                 leave_request.status = 'pending'
                 leave_request.manager = profile.manager
             elif profile.role == 'manager':
-                # Manager : validation directe par RH/DG
+                # Manager : Passe DIRECTEMENT au RH sans pré-validation par un autre manager
+                # Le statut 'approved_manager' indique que c'est prêt pour validation RH
+                # sans avoir besoin d'une pré-validation par un autre manager
                 leave_request.status = 'approved_manager'
             elif profile.role == 'rh_dg':
                 # RH/DG : auto-approbation
