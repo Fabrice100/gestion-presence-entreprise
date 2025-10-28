@@ -43,14 +43,14 @@ class LeaveBalanceListView(EmployeeRequiredMixin, ListView):
 
 
 class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
-    """Vue pour que les RH/DG gèrent toutes les demandes de congés."""
+    """Vue pour que les RH gèrent toutes les demandes de congés."""
     model = LeaveRequest
     template_name = 'leave/rh_leave_management_ultra_modern.html'
     context_object_name = 'leave_requests'
     paginate_by = 20
     
     def get_queryset(self):
-        """Filtre toutes les demandes pour les RH/DG."""
+        """Filtre toutes les demandes pour les RH."""
         queryset = LeaveRequest.objects.all().select_related(
             'employee', 'leave_type', 'employee__employeeprofile'
         ).order_by('-created_at')
@@ -103,7 +103,7 @@ class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
 
 
 class RHLeaveReportsView(EnhancedLoginRequiredMixin, TemplateView):
-    """Vue pour les rapports RH/DG sur les congés."""
+    """Vue pour les rapports RH sur les congés."""
     template_name = 'leave/rh_leave_reports.html'
     
     def get_context_data(self, **kwargs):
@@ -208,10 +208,31 @@ class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
     paginate_by = 12
     
     def get_queryset(self):
-        """Filtre les demandes en attente de validation."""
+        """
+        Filtre les demandes en attente de validation.
+        
+        FILTRAGE STRICT PAR DÉPARTEMENT (conforme aux spécifications):
+        Le Manager voit SEULEMENT les demandes de son département/service.
+        """
+        # Récupérer le département du Manager
+        manager_profile = self.request.user.employee_profile
+        manager_department = manager_profile.department
+        
+        if not manager_department:
+            # Manager sans département : aucune demande
+            return LeaveRequest.objects.none()
+        
+        # FILTRAGE STRICT: seulement département du Manager
         queryset = LeaveRequest.objects.filter(
-            status='pending'
-        ).exclude(employee=self.request.user).select_related('employee', 'leave_type', 'employee__employee_profile__department').order_by('-created_at')
+            status='pending',
+            employee__employee_profile__department=manager_department
+        ).exclude(
+            employee=self.request.user  # Exclure propres demandes Manager
+        ).select_related(
+            'employee', 
+            'leave_type', 
+            'employee__employee_profile__department'
+        ).order_by('-created_at')
         
         # Filtres
         priority = self.request.GET.get('priority')
@@ -232,11 +253,30 @@ class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
         """Ajoute des données de contexte."""
         context = super().get_context_data(**kwargs)
         
-        # Statistiques
-        all_requests = LeaveRequest.objects.exclude(employee=self.request.user)
+        # FILTRAGE STRICT PAR DÉPARTEMENT (conforme aux spécifications)
+        manager_profile = self.request.user.employee_profile
+        manager_department = manager_profile.department
+        
+        if not manager_department:
+            # Manager sans département
+            all_requests = LeaveRequest.objects.none()
+            context['employees'] = User.objects.none()
+        else:
+            # Seulement département du Manager
+            all_requests = LeaveRequest.objects.filter(
+                employee__employee_profile__department=manager_department
+            ).exclude(employee=self.request.user)
+            
+            # Employés du département uniquement
+            context['employees'] = User.objects.filter(
+                employee_profile__department=manager_department,
+                leave_requests__isnull=False
+            ).exclude(id=self.request.user.id).distinct().select_related('employee_profile')
+        
+        # Statistiques (seulement département)
         context['pending_count'] = all_requests.filter(status='pending').count()
-        context['approved_count'] = all_requests.filter(status='approved').count()
-        context['rejected_count'] = all_requests.filter(status='rejected').count()
+        context['approved_count'] = all_requests.filter(status__in=['approved_manager', 'approved_rh']).count()
+        context['rejected_count'] = all_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count()
         context['monthly_count'] = all_requests.filter(
             created_at__month=timezone.now().month,
             created_at__year=timezone.now().year
@@ -244,9 +284,6 @@ class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
         
         # Données pour les filtres
         context['leave_types'] = LeaveType.objects.filter(is_active=True)
-        context['employees'] = User.objects.filter(
-            leave_requests__isnull=False
-        ).distinct().select_related('employee_profile')
         
         return context
 
@@ -404,7 +441,16 @@ class LeaveCalendarView(EmployeeRequiredMixin, TemplateView):
         employee = self.request.GET.get('employee')
         
         # Générer le calendrier
-        calendar_data = holiday_service.get_leave_calendar(year, month)
+        try:
+            calendar_data = holiday_service.get_leave_calendar(year, month)
+        except Exception as e:
+            # En cas d'erreur, afficher un calendrier vide
+            calendar_data = {
+                'calendar': [],
+                'holidays_list': [],
+            }
+            context['error'] = str(e)
+            return context
         
         context.update({
             'current_year': year,

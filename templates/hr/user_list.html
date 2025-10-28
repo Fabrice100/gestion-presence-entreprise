@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liste des Utilisateurs{% endblock %}
+{% block page_title %}Utilisateurs{% endblock %}
+{% block page_subtitle %}Gérez les employés et managers{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- En-tête avec boutons Créer -->
+    <div class="flex justify-between items-center">
+        <h2'au siecle="text-2xl font-bold text-gray-900">Utilisateurs</h2>
+        <div class="flex gap-3">
+            <a href="{% url 'hr:manager_create' %}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                <i class="bi bi-person-badge mr-2"></i>
+                Nouveau Manager
+            </a>
+            <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center px-4 py- medical bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="bi bi-person-plus mr-2"></i>
+                Nouveau Employé
+            </a>
+        </div>
+    </div>
+    
+    <!-- Liste -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rôle</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Département</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for profile in object_list %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-medium text-gray-900">{{ profile.employee_id }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ profile.user.get_full_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">{{ profile.user.email }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if profile.role == 'manager' %}
+                        <span class="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">Manager</span>
+                        {% elif profile.role == 'employee' %}
+                        <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Employé</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">RH/DG</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">{{ profile.department.name|default:"—" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'hr:user_edit' profile.user.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'hr:user_delete' profile.user.pk %}" class="text-red-600 hover:text-red-900">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                        <i class="bi bi-people text-4xl mb-2"></i>
+                        <p class="text-lg">Aucun utilisateur trouvé</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+{% endblock %}
+
+

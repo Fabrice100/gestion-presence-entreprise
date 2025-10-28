@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Modifier{% else %}Créer{% endif %} un Département{% endblock %}
+{% block page_title %}{% if object %}Modifier{% else %}Créer{% endif %} un Département{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        
+        <!-- En-tête -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+                <i class="bi bi-{% if object %}pencil{% else %}plus-circle{% endif %}-fill mr-3"></i>
+                {% if object %}Modifier{% else %}Nouveau{% endif %} Département
+            </h2>
+        </div>
+        
+        <!-- Formulaire -->
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            
+            <div class="space-y-6">
+                <!-- Nom -->
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nom <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Description -->
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Manager -->
+                <div>
+                    <label for="{{ form.manager.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Manager
+                    </label>
+                    {{ form.manager }}
+                    {% if form.manager.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.manager.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Boutons -->
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+                <a href="{% url 'hr:department_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="bi bi-arrow-left mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="bi bi-check-lg mr-2"></i>
+                    {% if object %}Enregistrer{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

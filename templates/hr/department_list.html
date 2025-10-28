@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liste des Départements{% endblock %}
+{% block page_title %}Départements{% endblock %}
+{% block page_subtitle %}Gérez les départements de l'entreprise{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- En-tête avec bouton Créer -->
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900">Départements</h2>
+        <a href="{% url 'hr:department_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="bi bi-plus-circle mr-2"></i>
+            Nouveau Département
+        </a>
+    </div>
+    
+    <!-- Liste -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employés</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for department in object_list %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ department.name }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-500">{{ department.description|truncatewords:10 }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ department.manager.get_full_name|default:"Non assigné" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            {{ department.get_employee_count }} employé{{ department.get_employee_count|pluralize }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'hr:department_edit' department.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'hr:department_delete' department.pk %}" class="text-red-600 hover:text-red-900">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <i class="bi bi-folder-x text-4xl mb-2"></i>
+                        <p class="text-lg">Aucun département trouvé</p>
+                        <p class="text-sm mt-2">Créez votre premier département</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+{% endblock %}
+
+

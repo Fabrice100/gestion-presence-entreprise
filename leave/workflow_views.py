@@ -4,7 +4,7 @@ Vues pour le workflow de validation des congés.
 Ce module contient les vues pour :
 - Création de demandes de congés
 - Validation par les managers
-- Validation finale par RH/DG
+- Validation finale par RH
 - Gestion des soldes de congés
 - Notifications et alertes
 
@@ -17,6 +17,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from accounts.models import Department
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
@@ -109,7 +110,7 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         - Création de la demande
         - Envoi des notifications
         """
-        # Vérifier que l'utilisateur a un profil
+        # Vérifier que l'utilisateur a un profil (les superusers sont uniquement pour /admin/)
         if not hasattr(self.request.user, 'employee_profile'):
             form.add_error(None, 'Erreur: Votre compte n\'a pas de profil employé. Contactez l\'administrateur.')
             return self.form_invalid(form)
@@ -122,17 +123,27 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         # Calculer le nombre de jours demandés
         days_requested = (end_date - start_date).days + 1
         
-        # Vérifier le solde disponible
-        balance, created = LeaveBalance.objects.get_or_create(
-            employee=self.request.user,
-            leave_type=leave_type,
-            year=start_date.year,
-            defaults={'allocated_balance': leave_type.allocation_amount, 'taken_balance': 0}
-        )
-        
-        if balance.remaining_balance < days_requested:
-            form.add_error(None, f'Solde insuffisant. Disponible: {balance.remaining_balance} jours, Demandé: {days_requested} jours')
-            return self.form_invalid(form)
+        # VÉRIFICATION CRITIQUE : Vérifier le solde SEULEMENT pour les congés qui déduisent du solde
+        # TOUS les congés payés (vacances, maladie, événements) déduisent du MÊME solde de 30j
+        if hasattr(leave_type, 'deducts_balance') and leave_type.deducts_balance:
+            # Récupérer le type "Congés payés" comme solde unique
+            conges_payes_type = LeaveType.objects.filter(name__icontains='payé').first()
+            
+            if not conges_payes_type:
+                form.add_error(None, 'Erreur de configuration: Type "Congés payés" non trouvé')
+                return self.form_invalid(form)
+            
+            # Vérifier le solde global de 30 jours (pas le solde du type spécifique)
+            balance, created = LeaveBalance.objects.get_or_create(
+                employee=self.request.user,
+                leave_type=conges_payes_type,  # Toujours utiliser le type "Congés payés"
+                year=start_date.year,
+                defaults={'allocated_balance': 30, 'taken_balance': 0}
+            )
+            
+            if balance.remaining_balance < days_requested:
+                form.add_error(None, f'Solde insuffisant. Disponible: {balance.remaining_balance} jours, Demandé: {days_requested} jours')
+                return self.form_invalid(form)
         
         # Vérifier les chevauchements
         overlapping_requests = LeaveRequest.objects.filter(
@@ -156,19 +167,20 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             # Calculer la durée
             leave_request.duration_days = days_requested
             
-            # Déterminer le niveau de validation nécessaire (BUG CORRIGÉ)
+            # Déterminer le niveau de validation nécessaire
+            # CONFORME AUX SPÉCIFICATIONS (CAPTURES D'ÉCRAN)
             profile = self.request.user.employee_profile
             if profile.role == 'employee':
-                # Employé : validation par manager puis RH/DG (workflow complet)
+                # EMPLOYÉ : validation par Manager puis RH (workflow complet en 2 étapes)
                 leave_request.status = 'pending'
                 leave_request.manager = profile.manager
             elif profile.role == 'manager':
-                # Manager : Passe DIRECTEMENT au RH sans pré-validation par un autre manager
-                # Le statut 'approved_manager' indique que c'est prêt pour validation RH
-                # sans avoir besoin d'une pré-validation par un autre manager
+                # MANAGER : Bypass pré-validation, va DIRECTEMENT au RH
+                # Status 'approved_manager' = "Prêt pour validation RH finale"
+                # Conforme capture : "Demandes Manager → directement au RH"
                 leave_request.status = 'approved_manager'
-            elif profile.role == 'rh_dg':
-                # RH/DG : auto-approbation
+            elif profile.role == 'rh':
+                # RH : Auto-approbation immédiate
                 leave_request.status = 'approved_rh'
             
             leave_request.save()
@@ -179,8 +191,8 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             # Notifier le manager
             NotificationService.send_leave_pending_notification(leave_request, leave_request.manager)
         elif leave_request.status == 'approved_manager':
-            # Notifier les RH/DG
-            rh_users = User.objects.filter(employee_profile__role='rh_dg', employee_profile__is_active=True)
+            # Notifier les RH
+            rh_users = User.objects.filter(employee_profile__role='rh', employee_profile__is_active=True)
             for rh_user in rh_users:
                 NotificationService.send_leave_pending_notification(leave_request, rh_user)
         
@@ -190,7 +202,7 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
 
 class LeaveApprovalListView(LoginRequiredMixin, ListView):
     """
-    Liste des demandes de congés à valider pour les managers et RH/DG.
+    Liste des demandes de congés à valider pour les managers et RH.
     """
     model = LeaveRequest
     template_name = 'leave/leave_approval_list.html'
@@ -199,22 +211,46 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         user = self.request.user
+        
+        if not hasattr(user, 'employee_profile'):
+            return LeaveRequest.objects.none()
+        
         profile = user.employee_profile
         
         if profile.role == 'manager':
-            # Manager : voir les demandes de ses employés
-            managed_employees = User.objects.filter(
-                employee_profile__manager=user
-            )
+            # Manager : voir les demandes de SON département uniquement
+            # Trouver le département que ce manager gère
+            managed_department = Department.objects.filter(manager=user).first()
+            
+            if not managed_department:
+                # Manager sans département : aucune demande
+                return LeaveRequest.objects.none()
+            
+            # Filtrer par département du manager
             queryset = LeaveRequest.objects.filter(
-                employee__in=managed_employees,
+                employee__employee_profile__department=managed_department,
                 status='pending'
             ).select_related('employee', 'leave_type', 'employee__employee_profile')
-        elif profile.role == 'rh_dg':
-            # RH/DG : voir toutes les demandes en attente de validation finale
-            queryset = LeaveRequest.objects.filter(
-                status='approved_manager'
-            ).select_related('employee', 'leave_type', 'employee__employee_profile')
+        elif profile.role == 'rh':
+            # RH : voir TOUTES les demandes de TOUS les départements (employés + managers)
+            # Filtre par statut si demandé, sinon affiche pending et approved_manager par défaut
+            status_filter = self.request.GET.get('status')
+            if status_filter:
+                if status_filter == 'pending':
+                    queryset = LeaveRequest.objects.filter(status='pending')
+                elif status_filter == 'approved':
+                    queryset = LeaveRequest.objects.filter(status__in=['approved_manager', 'approved_rh'])
+                elif status_filter == 'rejected':
+                    queryset = LeaveRequest.objects.filter(status__in=['rejected_manager', 'rejected_rh'])
+                else:
+                    queryset = LeaveRequest.objects.filter(status=status_filter)
+            else:
+                # Par défaut: voir les demandes en attente de validation finale RH
+                queryset = LeaveRequest.objects.filter(
+                    status__in=['approved_manager', 'pending']
+                )
+            
+            queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile')
         else:
             queryset = LeaveRequest.objects.none()
         
@@ -256,9 +292,9 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
     
     def get(self, request, *args, **kwargs):
         """Affiche le formulaire de traitement d'approbation."""
-        leave_request = self.get_object()
-        context = self.get_context_data(object=leave_request)
-        context['remaining_days'] = self.get_remaining_balance(leave_request.employee)
+        self.object = self.get_object()
+        context = self.get_context_data()
+        context['remaining_days'] = self.get_remaining_balance(self.object.employee)
         return render(request, self.template_name, context)
     
     def post(self, request, *args, **kwargs):
@@ -291,19 +327,21 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             if profile.role == 'manager':
                 # Validation manager
                 if action == 'approve':
+                    leave_request.manager = user
                     leave_request.manager_decision = 'approved_manager'
                     leave_request.manager_comment = comment
                     leave_request.manager_decision_at = timezone.now()
                     leave_request.status = 'approved_manager'
                     
                 else:  # reject
+                    leave_request.manager = user
                     leave_request.manager_decision = 'rejected_manager'
                     leave_request.manager_comment = comment
                     leave_request.manager_decision_at = timezone.now()
                     leave_request.status = 'rejected_manager'
             
-            elif profile.role == 'rh_dg':
-                # Validation RH/DG
+            elif profile.role == 'rh':
+                # Validation RH
                 if action == 'approve':
                     leave_request.rh_decision = 'approved_rh'
                     leave_request.rh_comment = comment
@@ -325,9 +363,9 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             NotificationService.send_leave_approved_notification(leave_request, user)
             messages.success(self.request, 'Demande de congé approuvée avec succès.')
             
-            # Si c'est un manager qui approuve, notifier les RH/DG
+            # Si c'est un manager qui approuve, notifier les RH
             if profile.role == 'manager':
-                rh_users = User.objects.filter(employee_profile__role='rh_dg', employee_profile__is_active=True)
+                rh_users = User.objects.filter(employee_profile__role='rh', employee_profile__is_active=True)
                 for rh_user in rh_users:
                     NotificationService.send_leave_pending_notification(leave_request, rh_user)
         else:
@@ -338,21 +376,29 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
     
     def form_invalid(self, leave_request, form):
         """Gère les erreurs de formulaire."""
-        context = self.get_context_data(object=leave_request)
+        self.object = leave_request  # Définir self.object pour get_context_data()
+        context = self.get_context_data()
         context['approval_form'] = form
         return render(self.request, self.template_name, context)
     
     def _needs_rh_approval(self, leave_request):
-        """Détermine si une validation RH/DG est nécessaire."""
-        # Logique métier : validation RH/DG requise pour certains types de congés
+        """Détermine si une validation RH est nécessaire."""
+        # Logique métier : validation RH requise pour certains types de congés
         return leave_request.leave_type.requires_rh_approval
     
     def _deduct_leave_balance(self, leave_request):
         """
-        Déduit les jours de congé du solde de l'employé.
+        Déduit les jours de congé du solde UNIQUE de 30 jours de l'employé.
         
         BUG CORRIGÉ : Exclut automatiquement les jours fériés pour conformité légale.
+        NOUVEAU : TOUS les congés payés (vacances, maladie, événements) déduisent 
+                  du MÊME solde de 30 jours.
         """
+        # VÉRIFICATION CRITIQUE : Ce type de congé déduit-il du solde ?
+        if not leave_request.leave_type.deducts_balance:
+            # Congé sans solde uniquement : NE PAS déduire
+            return
+        
         from leave.holiday_service import HolidayService
         holiday_service = HolidayService()
         
@@ -362,11 +408,20 @@ class LeaveApprovalUpdateView(LoginRequiredMixin, DetailView):
             leave_request.end_date
         )
         
+        # Récupérer le type "Congés payés" comme solde unique
+        conges_payes_type = LeaveType.objects.filter(name__icontains='payé').first()
+        
+        if not conges_payes_type:
+            # Erreur de configuration, mais ne pas bloquer l'approbation
+            return
+        
+        # IMPORTANT : Toujours déduire du solde "Congés payés" (solde unique de 30j)
+        # Peu importe le type demandé (maladie, événements, etc.)
         balance, created = LeaveBalance.objects.get_or_create(
             employee=leave_request.employee,
-            leave_type=leave_request.leave_type,
+            leave_type=conges_payes_type,  # Toujours utiliser le type "Congés payés"
             year=leave_request.start_date.year,
-            defaults={'allocated_balance': leave_request.leave_type.allocation_amount, 'taken_balance': 0}
+            defaults={'allocated_balance': 30, 'taken_balance': 0}
         )
         
         # Déduire seulement les jours OUVRABLES (jours fériés exclus)
@@ -398,6 +453,10 @@ def leave_statistics_api(request):
         return JsonResponse({'error': 'Non authentifié'}, status=401)
     
     user = request.user
+    
+    if not hasattr(user, 'employee_profile'):
+        return JsonResponse({'error': 'Profil employé non trouvé'}, status=403)
+    
     profile = user.employee_profile
     current_year = date.today().year
     
@@ -440,8 +499,8 @@ def leave_statistics_api(request):
         stats['approved_requests'] = leave_requests.filter(status__in=['approved_manager', 'approved_rh']).count()
         stats['rejected_requests'] = leave_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count()
     
-    elif profile.role == 'rh_dg':
-        # Statistiques pour RH/DG (toute l'entreprise)
+    elif profile.role == 'rh':
+        # Statistiques pour RH (toute l'entreprise)
         leave_requests = LeaveRequest.objects.all()
         stats['total_requests'] = leave_requests.count()
         stats['pending_requests'] = leave_requests.filter(status='approved_manager').count()
