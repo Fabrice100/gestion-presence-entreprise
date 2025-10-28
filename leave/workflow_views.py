@@ -226,10 +226,26 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
                 # Manager sans département : aucune demande
                 return LeaveRequest.objects.none()
             
-            # Filtrer par département du manager
+            # Filtrer par département du manager et gérer les filtres de statut
+            status_filter = self.request.GET.get('status')
+            
+            if status_filter:
+                # Filtrer selon le statut demandé
+                if status_filter == 'pending':
+                    status_query = ['pending']
+                elif status_filter == 'approved':
+                    status_query = ['approved_manager']
+                elif status_filter == 'rejected':
+                    status_query = ['rejected_manager']
+                else:
+                    status_query = ['pending']  # Par défaut
+            else:
+                # Pas de filtre : afficher tous les statuts
+                status_query = ['pending', 'approved_manager', 'rejected_manager']
+            
             queryset = LeaveRequest.objects.filter(
                 employee__employee_profile__department=managed_department,
-                status='pending'
+                status__in=status_query
             ).select_related('employee', 'leave_type', 'employee__employee_profile')
         elif profile.role == 'rh':
             # RH : voir TOUTES les demandes de TOUS les départements (employés + managers)
