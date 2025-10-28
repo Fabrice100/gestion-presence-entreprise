@@ -302,16 +302,14 @@ class WorkScheduleListView(HRRequiredMixin, ListView):
     Liste de tous les profils horaires.
     Interface RH pour gérer les profils.
     """
-    model = None  # Sera importé dynamiquement
+    from accounts.models import WorkSchedule
+    model = WorkSchedule
     template_name = 'hr/schedule_list.html'
     context_object_name = 'schedules'
     paginate_by = 20
     
-    def get_model(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule
-    
-.order_by('name')
+    def get_queryset(self):
+        return WorkSchedule.objects.all().order_by('name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
