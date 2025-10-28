@@ -311,9 +311,7 @@ class WorkScheduleListView(HRRequiredMixin, ListView):
         from accounts.models import WorkSchedule
         return WorkSchedule
     
-    def get_queryset(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule.objects.all().order_by('name')
+.order_by('name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -331,18 +329,12 @@ class WorkScheduleCreateView(HRRequiredMixin, CreateView):
     """
     Création d'un nouveau profil horaire.
     """
-    model = None
-    form_class = None
+    from accounts.models import WorkSchedule
+    from accounts.schedule_forms import WorkScheduleForm
+    model = WorkSchedule
+    form_class = WorkScheduleForm
     template_name = 'hr/schedule_form.html'
     success_url = reverse_lazy('hr:hr_schedule_list')
-    
-    def get_model(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule
-    
-    def get_form_class(self):
-        from accounts.schedule_forms import WorkScheduleForm
-        return WorkScheduleForm
     
     def form_valid(self, form):
         # Enregistrer qui a créé le profil
@@ -361,21 +353,14 @@ class WorkScheduleUpdateView(HRRequiredMixin, UpdateView):
     """
     Modification d'un profil horaire existant.
     """
-    model = None
-    form_class = None
+    from accounts.models import WorkSchedule
+    from accounts.schedule_forms import WorkScheduleForm
+    model = WorkSchedule
+    form_class = WorkScheduleForm
     template_name = 'hr/schedule_form.html'
     success_url = reverse_lazy('hr:hr_schedule_list')
     
-    def get_model(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule
-    
-    def get_form_class(self):
-        from accounts.schedule_forms import WorkScheduleForm
-        return WorkScheduleForm
-    
     def get_queryset(self):
-        from accounts.models import WorkSchedule
         return WorkSchedule.objects.all()
     
     def form_valid(self, form):
@@ -419,17 +404,11 @@ class WorkScheduleDeleteView(HRRequiredMixin, DeleteView):
     """
     Suppression d'un profil horaire (avec vérifications).
     """
-    model = None
+    from accounts.models import WorkSchedule
+    model = WorkSchedule
     template_name = 'hr/schedule_confirm_delete.html'
     success_url = reverse_lazy('hr:hr_schedule_list')
     
-    def get_model(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule
-    
-    def get_queryset(self):
-        from accounts.models import WorkSchedule
-        return WorkSchedule.objects.all()
     
     def delete(self, request, *args, **kwargs):
         from accounts.schedule_service import WorkScheduleService
