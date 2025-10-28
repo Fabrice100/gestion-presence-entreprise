@@ -38,11 +38,6 @@
                     class="flex-1 px-6 py-4 text-sm font-semibold border-b-2 transition-colors">
                 💰 Mes soldes
             </button>
-            <button @click="activeTab = 'calendrier'" 
-                    :class="activeTab === 'calendrier' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                    class="flex-1 px-6 py-4 text-sm font-semibold border-b-2 transition-colors">
-                📅 Calendrier
-            </button>
         </div>
     </div>
 
@@ -161,24 +156,6 @@
                 <p class="text-gray-600 dark:text-gray-400">Vos soldes seront initialisés automatiquement</p>
             </div>
             {% endfor %}
-        </div>
-    </div>
-
-    <!-- TAB 3: Calendrier -->
-    <div x-show="activeTab === 'calendrier'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="text-center py-12">
-                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Calendrier des congés</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">
-                    Vue calendrier avec vos congés et ceux de l'équipe
-                </p>
-                <a href="{% url 'leave:leave_calendar' %}" class="inline-block text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
-                    Ouvrir le calendrier complet →
-                </a>
-            </div>
         </div>
     </div>
 
