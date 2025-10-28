@@ -89,7 +89,7 @@ class Attendance(models.Model):
         help_text="Heure du pointage"
     )
     
-    # Informations de géolocalisation
+    # Informations de géolocalisation (requises)
     latitude = models.FloatField(
         validators=[MinValueValidator(-90), MaxValueValidator(90), validate_gps_coordinate],
         verbose_name="Latitude",

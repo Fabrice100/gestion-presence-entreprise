@@ -22,53 +22,35 @@ def validate_gps_coordinate(value):
     Valide une coordonnée GPS (latitude ou longitude).
     
     Args:
-        value: Coordonnée à valider
+        value: Coordonnée à valider (float, int ou string)
         
     Raises:
         ValidationError: Si la coordonnée est invalide
     """
+    # GPS est requis - ne pas accepter None ou vide
+    if value is None or value == '':
+        raise ValidationError(
+            _('Coordonnée GPS requise.'),
+            code='gps_required'
+        )
+    
     if not isinstance(value, (str, float, int)):
         raise ValidationError(
             _('La coordonnée GPS doit être un nombre.'),
             code='invalid_gps_type'
         )
     
-    # Conversion en string pour validation
-    coord_str = str(value).strip()
-    
-    # Validation du format
-    if not secure_validator._is_valid_gps_format(coord_str):
-        raise ValidationError(
-            _('Format de coordonnée GPS invalide.'),
-            code='invalid_gps_format'
-        )
-    
     try:
-        coord_float = float(coord_str)
+        # Conversion en float
+        coord_float = float(value)
         
-        # Validation des limites pour latitude
-        if -90 <= coord_float <= 90:
-            # C'est probablement une latitude
-            if not (secure_validator.MIN_GPS_COORDINATE <= coord_float <= secure_validator.MAX_GPS_COORDINATE):
-                raise ValidationError(
-                    _('Latitude hors limites (-90° à +90°).'),
-                    code='latitude_out_of_range'
-                )
-        elif -180 <= coord_float <= 180:
-            # C'est probablement une longitude
-            if not (secure_validator.MIN_GPS_LONGITUDE <= coord_float <= secure_validator.MAX_GPS_LONGITUDE):
-                raise ValidationError(
-                    _('Longitude hors limites (-180° à +180°).'),
-                    code='longitude_out_of_range'
-                )
-        else:
-            # Coordonnée complètement hors limites
+        # Validation des limites (latitude ou longitude possible)
+        if not (-180 <= coord_float <= 180):
             raise ValidationError(
-                _('Coordonnée GPS hors limites.'),
+                _('Coordonnée GPS hors limites (-180° à +180°).'),
                 code='coordinate_out_of_range'
             )
-    
-    except ValueError:
+    except (ValueError, TypeError):
         raise ValidationError(
             _('Coordonnée GPS non numérique.'),
             code='invalid_gps_numeric'

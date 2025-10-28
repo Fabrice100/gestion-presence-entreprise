@@ -229,7 +229,7 @@ class RHRequiredMixinTest(PermissionMixinTestBase):
         self.rh_profile = self.rh_user.employee_profile
         self.rh_profile.employee_id = 'EMP200'
         self.rh_profile.department = self.dept
-        self.rh_profile.role = 'rh_dg'
+        self.rh_profile.role = 'rh'
         self.rh_profile.is_active = True
         self.rh_profile.save()
         
@@ -335,7 +335,7 @@ class PermissionHierarchyRequiredMixinTest(PermissionMixinTestBase):
         rh_profile = self.rh_user.employee_profile
         rh_profile.employee_id = 'EMP200'
         rh_profile.department = self.dept
-        rh_profile.role = 'rh_dg'
+        rh_profile.role = 'rh'
         rh_profile.is_active = True
         rh_profile.save()
     
@@ -345,7 +345,7 @@ class PermissionHierarchyRequiredMixinTest(PermissionMixinTestBase):
     
     def test_employee_is_not_rh(self):
         """Employé n'est pas RH."""
-        self.assertFalse(self.employee_user.employee_profile.is_rh_dg())
+        self.assertFalse(self.employee_user.employee_profile.is_rh())
     
     def test_manager_is_manager(self):
         """Manager est bien manager."""
@@ -353,7 +353,7 @@ class PermissionHierarchyRequiredMixinTest(PermissionMixinTestBase):
     
     def test_manager_is_not_rh(self):
         """Manager n'est pas RH."""
-        self.assertFalse(self.manager_user.employee_profile.is_rh_dg())
+        self.assertFalse(self.manager_user.employee_profile.is_rh())
     
     def test_rh_is_not_manager(self):
         """RH n'est pas manager."""
@@ -361,4 +361,4 @@ class PermissionHierarchyRequiredMixinTest(PermissionMixinTestBase):
     
     def test_rh_is_rh(self):
         """RH est bien RH."""
-        self.assertTrue(self.rh_user.employee_profile.is_rh_dg())
+        self.assertTrue(self.rh_user.employee_profile.is_rh())

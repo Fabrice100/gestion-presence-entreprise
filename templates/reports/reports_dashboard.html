@@ -1,0 +1,110 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Rapports - PresencePro{% endblock %}
+{% block page_title %}Tableau de Bord Rapports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl">
+        <h2 class="text-3xl font-bold mb-2">
+            📊 Rapports et Analyses
+        </h2>
+        <p class="text-purple-100 text-lg">
+            Accédez aux différents rapports de l'entreprise
+        </p>
+    </div>
+    
+    <!-- Rapports Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Rapport Présence -->
+        <a href="{% url 'reports:attendance_report' %}" 
+           class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 group hover:scale-105">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <i class="bi bi-arrow-right text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Rapport de Présence
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Consultez et exportez les pointages de tous les employés
+            </p>
+        </a>
+        
+        <!-- Rapport Congés -->
+        <a href="{% url 'reports:leave_report' %}" 
+           class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 group hover:scale-105">
+            <div class="flex items-center justify-between mb-程序设计
+                <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <i class="bi bi-arrow-right text-gray-400 group-hover:text-green-600 transition-colors"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Rapport de Congés
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Analysez les congés par période et département
+            </p>
+        </a>
+        
+        <!-- Rapport Anomalies -->
+        <a href="{% url 'reports:anomaly_report' %}" 
+           class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 group hover:scale-105">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <i class="bi bi-arrow-right text-gray-400 group-hover:text-red-600 transition-colors"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Rapport d'Anomalies
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Détails sur les retards et anomalies de pointage
+            </p>
+        </a>
+        
+    </div>
+    
+    <!-- Actions Rapides -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <i class="bi bi-lightning-charge-fill text-yellow-500 mr-2"></i>
+            Actions Rapides
+        </h3>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'reports:export_payroll' format='pdf' %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="bi bi-file-earmark-pdf mr-2"></i>
+                Export Paie (PDF)
+            </a>
+            <a href="{% url 'reports:export_payroll' format='excel' %}" 
+               class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <i class="bi bi-file-earmark-excel mr-2"></i>
+                Export Paie (Excel)
+            </a>
+            <a href="{% url 'reports:export_anomalies' format='csv' %}" 
+               class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                <i class="bi bi-file-earmark-spreadsheet mr-2"></i>
+                Export Anomalies (CSV)
+            </a>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+

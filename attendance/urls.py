@@ -17,6 +17,7 @@ from django.urls import path
 from django.views.generic import TemplateView
 from . import views
 from . import settings_views
+from . import anomaly_views
 
 app_name = 'attendance'
 
@@ -35,6 +36,19 @@ urlpatterns = [
     path('my-attendance/', views.MyAttendanceView.as_view(), name='my_attendance'),
     path('team-attendance/', views.TeamAttendanceView.as_view(), name='team_attendance'),
     path('anomalies/', views.AnomaliesManagementView.as_view(), name='anomalies'),
+    
+    # === TASK 6: Gestion des anomalies (Manager + RH) ===
+    # Manager: anomalies de son département
+    path('anomalies/manager/', anomaly_views.ManagerAnomalyListView.as_view(), name='manager_anomaly_list'),
+    
+    # RH: toutes les anomalies (vue globale)
+    path('anomalies/rh/', anomaly_views.RHAnomalyListView.as_view(), name='rh_anomaly_list'),
+    
+    # Détails d'une anomalie
+    path('anomalies/<int:pk>/', anomaly_views.AnomalyDetailView.as_view(), name='anomaly_detail'),
+    
+    # Résolution d'une anomalie (POST)
+    path('anomalies/<int:pk>/resolve/', anomaly_views.AnomalyResolutionView.as_view(), name='resolve_anomaly'),
     
     
     # Diagnostic GPS

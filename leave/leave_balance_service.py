@@ -212,7 +212,9 @@ class LeaveBalanceService:
     
     def update_balance_after_approval(self, leave_request: LeaveRequest) -> bool:
         """
-        Met à jour le solde après approbation d'une demande.
+        Met à jour le solde UNIQUE après approbation d'une demande.
+        
+        IMPORTANT : Tous les congés payés déduisent du MÊME solde de 30 jours.
         
         Args:
             leave_request: Demande de congé approuvée
@@ -220,10 +222,27 @@ class LeaveBalanceService:
         Returns:
             True si mis à jour avec succès
         """
+        # Vérifier si ce type déduit du solde
+        if not leave_request.leave_type.deducts_balance:
+            # Congé sans solde : ne rien faire
+            return True
+        
         try:
+            # Récupérer le type "Congés payés" comme solde unique
+            from leave.models import LeaveType
+            conges_payes_type = LeaveType.objects.filter(name__icontains='payé').first()
+            
+            if not conges_payes_type:
+                self.logger.error(
+                    "Type 'Congés payés' non trouvé",
+                    event_type="leave_type_not_found"
+                )
+                return False
+            
+            # TOUJOURS utiliser le solde "Congés payés" (solde unique de 30j)
             balance = LeaveBalance.objects.get(
                 employee=leave_request.employee,
-                leave_type=leave_request.leave_type,
+                leave_type=conges_payes_type,  # Solde unique
                 year=leave_request.start_date.year
             )
             
@@ -246,7 +265,6 @@ class LeaveBalanceService:
             self.logger.error(
                 "Solde non trouvé pour mise à jour",
                 user_id=leave_request.employee.id,
-                leave_type_id=leave_request.leave_type.id,
                 year=leave_request.start_date.year,
                 event_type="leave_balance_not_found"
             )

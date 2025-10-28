@@ -115,8 +115,8 @@ class PDFExportService:
         from accounts.models import EmployeeProfile
         from attendance.models import Attendance
         
-        if request.user.employee_profile.role == 'rh_dg':
-            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
+        if request.user.employee_profile.role == 'rh':
+            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role='rh')
             if department_id:
                 employees = employees.filter(department_id=department_id)
         elif request.user.employee_profile.role == 'manager':
@@ -241,7 +241,7 @@ class PDFExportService:
         # Récupérer les données de congés
         from leave.models import LeaveRequest
         
-        if request.user.employee_profile.role == 'rh_dg':
+        if request.user.employee_profile.role == 'rh':
             leave_requests = LeaveRequest.objects.filter(start_date__year=year)
         elif request.user.employee_profile.role == 'manager':
             managed_employees = request.user.employee_profile.get_managed_employees()
@@ -379,8 +379,8 @@ class ExcelExportService:
         from accounts.models import EmployeeProfile
         from attendance.models import Attendance
         
-        if request.user.employee_profile.role == 'rh_dg':
-            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
+        if request.user.employee_profile.role == 'rh':
+            employees = EmployeeProfile.objects.filter(is_active=True).exclude(role='rh')
             if department_id:
                 employees = employees.filter(department_id=department_id)
         elif request.user.employee_profile.role == 'manager':
@@ -495,7 +495,7 @@ class ExcelExportService:
         # Récupérer les données
         from leave.models import LeaveRequest
         
-        if request.user.employee_profile.role == 'rh_dg':
+        if request.user.employee_profile.role == 'rh':
             leave_requests = LeaveRequest.objects.filter(start_date__year=year)
         elif request.user.employee_profile.role == 'manager':
             managed_employees = request.user.employee_profile.get_managed_employees()
@@ -567,10 +567,10 @@ class _EmployeeExportService:
         """Export de la liste des employés en Excel."""
         from accounts.models import EmployeeProfile
         
-        # Récupérer les employés (exclure admin et rh_dg)
+        # Récupérer les employés (exclure rh)
         employees = EmployeeProfile.objects.select_related('user', 'department', 'manager').filter(
             is_active=True
-        ).exclude(role__in=['admin', 'rh_dg']).order_by('employee_id')
+        ).exclude(role='rh').order_by('employee_id')
         
         # Créer le workbook
         wb = Workbook()
@@ -645,7 +645,7 @@ class _EmployeeExportService:
         # Récupérer les employés
         employees = EmployeeProfile.objects.select_related('user', 'department', 'manager').filter(
             is_active=True
-        ).exclude(role__in=['admin', 'rh_dg']).order_by('employee_id')
+        ).exclude(role='rh').order_by('employee_id')
         
         response = HttpResponse(content_type='text/csv')
         filename = f"liste_employes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"

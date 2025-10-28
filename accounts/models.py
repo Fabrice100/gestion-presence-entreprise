@@ -78,6 +78,208 @@ class Department(models.Model):
         return self.employees.filter(is_active=True).count()
 
 
+class WorkSchedule(models.Model):
+    """
+    Profil horaire réutilisable définissant les horaires contractuels.
+    
+    Exemples de profils :
+    - Bureau Standard : 8h-18h avec pause 12h-14h
+    - Mi-temps : 8h-12h sans pause
+    - Équipe Nuit : 20h-4h avec pause 23h-23h30
+    
+    Permet de :
+    - Corriger les heures de pointage selon le contrat
+    - Gérer plusieurs équipes avec horaires différents
+    - Maintenir l'historique des affectations
+    """
+    
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nom du profil",
+        help_text="Ex: Bureau Standard, Mi-temps, Équipe Matin"
+    )
+    
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Description",
+        help_text="Description du profil horaire et à qui il s'applique"
+    )
+    
+    # Horaires contractuels
+    start_time = models.TimeField(
+        verbose_name="Heure début contrat (HDC)",
+        help_text="Heure de début contractuelle (ex: 8h00)"
+    )
+    
+    end_time = models.TimeField(
+        verbose_name="Heure fin contrat (HFC)",
+        help_text="Heure de fin contractuelle (ex: 18h00)"
+    )
+    
+    # Pause
+    pause_start = models.TimeField(
+        verbose_name="Début de pause",
+        help_text="Heure de début de la pause (ex: 12h00)"
+    )
+    
+    pause_end = models.TimeField(
+        verbose_name="Fin de pause",
+        help_text="Heure de fin de la pause (ex: 14h00)"
+    )
+    
+    # Profil par défaut
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="Profil par défaut",
+        help_text="Utilisé pour les nouveaux employés si aucun profil spécifié"
+    )
+    
+    # Traçabilité
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_schedules',
+        verbose_name="Créé par",
+        help_text="Utilisateur (RH) qui a créé ce profil"
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de création"
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Date de modification"
+    )
+    
+    class Meta:
+        verbose_name = "Profil Horaire"
+        verbose_name_plural = "Profils Horaires"
+        ordering = ['name']
+    
+    def __str__(self):
+        """Représentation string du profil horaire."""
+        return f"{self.name} ({self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')})"
+    
+    def get_pause_duration_hours(self):
+        """Calcule la durée de la pause en heures décimales."""
+        from datetime import datetime, date
+        from decimal import Decimal
+        
+        today = date.today()
+        start_dt = datetime.combine(today, self.pause_start)
+        end_dt = datetime.combine(today, self.pause_end)
+        
+        duration_seconds = (end_dt - start_dt).total_seconds()
+        return Decimal(str(duration_seconds / 3600)).quantize(Decimal('0.01'))
+    
+    def get_contractual_duration_hours(self):
+        """Calcule la durée contractuelle totale (sans pause) en heures."""
+        from datetime import datetime, date
+        from decimal import Decimal
+        
+        today = date.today()
+        start_dt = datetime.combine(today, self.start_time)
+        end_dt = datetime.combine(today, self.end_time)
+        
+        # Si fin < début, c'est le lendemain (équipe de nuit)
+        if end_dt < start_dt:
+            from datetime import timedelta
+            end_dt += timedelta(days=1)
+        
+        total_seconds = (end_dt - start_dt).total_seconds()
+        total_hours = Decimal(str(total_seconds / 3600))
+        
+        # Soustraire la pause
+        pause_hours = self.get_pause_duration_hours()
+        return (total_hours - pause_hours).quantize(Decimal('0.01'))
+    
+    def get_employee_count(self):
+        """Retourne le nombre d'employés actuellement sur ce profil."""
+        return self.employees.filter(is_active=True).count()
+
+
+class EmployeeScheduleHistory(models.Model):
+    """
+    Historique des affectations de profils horaires aux employés.
+    
+    IMMUABILITÉ : Cette table garantit que les données passées ne sont jamais modifiées.
+    Chaque changement de profil crée une nouvelle ligne avec dates de début/fin.
+    
+    Permet de :
+    - Recalculer les paies des mois précédents avec les bons profils
+    - Audit trail complet des changements d'horaires
+    - Conformité légale (preuve du contrat à une date donnée)
+    
+    Exemple :
+    - Jean | Bureau | 01/01/2025 | 14/03/2025 | RH_Marie
+    - Jean | Mi-temps | 15/03/2025 | NULL | RH_Marie
+    """
+    
+    employee = models.ForeignKey(
+        'EmployeeProfile',
+        on_delete=models.CASCADE,
+        related_name='schedule_history',
+        verbose_name="Employé"
+    )
+    
+    work_schedule = models.ForeignKey(
+        WorkSchedule,
+        on_delete=models.PROTECT,  # Empêche suppression si historique existe
+        related_name='history_entries',
+        verbose_name="Profil horaire"
+    )
+    
+    assigned_date = models.DateField(
+        verbose_name="Date d'affectation",
+        help_text="Date à partir de laquelle ce profil est actif pour l'employé"
+    )
+    
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Date de fin",
+        help_text="NULL si c'est le profil actif, sinon date de fin d'utilisation"
+    )
+    
+    # Traçabilité
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='schedule_assignments',
+        verbose_name="Assigné par",
+        help_text="Utilisateur (RH) qui a fait l'affectation"
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date d'enregistrement"
+    )
+    
+    class Meta:
+        verbose_name = "Historique Profil Horaire"
+        verbose_name_plural = "Historiques Profils Horaires"
+        ordering = ['-assigned_date']
+        indexes = [
+            models.Index(fields=['employee', 'assigned_date', 'end_date']),
+        ]
+    
+    def __str__(self):
+        """Représentation string de l'historique."""
+        status = "actif" if self.end_date is None else f"jusqu'au {self.end_date}"
+        return f"{self.employee} - {self.work_schedule.name} ({status})"
+    
+    def is_active(self):
+        """Vérifie si cet historique est actuellement actif."""
+        return self.end_date is None
+
+
 class EmployeeProfile(models.Model):
     """
     Modèle étendant le User Django avec des informations spécifiques aux employés.
@@ -86,12 +288,12 @@ class EmployeeProfile(models.Model):
     le système de gestion de présence et congés.
     """
     
-    # Choix pour les rôles
+    # Choix pour les rôles (3 rôles métier seulement)
+    # Note: Admin technique = Django superuser (pas de EmployeeProfile)
     ROLE_CHOICES = [
         ('employee', 'Employé'),
         ('manager', 'Manager'),
-        ('rh_dg', 'RH/DG'),
-        ('admin', 'Administrateur'),
+        ('rh', 'RH'),
     ]
     
     # Choix pour les types d'employés
@@ -187,6 +389,17 @@ class EmployeeProfile(models.Model):
         help_text="L'employé doit changer son mot de passe à la prochaine connexion"
     )
     
+    # Profil horaire actuel
+    current_work_schedule = models.ForeignKey(
+        WorkSchedule,
+        on_delete=models.PROTECT,
+        null=True,  # Temporaire pour migration - sera NOT NULL après
+        blank=True,
+        related_name='employees',
+        verbose_name="Profil horaire actuel",
+        help_text="Profil horaire actuellement appliqué à cet employé"
+    )
+    
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Date de création"
@@ -214,17 +427,15 @@ class EmployeeProfile(models.Model):
         """Vérifie si l'employé est un manager."""
         return self.role == 'manager'
     
-    def is_rh_dg(self):
-        """Vérifie si l'employé est RH/DG."""
-        return self.role == 'rh_dg'
+    def is_rh(self):
+        """Vérifie si l'employé est RH."""
+        return self.role == 'rh'
     
-    def is_admin(self):
-        """Vérifie si l'employé est administrateur."""
-        return self.role == 'admin'
+    # Note: is_admin() supprimée - Utiliser user.is_superuser pour admin technique
     
     def can_validate_leave_requests(self):
         """Vérifie si l'employé peut valider des demandes de congés."""
-        return self.role in ['manager', 'rh_dg']
+        return self.role in ['manager', 'rh']
     
     def get_managed_employees(self):
         """Retourne la liste des employés gérés par ce manager."""

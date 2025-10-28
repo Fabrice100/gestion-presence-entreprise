@@ -184,11 +184,21 @@ class HoursCalculationService:
             )
             return None
         
-        # Calculer les heures
-        worked_hours = cls.calculate_worked_hours(
-            attendance_in.time,
-            attendance_out.time
-        )
+        # Calculer les heures en utilisant le profil horaire de l'employé
+        try:
+            employee_profile = attendance_out.employee.employee_profile
+            worked_hours = cls.calculate_worked_hours(
+                attendance_in.time,
+                attendance_out.time,
+                employee_profile=employee_profile,
+                attendance_date=attendance_out.date
+            )
+        except Exception as e:
+            # Fallback vers l'ancien calcul si problème
+            worked_hours = cls.calculate_worked_hours(
+                attendance_in.time,
+                attendance_out.time
+            )
         
         # Mettre à jour le pointage de sortie
         attendance_out.worked_hours = worked_hours
@@ -297,3 +307,114 @@ class HoursCalculationService:
             'days_with_null': days_with_null,
             'average_hours_per_day': average
         }
+    
+    @classmethod
+    def calculate_worked_hours_with_schedule(cls, employee_profile, in_time, out_time, attendance_date=None):
+        """
+        Calcule les heures travaillées en utilisant le profil horaire contractuel.
+        
+        NOUVELLE MÉTHODE - Implémente la logique de plafonnement des captures:
+        1. Correction heure d'entrée : Si in_time < HDC → utilise HDC
+        2. Correction heure de sortie : Si out_time > HFC → utilise HFC  
+        3. Calcul durée corrigée : (sortie corrigée - entrée corrigée)
+        4. Déduction de la pause contractuelle
+        5. Résultat = heures travaillées selon contrat
+        
+        Args:
+            employee_profile (EmployeeProfile): Profil de l'employé
+            in_time (time): Heure de pointage d'entrée
+            out_time (time): Heure de pointage de sortie
+            attendance_date (date, optional): Date du pointage (pour historique). Si None, utilise aujourd'hui.
+            
+        Returns:
+            Decimal: Heures travaillées (2 décimales), selon horaires contractuels
+            
+        Exemples (profil Bureau: 8h-18h, pause 12h-14h):
+            >>> # Employé arrive avant 8h et part après 18h
+            >>> calculate_worked_hours_with_schedule(emp, time(7,0), time(19,0))
+            Decimal('8.00')  # Plafonnéà 8h-18h = 10h - 2h pause = 8h
+            
+            >>> # Employé arrive à 9h et part à 17h
+            >>> calculate_worked_hours_with_schedule(emp, time(9,0), time(17,0))
+            Decimal('6.00')  # 9h-17h = 8h - 2h pause = 6h
+            
+            >>> # Employé arrive à 8h et part à 12h (demi-journée)
+            >>> calculate_worked_hours_with_schedule(emp, time(8,0), time(12,0))
+            Decimal('4.00')  # 8h-12h = 4h (pas de pause)
+        """
+        # Récupérer le profil horaire valide à la date du pointage
+        from accounts.schedule_service import WorkScheduleService
+        
+        if attendance_date is None:
+            attendance_date = timezone.now().date()
+        
+        schedule = WorkScheduleService.get_schedule_for_date(employee_profile, attendance_date)
+        
+        # 1. CORRIGER L'HEURE D'ENTRÉE (si avant HDC → utilise HDC)
+        if in_time < schedule.start_time:
+            corrected_in = schedule.start_time
+        else:
+            corrected_in = in_time
+        
+        # 2. CORRIGER L'HEURE DE SORTIE (si après HFC → utilise HFC)
+        if out_time > schedule.end_time:
+            corrected_out = schedule.end_time
+        else:
+            corrected_out = out_time
+        
+        # 3. CALCULER LA DURÉE CORRIGÉE
+        duration = cls.calculate_duration_hours(corrected_in, corrected_out)
+        
+        # 4. DÉDUIRE LA PAUSE CONTRACTUELLE
+        pause_duration = schedule.get_pause_duration_hours()
+        worked = duration - pause_duration
+        
+        # 5. ÉVITER LES VALEURS NÉGATIVES
+        if worked < Decimal('0.00'):
+            worked = Decimal('0.00')
+        
+        return worked.quantize(Decimal('0.01'))
+    
+    @classmethod
+    def calculate_worked_hours(cls, in_time, out_time, employee_profile=None, attendance_date=None):
+        """
+        Calcule les heures travaillées (méthode mise à jour).
+        
+        COMPORTEMENT:
+        - Si employee_profile fourni : Utilise les horaires contractuels (RECOMMANDÉ)
+        - Si employee_profile=None : Utilise l'ancien calcul avec pause fixe 1h et plafond 8h (LEGACY)
+        
+        Args:
+            in_time (time): Heure d'entrée
+            out_time (time): Heure de sortie
+            employee_profile (EmployeeProfile, optional): Profil de l'employé
+            attendance_date (date, optional): Date du pointage
+            
+        Returns:
+            Decimal: Heures travaillées (2 décimales)
+        """
+        # NOUVELLE LOGIQUE : Utiliser les profils horaires
+        if employee_profile is not None:
+            return cls.calculate_worked_hours_with_schedule(
+                employee_profile, 
+                in_time, 
+                out_time,
+                attendance_date
+            )
+        
+        # LEGACY : Ancien calcul (pause fixe 1h, plafond 8h)
+        # Durée brute
+        duration = cls.calculate_duration_hours(in_time, out_time)
+        
+        # Déduire la pause fixe
+        worked = duration - cls.PAUSE_DURATION_HOURS
+        
+        # Éviter les valeurs négatives
+        if worked < Decimal('0.00'):
+            worked = Decimal('0.00')
+        
+        # Plafonner à 8h
+        if worked > cls.MAX_DAILY_HOURS:
+            worked = cls.MAX_DAILY_HOURS
+        
+        return worked.quantize(Decimal('0.01'))

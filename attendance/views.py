@@ -210,7 +210,7 @@ class TeamAttendanceView(EnhancedLoginRequiredMixin, ListView):
     paginate_by = 50
     
     def dispatch(self, request, *args, **kwargs):
-        """Vérifier que l'utilisateur est manager ou RH/DG"""
+        """Vérifier que l'utilisateur est manager ou RH"""
         if not hasattr(request.user, 'employeeprofile'):
             messages.error(request, 'Vous n\'avez pas de profil employé.')
             return redirect('dashboard:main')
@@ -233,7 +233,7 @@ class TeamAttendanceView(EnhancedLoginRequiredMixin, ListView):
                 employee__employeeprofile__department=profile.department
             )
         else:
-            # RH/DG voit tout
+            # RH voit tout
             queryset = Attendance.objects.all()
         
         queryset = queryset.select_related('employee', 'employee__employeeprofile').order_by('-date', '-time')
@@ -292,7 +292,7 @@ class TeamAttendanceView(EnhancedLoginRequiredMixin, ListView):
 
 class AnomaliesManagementView(EnhancedLoginRequiredMixin, ListView):
     """
-    Vue RH/DG pour gérer les anomalies de pointage
+    Vue RH pour gérer les anomalies de pointage
     Détection automatique, filtres, actions en masse
     """
     model = AttendanceAnomaly
@@ -301,7 +301,7 @@ class AnomaliesManagementView(EnhancedLoginRequiredMixin, ListView):
     paginate_by = 30
     
     def dispatch(self, request, *args, **kwargs):
-        """Vérifier que l'utilisateur est RH/DG"""
+        """Vérifier que l'utilisateur est RH"""
         if not hasattr(request.user, 'employeeprofile'):
             messages.error(request, 'Vous n\'avez pas de profil employé.')
             return redirect('dashboard:main')

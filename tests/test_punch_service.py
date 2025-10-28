@@ -320,3 +320,4 @@ class PunchServiceIntegrationTest(TestCase):
         attendances = service.get_today_attendances(self.user)
         self.assertEqual(attendances.count(), 2)
 
+

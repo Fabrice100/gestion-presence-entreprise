@@ -97,7 +97,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'accounts.middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire
+    'accounts.force_password_middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire (NOUVEAU)
     'accounts.admin_middleware.AdminRedirectMiddleware',   # Redirection admin vers Django Admin
     # Middleware personnalisés pour gestion d'erreurs
     'common.middleware.RequestLoggingMiddleware',
@@ -248,7 +248,7 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
 
 DEFAULT_FROM_EMAIL = 'noreply@presencepro.local'
 SITE_URL = 'http://localhost:8000'  # URL du site pour les emails
-SITE_NAME = 'PresencePro'
+SITE_NAME = 'PresencePro - Système de Gestion de Présence'  # Nom du site pour les emails
 
 # Configuration des logs (unifiée et sécurisée)
 LOGGING = {

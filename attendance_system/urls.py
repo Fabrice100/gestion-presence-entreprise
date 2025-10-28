@@ -34,7 +34,7 @@ urlpatterns = [
     path('reports/', include('reports.urls')),
     path('dashboard/', include('accounts.dashboard_urls')),
     
-    # Interface RH/DG
+    # Interface RH
     path('hr/', include('accounts.hr_urls')),
 
 ]

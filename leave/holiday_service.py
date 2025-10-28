@@ -276,9 +276,9 @@ class HolidayService:
         
         holidays = self.get_holidays_in_period(month_start, month_end)
         
-        # Récupérer les congés approuvés du mois
+        # Récupérer les congés approuvés du mois (approved_rh ou approved_manager)
         approved_leaves = LeaveRequest.objects.filter(
-            status='approved',
+            status__in=['approved_rh', 'approved_manager'],
             start_date__lte=month_end,
             end_date__gte=month_start
         ).select_related('employee', 'leave_type')
@@ -318,8 +318,10 @@ class HolidayService:
             'year': year,
             'month': month,
             'month_name': calendar.month_name[month],
-            'days': calendar_data,
-            'holidays': holidays,
+            'calendar': calendar_data,
+            'days': calendar_data,  # Alias pour compatibilité
+            'holidays_list': holidays,
+            'holidays': holidays,  # Alias pour compatibilité
             'total_holidays': len(holidays),
             'total_working_days': self.get_working_days_in_period(month_start, month_end)
         }
@@ -393,4 +395,5 @@ class HolidayService:
 
 # Instance globale du service
 holiday_service = HolidayService()
+
 

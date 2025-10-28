@@ -45,3 +45,4 @@ def format_balance(value):
     except:
         return f"{value} jours"
 
+

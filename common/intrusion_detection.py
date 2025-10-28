@@ -531,3 +531,4 @@ class IntrusionDetectionService:
 # Instance globale du service de détection d'intrusion
 intrusion_detection_service = IntrusionDetectionService()
 
+

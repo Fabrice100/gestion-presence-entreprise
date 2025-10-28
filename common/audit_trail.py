@@ -453,3 +453,4 @@ class AuditTrailService:
 # Instance globale du service d'audit
 audit_trail_service = AuditTrailService()
 
+

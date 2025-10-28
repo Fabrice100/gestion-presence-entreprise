@@ -1,0 +1,296 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Paramètres Système{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-6xl mx-auto">
+    
+    <!-- En-tête -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+            <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Paramètres Système
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">
+            Configurez les règles de pointage, horaires de travail et géolocalisation
+        </p>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="space-y-3">
+            {% for message in messages %}
+            <div class="bg-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-50 
+                        dark:bg-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-900/20 
+                        border-l-4 border-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-500 p-4 rounded">
+                <p class="text-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-700 
+                          dark:text-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-300">
+                    {{ message }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Section 1: Horaires de Travail -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Horaires de Travail
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Heure de début -->
+                    <div>
+                        <label for="id_work_start_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🕐 Heure de début <span class="text-red-500">*</span>
+                        </label>
+                        <input type="time" 
+                               name="work_start_time" 
+                               id="id_work_start_time"
+                               value="{{ form.work_start_time.value|default:'08:00' }}"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        {% if form.work_start_time.errors %}
+                        <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.work_start_time.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Heure de fin -->
+                    <div>
+                        <label for="id_work_end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🕔 Heure de fin <span class="text-red-500">*</span>
+                        </label>
+                        <input type="time" 
+                               name="work_end_time" 
+                               id="id_work_end_time"
+                               value="{{ form.work_end_time.value|default:'17:00' }}"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        {% if form.work_end_time.errors %}
+                        <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.work_end_time.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Heures de travail par jour -->
+                    <div>
+                        <label for="id_standard_hours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ⏱️ Heures de travail standard par jour
+                        </label>
+                        <input type="number" 
+                               name="standard_hours" 
+                               id="id_standard_hours"
+                               value="{{ form.standard_hours.value|default:'8' }}"
+                               step="0.5"
+                               min="1"
+                               max="24"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            💡 Ex: 8 heures pour une journée normale
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Tolérance de Retard -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Tolérance de Retard
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Minutes de tolérance -->
+                    <div>
+                        <label for="id_late_tolerance_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ⏰ Minutes de tolérance
+                        </label>
+                        <input type="number" 
+                               name="late_tolerance_minutes" 
+                               id="id_late_tolerance_minutes"
+                               value="{{ form.late_tolerance_minutes.value|default:'15' }}"
+                               min="0"
+                               max="60"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            💡 Retard accepté avant déclenchement d'une anomalie
+                        </p>
+                    </div>
+
+                    <!-- Exemple visuel -->
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                        <p class="text-sm text-blue-700 dark:text-blue-300 font-medium mb-2">📊 Exemple:</p>
+                        <div class="space-y-1 text-sm text-blue-600 dark:text-blue-400">
+                            <p>✅ Heure prévue: <strong>08:00</strong></p>
+                            <p>✅ Arrivée: <strong>08:14</strong> → OK (dans tolérance)</p>
+                            <p>❌ Arrivée: <strong>08:16</strong> → Retard détecté</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Géolocalisation -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Géolocalisation
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Activer géolocalisation -->
+                    <div class="flex items-start">
+                        <input type="checkbox" 
+                               name="require_geolocation" 
+                               id="id_require_geolocation"
+                               {% if form.require_geolocation.value %}checked{% endif %}
+                               class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="id_require_geolocation" class="ml-3 text-sm">
+                            <span class="font-medium text-gray-900 dark:text-white">Exiger la géolocalisation</span>
+                            <p class="text-gray-500 dark:text-gray-400">Les employés doivent activer leur localisation pour pointer</p>
+                        </label>
+                    </div>
+
+                    <!-- Latitude -->
+                    <div>
+                        <label for="id_company_latitude" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            📍 Latitude de l'entreprise
+                        </label>
+                        <input type="number" 
+                               name="company_latitude" 
+                               id="id_company_latitude"
+                               value="{{ form.company_latitude.value|default:'0.0' }}"
+                               step="0.000001"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <!-- Longitude -->
+                    <div>
+                        <label for="id_company_longitude" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            📍 Longitude de l'entreprise
+                        </label>
+                        <input type="number" 
+                               name="company_longitude" 
+                               id="id_company_longitude"
+                               value="{{ form.company_longitude.value|default:'0.0' }}"
+                               step="0.000001"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <!-- Rayon de tolérance -->
+                    <div>
+                        <label for="id_geofence_radius" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            📏 Rayon de tolérance (mètres)
+                        </label>
+                        <input type="number" 
+                               name="geofence_radius" 
+                               id="id_geofence_radius"
+                               value="{{ form.geofence_radius.value|default:'100' }}"
+                               min="10"
+                               max="1000"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            💡 Distance maximale autorisée depuis l'entreprise
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Détection Automatique -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Détection Automatique
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Activer détection auto -->
+                    <div class="flex items-start">
+                        <input type="checkbox" 
+                               name="auto_detect_anomalies" 
+                               id="id_auto_detect_anomalies"
+                               {% if form.auto_detect_anomalies.value %}checked{% endif %}
+                               class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="id_auto_detect_anomalies" class="ml-3 text-sm">
+                            <span class="font-medium text-gray-900 dark:text-white">Détection automatique des anomalies</span>
+                            <p class="text-gray-500 dark:text-gray-400">Détecter automatiquement les retards et absences</p>
+                        </label>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                        <p class="text-sm text-purple-700 dark:text-purple-300">
+                            <strong>⚙️ Fonctionnalités activées:</strong>
+                        </p>
+                        <ul class="mt-2 space-y-1 text-sm text-purple-600 dark:text-purple-400 list-disc list-inside">
+                            <li>Détection des pointages manquants</li>
+                            <li>Détection des retards</li>
+                            <li>Notifications automatiques aux managers</li>
+                            <li>Création automatique d'anomalies</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="flex justify-end space-x-4 pt-6">
+            <a href="{% url 'dashboard:rh_dg_dashboard' %}" 
+               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Enregistrer les paramètres
+            </button>
+        </div>
+    </form>
+
+    <!-- Aide -->
+    <div class="mt-8 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            💡 Aide
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">🕐 Horaires de Travail</p>
+                <p>Définissez les heures de début et fin de la journée de travail standard.</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">⏰ Tolérance</p>
+                <p>Nombre de minutes acceptées avant de considérer un retard.</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">📍 Géolocalisation</p>
+                <p>Limitez les pointages aux employés présents sur site.</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">🤖 Détection Auto</p>
+                <p>Le système détecte automatiquement les anomalies chaque jour.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

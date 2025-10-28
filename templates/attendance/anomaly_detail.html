@@ -1,0 +1,149 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Détail Anomalie #{{ anomaly.id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="javascript:history.back()" class="text-blue-600 hover:text-blue-800 font-medium">
+            ← Retour
+        </a>
+    </div>
+    
+    <!-- Carte principale -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- En-tête avec statut -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">Anomalie #{{ anomaly.id }}</h1>
+                    <p class="text-blue-100">{{ anomaly.get_anomaly_type_display }}</p>
+                </div>
+                <div>
+                    {% if anomaly.status == 'pending' %}
+                        <span class="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium">⏳ En attente</span>
+                    {% elif anomaly.status == 'justified' %}
+                        <span class="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium">📝 Justifiée</span>
+                    {% elif anomaly.status == 'resolved' %}
+                        <span class="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium">✅ Résolue</span>
+                    {% elif anomaly.status == 'ignored' %}
+                        <span class="bg-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium">🚫 Ignorée</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations employé -->
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">👤 Employé</h2>
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    {{ attendance.employee.first_name|first }}{{ attendance.employee.last_name|first }}
+                </div>
+                <div>
+                    <p class="text-lg font-semibold text-gray-800">{{ attendance.employee.get_full_name }}</p>
+                    <p class="text-gray-600">{{ attendance.employee.employee_profile.employee_id }}</p>
+                    <p class="text-gray-600">{{ attendance.employee.employee_profile.department.name }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Détails pointage -->
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">🕒 Détails du pointage</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-1">Date</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ attendance.date|date:"d/m/Y" }}</p>
+                </div>
+                
+                {% if attendance.check_in %}
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">🟢 Entrée</p>
+                        <p class="text-lg font-semibold text-green-700">{{ attendance.check_in|time:"H:i:s" }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if attendance.check_out %}
+                    <div class="bg-red-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">🔴 Sortie</p>
+                        <p class="text-lg font-semibold text-red-700">{{ attendance.check_out|time:"H:i:s" }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if attendance.hours_worked %}
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">⏱️ Heures travaillées</p>
+                        <p class="text-lg font-semibold text-blue-700">{{ attendance.hours_worked|floatformat:2 }}h</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Description anomalie -->
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">⚠️ Description</h2>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                <p class="text-gray-800">{{ anomaly.description }}</p>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">Détectée le: {{ anomaly.created_at|date:"d/m/Y à H:i" }}</p>
+            </div>
+        </div>
+        
+        <!-- Résolution (si résolue) -->
+        {% if anomaly.status != 'pending' %}
+            <div class="p-6 bg-blue-50">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">✅ Résolution</h2>
+                <div class="bg-white border-l-4 border-blue-500 p-4 rounded shadow">
+                    <p class="text-gray-800 mb-3">{{ anomaly.justification }}</p>
+                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                        <span>👤 {{ anomaly.resolved_by.get_full_name }}</span>
+                        <span>•</span>
+                        <span>📅 {{ anomaly.resolved_at|date:"d/m/Y à H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Formulaire de résolution (si pending et autorisé) -->
+        {% if anomaly.status == 'pending' and can_resolve %}
+            <div class="p-6 bg-yellow-50 border-t-4 border-yellow-500">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">✍️ Résoudre cette anomalie</h2>
+                <form method="post" action="{% url 'attendance:resolve_anomaly' anomaly.id %}" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Action</label>
+                        <select name="action" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Sélectionner une action --</option>
+                            <option value="justified">📝 Justifiée (expliquée par l'employé)</option>
+                            <option value="resolved">✅ Résolue (anomalie corrigée)</option>
+                            <option value="ignored">🚫 Ignorée (sans importance)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Justification *</label>
+                        <textarea name="justification" required rows="5" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Expliquez en détail pourquoi cette anomalie est justifiée, résolue ou ignorée..."></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Cette justification sera visible par l'employé et les RH.</p>
+                    </div>
+                    
+                    <div class="flex gap-3 justify-end">
+                        <a href="javascript:history.back()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium">
+                            Annuler
+                        </a>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-lg">
+                            💾 Enregistrer la résolution
+                        </button>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

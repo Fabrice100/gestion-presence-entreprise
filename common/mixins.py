@@ -98,8 +98,18 @@ class EmployeeRequiredMixin(BasePermissionMixin, UserPassesTestMixin):
     def test_func(self):
         """
         Teste si l'utilisateur est un employé actif.
+        IMPORTANT: Les superusers Django sont uniquement pour /admin/ (configuration technique).
+        Les fonctionnalités métier nécessitent un EmployeeProfile avec un rôle (rh, manager, employee).
         """
         if not self.request.user.is_authenticated:
+            return False
+        
+        # Rejeter les superusers Django (ils doivent utiliser uniquement /admin/)
+        if self.request.user.is_superuser:
+            logger.error(
+                f"Superuser Django {self.request.user.username} tentant d'accéder à {self.request.path}. "
+                f"Les superusers sont uniquement pour /admin/. Utilisez un compte avec EmployeeProfile."
+            )
             return False
         
         if not hasattr(self.request.user, 'employee_profile'):
@@ -137,20 +147,20 @@ class ManagerRequiredMixin(EmployeeRequiredMixin):
 
 class RHRequiredMixin(EmployeeRequiredMixin):
     """
-    Mixin pour vérifier que l'utilisateur est RH/DG.
+    Mixin pour vérifier que l'utilisateur est RH.
     """
     
     def test_func(self):
         """
-        Teste si l'utilisateur est RH/DG.
+        Teste si l'utilisateur est RH.
         """
         if not super().test_func():
             return False
         
-        return self.request.user.employee_profile.is_rh_dg()
+        return self.request.user.employee_profile.is_rh()
     
     def get_permission_denied_message(self):
-        return "Seuls les RH/DG peuvent accéder à cette fonctionnalité."
+        return "Seuls les RH peuvent accéder à cette fonctionnalité."
 
 
 class AdminRequiredMixin(EmployeeRequiredMixin):
@@ -165,13 +175,11 @@ class AdminRequiredMixin(EmployeeRequiredMixin):
         if not super().test_func():
             return False
         
-        return (
-            self.request.user.employee_profile.is_admin() or 
-            self.request.user.is_superuser
-        )
+        # Seul le superuser Django peut accéder (pas de rôle métier 'admin')
+        return self.request.user.is_superuser
     
     def get_permission_denied_message(self):
-        return "Seuls les administrateurs peuvent accéder à cette fonctionnalité."
+        return "Seuls les administrateurs techniques (superuser Django) peuvent accéder à cette fonctionnalité."
 
 
 class OwnerOrManagerRequiredMixin(EmployeeRequiredMixin):
@@ -189,9 +197,9 @@ class OwnerOrManagerRequiredMixin(EmployeeRequiredMixin):
         if not super().test_func():
             return False
         
-        # Si c'est un manager ou RH/DG, accès autorisé
+        # Si c'est un manager ou RH, accès autorisé
         if (self.request.user.employee_profile.is_manager() or 
-            self.request.user.employee_profile.is_rh_dg()):
+            self.request.user.employee_profile.is_rh()):
             return True
         
         # Sinon, vérifier si c'est le propriétaire
@@ -262,12 +270,12 @@ def manager_required(view_func):
 
 def rh_required(view_func):
     """
-    Décorateur pour exiger qu'un utilisateur soit RH/DG.
+    Décorateur pour exiger qu'un utilisateur soit RH.
     """
     @employee_required
     def wrapped_view(request, *args, **kwargs):
-        if not request.user.employee_profile.is_rh_dg():
-            messages.error(request, 'Seuls les RH/DG peuvent accéder à cette fonctionnalité.')
+        if not request.user.employee_profile.is_rh():
+            messages.error(request, 'Seuls les RH peuvent accéder à cette fonctionnalité.')
             return redirect('dashboard:dashboard')
         
         return view_func(request, *args, **kwargs)

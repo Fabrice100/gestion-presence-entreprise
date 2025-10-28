@@ -194,7 +194,7 @@ class UserServiceCreateEmployeeTest(TestCase):
         profile_data = {
             'department': self.dept,
             'manager': None,
-            'role': 'rh_dg'
+            'role': 'rh'
         }
         
         user, employee_id, password = UserService.create_employee_with_credentials(

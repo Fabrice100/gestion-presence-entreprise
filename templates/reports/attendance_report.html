@@ -1,0 +1,83 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Rapport de Présence - PresencePro{% endblock %}
+{% block page_title %}Rapport de Présence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- En-tête -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+        <h2 class="text-2xl font-bold mb-2">
+            <i class="bi bi-clock-history mr-2"></i>
+            Rapport de Présence
+        </h2>
+        <p class="text-blue-100">Analyse complète des pointages des employés</p>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <i class="bi bi-funnel-fill mr-2"></i>
+            Filtres
+        </h3>
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date début
+                </label>
+                <input type="date" name="start_date" class="w-full rounded-lg border border-gray-300 px-4 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date fin
+                </label>
+                <input type="date" name="end_date" class="w-full rounded-lg border border-gray-300 px-4 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Département
+                </label>
+                <select name="department" class="w-full rounded-lg border border-gray-300 px-4 py-2">
+                    <option value="">Tous</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:col-span-3 flex gap-3">
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="bi bi-search mr-2"></i>Appliquer les filtres
+                </button>
+                <a href="?" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Résultats -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-）. 700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                Résultats
+            </h3>
+            <div class="flex gap-2">
+                <a href="{% url 'reports:export_payroll' format='pdf' %}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="bi bi-file-earmark-pdf mr-2"></i>PDF
+                </a>
+                <a href="{% url 'reports:export_payroll' format='excel' %}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="bi bi-file-earmark-excel mr-2"></i>Excel
+                </a>
+            </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">
+            Rapport de présence généré (les données affichées dépendent du backend)
+        </p>
+    </div>
+    
+</div>
+{% endblock %}
+
+

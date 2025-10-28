@@ -71,7 +71,7 @@
         <nav class="flex mb-4" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-3">
                 <li class="inline-flex items-center">
-                    <a href="{% url 'dashboard:employee' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                    <a href="{% url 'dashboard:employee_dashboard' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                         </svg>
@@ -329,116 +329,7 @@
                     </div>
                 </div>
                 
-                <!-- Carte d'aide -->
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl shadow-md p-6 border border-blue-200 dark:border-blue-800">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Aide & Conseils
-                        </h3>
-                    </div>
-                    
-                    <div class="space-y-3">
-                        <div class="flex items-start">
-                            <span class="text-blue-500 mr-2">✓</span>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Soumettez votre demande <strong>au moins 2 semaines à l'avance</strong>
-                            </p>
-                        </div>
-                        <div class="flex items-start">
-                            <span class="text-blue-500 mr-2">✓</span>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Vérifiez votre <strong>solde de congés</strong> avant de soumettre
-                            </p>
-                        </div>
-                        <div class="flex items-start">
-                            <span class="text-blue-500 mr-2">✓</span>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Expliquez clairement le <strong>motif</strong> de votre demande
-                            </p>
-                        </div>
-                        <div class="flex items-start">
-                            <span class="text-blue-500 mr-2">✓</span>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Les demandes sont traitées par ordre de priorité
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statut du processus -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                        Processus de validation
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                1
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                    Soumission
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Vous remplissez le formulaire
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                2
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                    Validation Manager
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Examen par votre responsable
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                3
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                    Validation RH
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Approbation finale RH/DG
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                ✓
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                    Approuvé
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Vous recevez une notification
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Champs obligatoires -->
+                                <!-- Champs obligatoires -->
                 <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
                     <div class="flex items-start">
                         <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">

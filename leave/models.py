@@ -118,6 +118,12 @@ class LeaveType(models.Model):
         help_text="Le congé est-il rémunéré ?"
     )
     
+    deducts_balance = models.BooleanField(
+        default=True,
+        verbose_name="Déduit du solde",
+        help_text="Ce type de congé déduit-il du solde annuel ? (Faux pour congés exceptionnels/maladie)"
+    )
+    
     is_active = models.BooleanField(
         default=True,
         verbose_name="Actif",
@@ -287,21 +293,21 @@ class LeaveRequest(models.Model):
         blank=True,
         null=True,
         verbose_name="Décision RH",
-        help_text="Décision du RH/DG"
+        help_text="Décision du RH"
     )
     
     rh_comment = models.TextField(
         blank=True,
         null=True,
         verbose_name="Commentaire RH",
-        help_text="Commentaire du RH/DG"
+        help_text="Commentaire du RH"
     )
     
     rh_decision_at = models.DateTimeField(
         blank=True,
         null=True,
         verbose_name="Décision RH le",
-        help_text="Date de décision du RH/DG"
+        help_text="Date de décision du RH"
     )
     
     created_at = models.DateTimeField(
@@ -360,8 +366,8 @@ class LeaveRequest(models.Model):
         except EmployeeProfile.DoesNotExist:
             return False
         
-        # Si c'est le RH/DG, il peut toujours approuver
-        if profile.is_rh_dg():
+        # Si c'est le RH, il peut toujours approuver
+        if profile.is_rh():
             return True
         
         # Si c'est un manager, il peut approuver les demandes de son équipe
@@ -394,7 +400,7 @@ class LeaveRequest(models.Model):
     
     def approve_by_rh(self, user, comment=None):
         """
-        Approuve la demande par le RH/DG.
+        Approuve la demande par le RH.
         """
         self.rh_decision = 'approved_rh'
         self.rh_comment = comment
@@ -404,7 +410,7 @@ class LeaveRequest(models.Model):
     
     def reject_by_rh(self, user, comment):
         """
-        Rejette la demande par le RH/DG.
+        Rejette la demande par le RH.
         """
         self.rh_decision = 'rejected_rh'
         self.rh_comment = comment
@@ -428,13 +434,22 @@ class LeaveRequest(models.Model):
     
     def get_remaining_balance(self):
         """
-        Calcule le solde restant pour ce type de congé.
-        """
-        from .models import LeaveBalance
+        Calcule le solde restant du SOLDE UNIQUE de 30 jours.
         
+        IMPORTANT : Tous les congés payés partagent le même solde.
+        """
+        from .models import LeaveBalance, LeaveType
+        
+        # Récupérer le type "Congés payés" (solde unique)
+        conges_payes_type = LeaveType.objects.filter(name__icontains='payé').first()
+        
+        if not conges_payes_type:
+            return 0
+        
+        # Toujours utiliser le solde "Congés payés"
         balance = LeaveBalance.objects.filter(
             employee=self.employee,
-            leave_type=self.leave_type
+            leave_type=conges_payes_type  # Solde unique
         ).first()
         
         if balance:

@@ -5,7 +5,7 @@ Ce module définit les routes pour les différents tableaux de bord :
 - Dashboard général (redirection selon le rôle)
 - Dashboard employé
 - Dashboard manager
-- Dashboard RH/DG
+- Dashboard RH
 - Admin redirigé vers Django Admin (/admin/)
 
 Auteur: Votre nom
@@ -26,7 +26,7 @@ urlpatterns = [
     # Note: Admin redirigé vers Django Admin (/admin/)
     path('employee/', dashboard_views.EmployeeDashboardView.as_view(), name='employee_dashboard'),
     path('manager/', dashboard_views.ManagerDashboardView.as_view(), name='manager_dashboard'),
-    path('rh-dg/', dashboard_views.RhDgDashboardView.as_view(), name='rh_dg_dashboard'),
+    path('rh-dg/', dashboard_views.RhDgDashboardView.as_view(), name='rh_dashboard'),
 ]
 
 

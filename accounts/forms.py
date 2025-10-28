@@ -16,7 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 
-from .models import EmployeeProfile, Department
+from .models import EmployeeProfile, Department, WorkSchedule
 
 
 class DepartmentForm(forms.ModelForm):
@@ -116,6 +116,16 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         })
     )
     
+    current_work_schedule = forms.ModelChoiceField(
+        queryset=WorkSchedule.objects.all(),
+        required=False,
+        empty_label="Sélectionner un profil horaire",
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        }),
+        help_text='Profil horaire à assigner à cet employé. Si aucun n\'est sélectionné, le profil par défaut sera utilisé.'
+    )
+    
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name']
@@ -188,6 +198,7 @@ class EmployeeProfileForm(forms.ModelForm):
         fields = [
             'department', 'manager', 'role', 'employee_type', 
             'hire_date', 'contract_end_date', 
+            'current_work_schedule',
             'is_active', 'can_punch'
         ]
         widgets = {
@@ -211,6 +222,9 @@ class EmployeeProfileForm(forms.ModelForm):
                 'class': 'form-control',
                 'type': 'date'
             }),
+            'current_work_schedule': forms.Select(attrs={
+                'class': 'form-control'
+            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -231,6 +245,14 @@ class EmployeeProfileForm(forms.ModelForm):
             employee_profile__is_active=True
         )
         self.fields['manager'].empty_label = "Aucun manager"
+        
+        # Configuration du champ profil horaire
+        self.fields['current_work_schedule'].queryset = WorkSchedule.objects.all()
+        self.fields['current_work_schedule'].empty_label = "Profil par défaut"
+        self.fields['current_work_schedule'].help_text = (
+            "Profil horaire contractuel de l'employé. "
+            "Si aucun n'est sélectionné, le profil par défaut sera utilisé."
+        )
 
 
 class UserSearchForm(forms.Form):

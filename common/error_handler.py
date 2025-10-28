@@ -209,6 +209,9 @@ class ErrorHandler:
             return self._handle_not_found_error(exception, context)
         elif isinstance(exception, DatabaseError):
             return self._handle_database_error(exception, context)
+        elif isinstance(exception, AttributeError):
+            # Gestion spécifique des AttributeError
+            return self._handle_attribute_error(exception, context)
         
         # Gestion des exceptions personnalisées
         elif isinstance(exception, SystemError):
@@ -294,18 +297,51 @@ class ErrorHandler:
             exception.severity
         )
     
-    def _handle_generic_error(self, exception: Exception, 
+    def _handle_attribute_error(self, exception: AttributeError,
+                               context: ErrorContext) -> Tuple[ErrorCode, str, ErrorSeverity]:
+        """Gère les erreurs AttributeError avec un message clair."""
+        error_message = str(exception)
+        
+        # Messages spécifiques selon le type d'erreur
+        if 'employee_profile' in error_message:
+            user_message = "Votre profil employé est incomplet. Veuillez contacter l'administrateur."
+            severity = ErrorSeverity.HIGH
+        else:
+            user_message = f"Erreur d'attribut: {error_message}"
+            severity = ErrorSeverity.HIGH
+        
+        self.logger.log_error(
+            exception,
+            context.to_dict() if context else {},
+            error_type="attribute_error"
+        )
+        
+        return (
+            ErrorCode.VALIDATION_ERROR,
+            user_message,
+            severity
+        )
+    
+    def _handle_generic_error(self, exception: Exception,
                             context: ErrorContext) -> Tuple[ErrorCode, str, ErrorSeverity]:
         """Gère les erreurs génériques."""
+        # Log de l'erreur réelle avec le message complet
         self.logger.log_error(
             exception,
             context.to_dict() if context else {},
             error_type="generic_error"
         )
         
+        # Si en mode DEBUG, afficher le message réel
+        from django.conf import settings
+        if settings.DEBUG:
+            user_message = f"Erreur: {type(exception).__name__} - {str(exception)}"
+        else:
+            user_message = self.error_messages[ErrorCode.UNKNOWN_ERROR]
+        
         return (
             ErrorCode.UNKNOWN_ERROR,
-            self.error_messages[ErrorCode.UNKNOWN_ERROR],
+            user_message,
             ErrorSeverity.HIGH
         )
     
@@ -391,4 +427,5 @@ def handle_errors(error_type: str = "unknown",
         
         return wrapper
     return decorator
+
 

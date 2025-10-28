@@ -15,6 +15,7 @@ Version: 1.0
 from django.urls import path
 from . import views
 from . import report_views
+from . import report_exports
 
 app_name = 'reports'
 
@@ -26,6 +27,11 @@ urlpatterns = [
     path('attendance/', report_views.AttendanceReportView.as_view(), name='attendance_report'),
     path('leave/', report_views.LeaveReportView.as_view(), name='leave_report'),
     path('anomalies/', report_views.AnomalyReportView.as_view(), name='anomaly_report'),
+    
+    # Exports PDF/Excel (NOUVEAU)
+    path('export/payroll/<str:format>/', report_exports.PayrollReportExportView.as_view(), name='export_payroll'),
+    path('export/anomalies/<str:format>/', report_exports.AnomalyReportExportView.as_view(), name='export_anomalies'),
+    path('export/leave-balance/<str:format>/', report_exports.LeaveBalanceReportExportView.as_view(), name='export_leave_balance'),
     
     # API pour exports
     path('api/export/', report_views.export_report_api, name='export_report_api'),

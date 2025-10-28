@@ -60,10 +60,10 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
         """Calcule les statistiques globales."""
         stats = {}
         
-        if profile.role == 'rh_dg':
-            # Statistiques pour RH/DG (toute l'entreprise)
+        if profile.role == 'rh':
+            # Statistiques pour RH (toute l'entreprise)
             stats.update({
-                'total_employees': EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg']).count(),
+                'total_employees': EmployeeProfile.objects.filter(is_active=True).exclude(role='rh').count(),
                 'total_departments': Department.objects.count(),
                 'present_today': self._get_present_today_count(),
                 'absent_today': self._get_absent_today_count(),
@@ -167,7 +167,7 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
     
     def _get_attendance_trend(self, start_date, end_date, profile):
         """Données pour le graphique de tendance des présences."""
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Toute l'entreprise
             attendance_data = Attendance.objects.filter(
                 date__range=[start_date, end_date],
@@ -208,7 +208,7 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
             # Pour SQLite
             date_func = "strftime('%%Y-%%m', start_date)"
         
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Toute l'entreprise
             leave_data = LeaveRequest.objects.filter(
                 status='approved_rh',
@@ -246,7 +246,7 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
     
     def _get_department_stats(self, profile):
         """Données pour le graphique des départements."""
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Toute l'entreprise
             dept_data = Department.objects.annotate(
                 employee_count=Count('employees', filter=Q(employees__is_active=True))
@@ -319,7 +319,7 @@ class AttendanceReportView(LoginRequiredMixin, TemplateView):
         data = {}
         
         # Déterminer les employés à inclure
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Tous les employés
             if department_id:
                 employees = User.objects.filter(
@@ -422,7 +422,7 @@ class LeaveReportView(LoginRequiredMixin, TemplateView):
             filters['status'] = status
         
         # Déterminer les employés à inclure
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Tous les employés
             leave_requests = LeaveRequest.objects.filter(**filters)
         elif profile.role == 'manager':
@@ -534,7 +534,7 @@ class AnomalyReportView(LoginRequiredMixin, TemplateView):
             filters['anomaly_type'] = anomaly_type
         
         # Déterminer les employés à inclure
-        if profile.role == 'rh_dg':
+        if profile.role == 'rh':
             # Toutes les anomalies
             anomalies = AttendanceAnomaly.objects.filter(**filters)
         elif profile.role == 'manager':
@@ -657,7 +657,8 @@ def critical_stats_api(request):
     from django.db.models import Count, Sum, Avg
     from attendance.models import Attendance
     from leave.models import LeaveRequest
-    from attendance.overtime_models import OvertimeRecord
+    # NOTE: OvertimeRecord n'existe pas encore dans le projet
+    # from attendance.overtime_models import OvertimeRecord
     
     try:
         user = request.user
@@ -669,21 +670,21 @@ def critical_stats_api(request):
         
         stats = {}
         
-        if profile.role in ['rh_dg', 'admin']:
+        if profile.role == 'rh':
             # === STATISTIQUES GLOBALES ===
             
             # 1. TAUX DE PRÉSENCE GLOBAL (6 mois)
             total_working_days = 130  # Estimation 6 mois
             total_possible_presences = EmployeeProfile.objects.filter(
                 is_active=True
-            ).exclude(role__in=['admin', 'rh_dg']).count() * total_working_days
+            ).exclude(role='rh').count() * total_working_days
             
             total_presences = Attendance.objects.filter(
                 date__range=[start_date, end_date],
                 punch_type='in',
                 employee__employee_profile__is_active=True
             ).exclude(
-                employee__employee_profile__role__in=['admin', 'rh_dg']
+                employee__employee_profile__role='rh'
             ).count()
             
             taux_presence = (total_presences / total_possible_presences * 100) if total_possible_presences > 0 else 0
@@ -698,12 +699,12 @@ def critical_stats_api(request):
                     date__range=[month_start, month_end],
                     punch_type='in'
                 ).exclude(
-                    employee__employee_profile__role__in=['admin', 'rh_dg']
+                    employee__employee_profile__role='rh'
                 ).count()
                 
                 month_possible = EmployeeProfile.objects.filter(
                     is_active=True
-                ).exclude(role__in=['admin', 'rh_dg']).count() * 22  # 22 jours ouvrables/mois
+                ).exclude(role='rh').count() * 22  # 22 jours ouvrables/mois
                 
                 month_rate = (month_presences / month_possible * 100) if month_possible > 0 else 0
                 evolution_absences.append({
@@ -712,17 +713,20 @@ def critical_stats_api(request):
                 })
             
             # 3. HEURES SUPPLÉMENTAIRES (6 mois)
-            overtime_total = OvertimeRecord.objects.filter(
-                date__range=[start_date, end_date],
-                status='approved'
-            ).aggregate(total=Sum('overtime_hours'))['total'] or 0
+            # NOTE: OvertimeRecord n'existe pas encore - désactivé temporairement
+            # overtime_total = OvertimeRecord.objects.filter(
+            #     date__range=[start_date, end_date],
+            #     status='approved'
+            # ).aggregate(total=Sum('overtime_hours'))['total'] or 0
+            overtime_total = 0  # Temporaire
             
-            overtime_avg_per_employee = overtime_total / EmployeeProfile.objects.filter(
-                is_active=True
-            ).exclude(role__in=['admin', 'rh_dg']).count() if EmployeeProfile.objects.filter(
-                is_active=True
-            ).exclude(role__in=['admin', 'rh_dg']
-            ).count() > 0 else 0
+            # overtime_avg_per_employee = overtime_total / EmployeeProfile.objects.filter(
+            #     is_active=True
+            # ).exclude(role='rh').count() if EmployeeProfile.objects.filter(
+            #     is_active=True
+            # ).exclude(role='rh'
+            # ).count() > 0 else 0
+            overtime_avg_per_employee = 0  # Temporaire
             
             # 4. CONGÉS - UTILISATION
             leaves_used = LeaveRequest.objects.filter(

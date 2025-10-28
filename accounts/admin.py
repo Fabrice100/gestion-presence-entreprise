@@ -134,7 +134,7 @@ class UserAdmin(BaseUserAdmin):
             role_colors = {
                 'employee': 'blue',
                 'manager': 'orange', 
-                'rh_dg': 'red',
+                'rh': 'red',
                 'admin': 'purple'
             }
             color = role_colors.get(profile.role, 'black')

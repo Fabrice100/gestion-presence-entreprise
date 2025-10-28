@@ -103,3 +103,4 @@ class Command(BaseCommand):
                 self.style.SUCCESS('Tous les soldes ont été initialisés avec succès!')
             )
 
+

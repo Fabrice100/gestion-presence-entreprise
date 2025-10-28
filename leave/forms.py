@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import date, timedelta
+from django.utils.html import format_html
 
 from .models import LeaveRequest, LeaveType, LeaveBalance
 
@@ -34,11 +35,13 @@ class LeaveRequestForm(forms.ModelForm):
             }),
             'start_date': forms.DateInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'type': 'date',
+                'min': date.today().strftime('%Y-%m-%d')
             }),
             'end_date': forms.DateInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'type': 'date',
+                'min': date.today().strftime('%Y-%m-%d')
             }),
             'reason': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -56,6 +59,11 @@ class LeaveRequestForm(forms.ModelForm):
             available_types = LeaveType.objects.filter(is_active=True)
             self.fields['leave_type'].queryset = available_types
             self.fields['leave_type'].empty_label = "Sélectionner un type de congé"
+        
+        # Mettre à jour min dynamiquement pour empêcher la sélection de dates passées
+        today_str = date.today().strftime('%Y-%m-%d')
+        self.fields['start_date'].widget.attrs['min'] = today_str
+        self.fields['end_date'].widget.attrs['min'] = today_str
     
     def clean(self):
         cleaned_data = super().clean()

@@ -3,7 +3,7 @@ URLs pour l'application leave (congés et absences).
 
 Ce module définit les routes pour :
 - Demande de congés avec workflow de validation
-- Validation des congés par managers et RH/DG
+- Validation des congés par managers et RH
 - Consultation des soldes
 - Gestion des types de congés
 
@@ -35,7 +35,7 @@ urlpatterns = [
     path('manager/my-requests/', views.ManagerLeaveRequestsView.as_view(), name='manager_my_requests'),
     path('manager/validation/', views.ManagerLeaveValidationView.as_view(), name='manager_validation'),
     
-    # Vues RH/DG
+    # Vues RH
     path('rh/management/', views.RHLeaveManagementView.as_view(), name='rh_leave_management'),
     path('rh/reports/', views.RHLeaveReportsView.as_view(), name='rh_leave_reports'),
     

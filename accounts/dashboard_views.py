@@ -5,7 +5,7 @@ Ce module contient les vues pour les différents tableaux de bord :
 - Dashboard général (redirection selon le rôle)
 - Dashboard employé
 - Dashboard manager
-- Dashboard RH/DG
+- Dashboard RH
 - Dashboard administrateur
 
 Auteur: Votre nom
@@ -52,8 +52,8 @@ class DashboardView(EnhancedLoginRequiredMixin, TemplateView):
         
         # Redirection selon le rôle métier
         # Note: Les superusers (admins techniques) sont gérés par le middleware
-        if profile.is_rh_dg():
-            return redirect('dashboard:rh_dg_dashboard')
+        if profile.is_rh():
+            return redirect('dashboard:rh_dashboard')
         elif profile.is_manager():
             return redirect('dashboard:manager_dashboard')
         else:
@@ -195,10 +195,20 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         user = self.request.user
         today = date.today()
         
-        # Employés gérés (profils)
-        managed_profiles = user.managed_employees.filter(
-            is_active=True
-        )
+        # FILTRAGE STRICT PAR DÉPARTEMENT (conforme aux spécifications)
+        # Le Manager voit SEULEMENT son département/service
+        manager_profile = user.employee_profile
+        manager_department = manager_profile.department
+        
+        if not manager_department:
+            # Manager sans département : aucun employé géré
+            managed_profiles = EmployeeProfile.objects.none()
+        else:
+            # Filtrer STRICTEMENT par département (exclure le Manager lui-même)
+            managed_profiles = EmployeeProfile.objects.filter(
+                department=manager_department,
+                is_active=True
+            ).exclude(user=user)  # Exclure le Manager des stats
         
         # Obtenir les utilisateurs des employés gérés
         managed_users = [profile.user for profile in managed_profiles]
@@ -256,15 +266,15 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
     """
     Tableau de bord pour les RH et DG.
     """
-    template_name = 'dashboard/rh_dg_dashboard_ultra_modern.html'
+    template_name = 'dashboard/rh_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         today = date.today()
         
-        # Tous les employés actifs
-        all_employees = EmployeeProfile.objects.filter(is_active=True).exclude(role__in=['admin', 'rh_dg'])
+        # Tous les employés actifs (exclure RH des statistiques employés)
+        all_employees = EmployeeProfile.objects.filter(is_active=True).exclude(role='rh')
         
         # Présences globales aujourd'hui
         global_attendance_today = Attendance.objects.filter(
@@ -291,7 +301,7 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
         
         # Statistiques par département
         department_stats = []
-        # RH/DG peut gérer tous les départements
+        # RH peut gérer tous les départements
         all_departments = Department.objects.filter(is_active=True)
         for dept in all_departments:
             dept_employees = all_employees.filter(department=dept)

@@ -1,8 +1,8 @@
 """
-URLs pour l'interface RH/DG.
+URLs pour l'interface RH.
 
 Ce module définit les routes pour :
-- Tableau de bord RH/DG
+- Tableau de bord RH
 - Gestion des départements
 - Gestion des utilisateurs (managers et employés)
 - API pour la gestion dynamique
@@ -30,6 +30,14 @@ urlpatterns = [
     path('users/employees/create/', hr_views.EmployeeCreateView.as_view(), name='employee_create'),
     path('users/<int:pk>/edit/', hr_views.UserUpdateView.as_view(), name='user_edit'),
     path('users/<int:pk>/delete/', hr_views.UserDeleteView.as_view(), name='user_delete'),
+    
+    # Gestion des profils horaires
+    path('schedules/', hr_views.WorkScheduleListView.as_view(), name='hr_schedule_list'),
+    path('schedules/create/', hr_views.WorkScheduleCreateView.as_view(), name='hr_schedule_create'),
+    path('schedules/<int:pk>/', hr_views.WorkScheduleDetailView.as_view(), name='hr_schedule_detail'),
+    path('schedules/<int:pk>/edit/', hr_views.WorkScheduleUpdateView.as_view(), name='hr_schedule_edit'),
+    path('schedules/<int:pk>/delete/', hr_views.WorkScheduleDeleteView.as_view(), name='hr_schedule_delete'),
+    path('employees/<int:employee_id>/change-schedule/', hr_views.change_employee_schedule_view, name='change_employee_schedule'),
     
     # API
     path('api/managers/', hr_views.get_managers_by_department, name='api_managers'),

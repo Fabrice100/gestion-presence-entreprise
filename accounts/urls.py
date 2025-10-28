@@ -15,6 +15,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 from .logout_view import logout_view
+from .force_password_views import ForcePasswordChangeView, password_changed_success
 
 app_name = 'accounts'
 
@@ -49,7 +50,12 @@ urlpatterns = [
         template_name='accounts/password_reset_complete.html'
     ), name='password_reset_complete'),
     
+    # Changement de mot de passe forcé (nouveau compte)
+    path('force-password-change/', ForcePasswordChangeView.as_view(), name='force_password_change'),
+    path('password-changed/', password_changed_success, name='password_changed_success'),
+    
     # Profil utilisateur
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
 ]
 

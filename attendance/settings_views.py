@@ -3,7 +3,7 @@ Vues pour la configuration du système de pointage.
 
 ACCÈS RÉSERVÉ AUX ADMINISTRATEURS SYSTÈME UNIQUEMENT
 
-Les RH/DG n'ont pas accès à cette configuration pour des raisons de sécurité.
+Les RH n'ont pas accès à cette configuration pour des raisons de sécurité.
 La configuration système (GPS, horaires) doit être gérée par l'administrateur technique.
 """
 
@@ -30,7 +30,7 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
     
     Politique de sécurité :
     - Seuls les superusers (admins Django) ont accès
-    - Les RH/DG gèrent le personnel, pas les paramètres système
+    - Les RH gèrent le personnel, pas les paramètres système
     """
     model = CompanySettings
     template_name = 'attendance/company_settings.html'
@@ -74,7 +74,7 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
         Accès autorisé uniquement à :
         - Superuser (admin Django) : accès complet
         
-        Tous les autres utilisateurs (y compris RH/DG) :
+        Tous les autres utilisateurs (y compris RH) :
         - Redirection vers dashboard avec message d'erreur
         """
         if not request.user.is_authenticated:
@@ -110,14 +110,14 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
             profile = self.request.user.employee_profile
             role = profile.role
         except:
-            role = 'admin' if self.request.user.is_superuser else None
+            role = None
         
         context.update({
             'page_title': 'Configuration Système',
             'settings': settings,
             'user_role': role,
-            'is_admin': role == 'admin',
-            'is_rh': role == 'rh_dg',
+            'is_superuser': self.request.user.is_superuser,
+            'is_rh': role == 'rh',
         })
         
         return context

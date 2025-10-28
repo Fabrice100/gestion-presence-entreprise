@@ -1,0 +1,248 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Modifier ma Demande #{{ object.id }}{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto">
+    
+    <!-- En-tête avec retour -->
+    <div class="flex items-center space-x-4 mb-8">
+        <a href="{% url 'leave:leave_request_detail' object.pk %}" 
+           class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+                <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Modifier ma Demande
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">
+                Demande #{{ object.id }} - Créée le {{ object.created_at|date:"d/m/Y" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Avertissement si statut non modifiable -->
+    {% if object.status != 'pending' %}
+    <div class="mb-6 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded">
+        <div class="flex">
+            <svg class="w-5 h-5 text-amber-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <div class="text-sm text-amber-700 dark:text-amber-300">
+                <p class="font-semibold">⚠️ Attention</p>
+                <p class="mt-1">Cette demande a le statut "{{ object.get_status_display }}". Les modifications peuvent nécessiter une nouvelle validation.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formulaire -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Messages d'erreur globaux -->
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-red-700 dark:text-red-300">
+                        {{ form.non_field_errors }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Type de congé -->
+            <div>
+                <label for="id_leave_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Type de congé <span class="text-red-500">*</span>
+                </label>
+                {{ form.leave_type }}
+                {% if form.leave_type.errors %}
+                <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.leave_type.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Dates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Date de début -->
+                <div>
+                    <label for="id_start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Date de début <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.start_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Date de fin -->
+                <div>
+                    <label for="id_end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Date de fin <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.end_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Motif -->
+            <div>
+                <label for="id_reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Motif
+                    <span class="text-gray-500 font-normal">(optionnel mais recommandé)</span>
+                </label>
+                {{ form.reason }}
+                {% if form.reason.errors %}
+                <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ form.reason.errors.0 }}</p>
+                {% endif %}
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    💡 Un motif clair facilite la validation par vos managers
+                </p>
+            </div>
+
+            <!-- Informations complémentaires -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                        <p class="font-semibold">ℹ️ À savoir</p>
+                        <ul class="mt-2 space-y-1 list-disc list-inside">
+                            <li>La durée sera calculée automatiquement (jours ouvrés)</li>
+                            <li>Les jours fériés ne sont pas comptabilisés</li>
+                            <li>Votre solde sera vérifié automatiquement</li>
+                            {% if object.status != 'pending' %}
+                            <li class="font-semibold">Cette modification réinitialisera le workflow de validation</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{% url 'leave:leave_request_detail' object.pk %}" 
+                   class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Enregistrer les Modifications
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Aide -->
+    <div class="mt-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            💡 Conseils
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">📅 Dates</p>
+                <p>Vérifiez que les dates ne chevauchent pas d'autres demandes en cours</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">💰 Solde</p>
+                <p>Assurez-vous d'avoir suffisamment de jours disponibles</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">📝 Motif</p>
+                <p>Un motif clair accélère la validation</p>
+            </div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white mb-1">⏱️ Délais</p>
+                <p>Respectez les délais de prévenance de votre entreprise</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Style pour les champs de formulaire */
+    select,
+    input[type="date"],
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        background-color: white;
+        color: #111827;
+        transition: all 0.2s;
+    }
+    
+    select:focus,
+    input[type="date"]:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        ring: 2px;
+        ring-color: rgba(59, 130, 246, 0.3);
+    }
+    
+    .dark select,
+    .dark input[type="date"],
+    .dark textarea {
+        background-color: #1f2937;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .dark select:focus,
+    .dark input[type="date"]:focus,
+    .dark textarea:focus {
+        border-color: #3b82f6;
+    }
+
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+</style>
+
+<script>
+// Calcul automatique de la durée
+const startDateInput = document.getElementById('id_start_date');
+const endDateInput = document.getElementById('id_end_date');
+
+if (startDateInput && endDateInput) {
+    [startDateInput, endDateInput].forEach(input => {
+        input.addEventListener('change', function() {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate && endDate && startDate <= endDate) {
+                // Calcul simple des jours (à améliorer avec jours ouvrés)
+                const diffTime = Math.abs(endDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                // Afficher un indicateur visuel (optionnel)
+                console.log(`Durée: ${diffDays} jour(s)`);
+            }
+        });
+    });
+}
+</script>
+{% endblock %}

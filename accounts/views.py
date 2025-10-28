@@ -135,11 +135,12 @@ class UserListView(AdminRequiredMixin, ListView):
     
     def get_queryset(self):
         """Filtre les utilisateurs selon les permissions."""
-        if not self.request.user.employee_profile.is_admin():
+        # Vérifier permissions RH
+        if not self.request.user.employee_profile.is_rh():
             return User.objects.none()
         
         queryset = User.objects.select_related('employee_profile').exclude(
-            employee_profile__role__in=['admin', 'rh_dg']
+            employee_profile__role='rh'
         ).order_by('employee_profile__employee_id')
         
         # Filtres
@@ -180,7 +181,7 @@ class UserDetailView(AdminRequiredMixin, DetailView):
     def get_queryset(self):
         """Filtre selon les permissions."""
         return User.objects.select_related('employee_profile').exclude(
-            employee_profile__role__in=['admin', 'rh_dg']
+            employee_profile__role='rh'
         )
 
 
