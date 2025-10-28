@@ -271,6 +271,44 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
             queryset = LeaveRequest.objects.none()
         
         return queryset.order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        if not hasattr(user, 'employee_profile'):
+            return context
+        
+        profile = user.employee_profile
+        
+        if profile.role == 'manager':
+            # Pour le manager : calculer les statistiques de SON département
+            managed_department = Department.objects.filter(manager=user).first()
+            if managed_department:
+                all_requests = LeaveRequest.objects.filter(
+                    employee__employee_profile__department=managed_department
+                ).exclude(employee=user).filter(
+                    status__in=['pending', 'approved_manager', 'rejected_manager']
+                )
+            else:
+                all_requests = LeaveRequest.objects.none()
+            
+            # Statistiques manager
+            context['pending_count'] = all_requests.filter(status='pending').count()
+            context['approved_count'] = all_requests.filter(status='approved_manager').count()
+            context['rejected_count'] = all_requests.filter(status='rejected_manager').count()
+            context['total_count'] = all_requests.count()
+            
+        elif profile.role == 'rh':
+            # Pour le RH : calculer les statistiques sur ses validations finales
+            context['pending_count'] = LeaveRequest.objects.filter(status='approved_manager').count()
+            context['approved_count'] = LeaveRequest.objects.filter(status='approved_rh').count()
+            context['rejected_count'] = LeaveRequest.objects.filter(status='rejected_rh').count()
+            context['total_count'] = LeaveRequest.objects.filter(
+                status__in=['approved_manager', 'approved_rh', 'rejected_rh']
+            ).count()
+        
+        return context
 
 
 class LeaveApprovalDetailView(LoginRequiredMixin, DetailView):
