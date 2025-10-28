@@ -251,21 +251,7 @@ class Attendance(models.Model):
         - Heures de pointage
         - Doublons
         """
-        # Charger la configuration de l'entreprise
-        from .admin_models import CompanySettings
-        company_settings = CompanySettings.load()
-        
-        # Vérifier la distance du site
-        if self.distance_from_site and self.distance_from_site > company_settings.allowed_radius_meters:
-            self.status = 'outside_zone'
-            return
-        
-        # Vérifier la précision GPS
-        if self.accuracy and self.accuracy > company_settings.gps_accuracy_max_meters:
-            self.status = 'low_accuracy'
-            return
-        
-        # Vérifier les heures de pointage (8h-17h)
+        # Vérifier les heures de pointage (simplifié)
         hour = self.time.hour
         if hour < 6 or hour > 19:  # En dehors des heures normales
             if self.punch_type == 'in':
@@ -273,15 +259,6 @@ class Attendance(models.Model):
             else:
                 self.status = 'early' if hour < 16 else 'normal'
         
-        # Vérifier les doublons
-        existing_punch = Attendance.objects.filter(
-            employee=self.employee,
-            date=self.date,
-            punch_type=self.punch_type
-        ).exclude(id=self.id).exists()
-        
-        if existing_punch:
-            self.status = 'double_punch'
     
     def is_within_zone(self):
         """Vérifie si le pointage est dans la zone autorisée."""
@@ -319,16 +296,12 @@ class AttendanceAnomaly(models.Model):
     Permet le suivi et la gestion des anomalies par les managers.
     """
     
-    # Choix pour les types d'anomalies
+    # Choix pour les types d'anomalies (simplifié pour projet de fin de cycle)
     ANOMALY_TYPE_CHOICES = [
         ('late_arrival', 'Arrivée en retard'),
         ('early_departure', 'Départ anticipé'),
         ('missing_punch_out', 'Oubli de sortie'),
         ('missing_punch_in', 'Oubli d\'entrée'),
-        ('outside_zone', 'Pointage hors zone'),
-        ('low_accuracy', 'Précision GPS faible'),
-        ('double_punch', 'Double pointage'),
-        ('long_duration', 'Durée de travail excessive'),
     ]
     
     # Choix pour les statuts de résolution
