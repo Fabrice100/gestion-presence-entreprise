@@ -160,24 +160,21 @@
                     </div>
                     
                     <!-- Actions -->
-                    <div class="flex-shrink-0 flex gap-3">
-                        <a href="{% url 'leave:leave_approval_detail' request.pk %}" 
-                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center font-medium">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            Examiner
-                        </a>
-                        
-                        {% if request.status == 'pending' or request.status == 'approved_manager' %}
+                    <div class="flex-shrink-0">
+                        {% if request.status == 'pending' %}
                         <a href="{% url 'leave:leave_approval_process' request.pk %}" 
-                           class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center font-medium">
+                           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center font-medium shadow-md hover:shadow-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            Traiter
+                            Traiter la demande
                         </a>
+                        {% else %}
+                        <span class="px-4 py-2 {% if request.status == 'approved_manager' or request.status == 'approved_rh' %}bg-green-100 text-green-700{% elif request.status == 'rejected_manager' or request.status == 'rejected_rh' %}bg-red-100 text-red-700{% endif %} rounded-lg font-medium">
+                            {% if request.status == 'approved_manager' or request.status == 'approved_rh' %}✅ Approuvée
+                            {% elif request.status == 'rejected_manager' or request.status == 'rejected_rh' %}❌ Rejetée
+                            {% endif %}
+                        </span>
                         {% endif %}
                     </div>
                 </div>
