@@ -409,6 +409,8 @@ class WorkScheduleDeleteView(HRRequiredMixin, DeleteView):
     template_name = 'hr/schedule_confirm_delete.html'
     success_url = reverse_lazy('hr:hr_schedule_list')
     
+    def get_queryset(self):
+        return self.model.objects.all()
     
     def delete(self, request, *args, **kwargs):
         from accounts.schedule_service import WorkScheduleService
