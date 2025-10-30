@@ -1,229 +1,171 @@
-{% extends 'base.html' %}
+{% extends 'base_ultra_modern.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="p-6 space-y-6">
     <!-- En-tête -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <a href="{% url 'accounts:hr_schedule_list' %}" class="text-decoration-none text-muted">
-                        <i class="fas fa-arrow-left"></i> Retour à la liste
-                    </a>
-                    <h1 class="h3 mt-2 mb-2">
-                        <i class="fas fa-clock text-primary"></i>
-                        {{ schedule.name }}
-                    </h1>
-                    {% if schedule.description %}
-                    <p class="text-muted">{{ schedule.description }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <a href="{% url 'accounts:hr_schedule_edit' schedule.pk %}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i>
-                        Modifier
-                    </a>
-                </div>
-            </div>
+    <div class="flex items-start justify-between">
+        <div>
+            <a href="{% url 'hr:hr_schedule_list' %}" class="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center">
+                <i class="bi bi-arrow-left mr-2"></i> Retour à la liste
+            </a>
+            <h1 class="mt-2 text-2xl font-bold text-gray-900 flex items-center">
+                <i class="bi bi-clock text-primary-600 mr-2"></i>
+                {{ schedule.name }}
+            </h1>
+            {% if schedule.description %}
+            <p class="text-gray-600 mt-1">{{ schedule.description }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'hr:hr_schedule_edit' schedule.pk %}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+                <i class="bi bi-pencil mr-2"></i>
+                Modifier
+            </a>
         </div>
     </div>
 
     <!-- Informations du profil -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle"></i>
-                        Informations du profil
-                    </h5>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="bi bi-info-circle mr-2"></i> Informations du profil
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm text-gray-500">Heure de début (HDC)</p>
+                    <p class="mt-1 text-xl font-semibold text-gray-900 flex items-center">
+                        <i class="bi bi-box-arrow-in-right text-green-600 mr-2"></i>
+                        {{ schedule.start_time|time:"H:i" }}
+                    </p>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="text-muted small">Heure de début (HDC)</label>
-                            <div class="h4">
-                                <i class="fas fa-sign-in-alt text-success"></i>
-                                {{ schedule.start_time|time:"H:i" }}
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="text-muted small">Heure de fin (HFC)</label>
-                            <div class="h4">
-                                <i class="fas fa-sign-out-alt text-danger"></i>
-                                {{ schedule.end_time|time:"H:i" }}
-                            </div>
-                        </div>
+                <div>
+                    <p class="text-sm text-gray-500">Heure de fin (HFC)</p>
+                    <p class="mt-1 text-xl font-semibold text-gray-900 flex items-center">
+                        <i class="bi bi-box-arrow-left text-red-600 mr-2"></i>
+                        {{ schedule.end_time|time:"H:i" }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pause</p>
+                    <p class="mt-1 text-lg text-gray-900 flex items-center">
+                        <i class="bi bi-cup-hot mr-2"></i>
+                        {{ schedule.pause_start|time:"H:i" }} - {{ schedule.pause_end|time:"H:i" }}
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ schedule.get_pause_duration_hours }}h</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Durée contractuelle</p>
+                    <p class="mt-1 text-lg text-gray-900 flex items-center">
+                        <i class="bi bi-hourglass-split mr-2"></i>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ schedule.get_contractual_duration_hours }}h/jour</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Statut</p>
+                    <div class="mt-1">
+                        {% if schedule.is_default %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-600 text-white">
+                            <i class="bi bi-star mr-1"></i> Profil par défaut
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Profil standard</span>
+                        {% endif %}
                     </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="text-muted small">Pause</label>
-                            <div class="h5">
-                                <i class="fas fa-coffee"></i>
-                                {{ schedule.pause_start|time:"H:i" }} - {{ schedule.pause_end|time:"H:i" }}
-                                <span class="badge bg-info ms-2">{{ schedule.get_pause_duration_hours }}h</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="text-muted small">Durée contractuelle</label>
-                            <div class="h5">
-                                <i class="fas fa-hourglass-half"></i>
-                                <span class="badge bg-success">{{ schedule.get_contractual_duration_hours }}h/jour</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="text-muted small">Statut</label>
-                            <div>
-                                {% if schedule.is_default %}
-                                <span class="badge bg-primary">
-                                    <i class="fas fa-star"></i> Profil par défaut
-                                </span>
-                                {% else %}
-                                <span class="badge bg-secondary">Profil standard</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Créé le</label>
-                            <div>
-                                {{ schedule.created_at|date:"d/m/Y à H:i" }}
-                                {% if schedule.created_by %}
-                                <small class="text-muted">par {{ schedule.created_by.get_full_name }}</small>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Créé le</p>
+                    <p class="mt-1 text-gray-900">
+                        {{ schedule.created_at|date:"d/m/Y à H:i" }}
+                        {% if schedule.created_by %}
+                        <span class="text-gray-500 text-sm">par {{ schedule.created_by.get_full_name }}</span>
+                        {% endif %}
+                    </p>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-users"></i>
-                        Statistiques
-                    </h5>
-                </div>
-                <div class="card-body text-center">
-                    <div class="display-4 text-primary">{{ employee_count }}</div>
-                    <p class="text-muted">Employé{{ employee_count|pluralize }} sur ce profil</p>
-                </div>
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                <i class="bi bi-people mr-2"></i> Statistiques
+            </h2>
+            <div class="text-center">
+                <div class="text-4xl font-bold text-primary-600">{{ employee_count }}</div>
+                <p class="text-gray-600">Employé{{ employee_count|pluralize }} sur ce profil</p>
             </div>
         </div>
     </div>
 
     <!-- Liste des employés -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-users"></i>
-                        Employés affectés à ce profil
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if employees %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nom</th>
-                                        <th>Département</th>
-                                        <th>Rôle</th>
-                                        <th>Manager</th>
-                                        <th class="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for employee in employees %}
-                                    <tr>
-                                        <td>
-                                            <code>{{ employee.employee_id }}</code>
-                                        </td>
-                                        <td>
-                                            <strong>{{ employee.user.get_full_name }}</strong>
-                                        </td>
-                                        <td>
-                                            {% if employee.department %}
-                                            <span class="badge bg-light text-dark">
-                                                {{ employee.department.name }}
-                                            </span>
-                                            {% else %}
-                                            <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if employee.role == 'manager' %}
-                                            <span class="badge bg-warning">Manager</span>
-                                            {% elif employee.role == 'rh_dg' %}
-                                            <span class="badge bg-danger">RH/DG</span>
-                                            {% else %}
-                                            <span class="badge bg-info">Employé</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if employee.manager %}
-                                            {{ employee.manager.get_full_name }}
-                                            {% else %}
-                                            <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-end">
-                                            <a href="{% url 'accounts:change_employee_schedule' employee.pk %}" 
-                                               class="btn btn-sm btn-outline-primary"
-                                               title="Changer de profil">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                            <h5>Aucun employé sur ce profil</h5>
-                            <p class="text-muted">Aucun employé n'est actuellement affecté à ce profil horaire</p>
-                        </div>
-                    {% endif %}
-                </div>
+    <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <i class="bi bi-people mr-2"></i> Employés affectés à ce profil
+        </h2>
+        {% if employees %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Département</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rôle</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Manager</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for employee in employees %}
+                        <tr>
+                            <td class="px-4 py-2"><code>{{ employee.employee_id }}</code></td>
+                            <td class="px-4 py-2 font-medium text-gray-900">{{ employee.user.get_full_name }}</td>
+                            <td class="px-4 py-2">
+                                {% if employee.department %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ employee.department.name }}</span>
+                                {% else %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2">
+                                {% if employee.role == 'manager' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Manager</span>
+                                {% elif employee.role == 'rh_dg' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">RH/DG</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Employé</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2">{% if employee.manager %}{{ employee.manager.get_full_name }}{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
+                            <td class="px-4 py-2 text-right">
+                                <a href="{% url 'hr:change_employee_schedule' employee.pk %}" class="inline-flex items-center px-3 py-1.5 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50">
+                                    <i class="bi bi-arrow-left-right mr-1"></i>
+                                    Changer
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        {% else %}
+            <div class="text-center py-8 text-gray-600">Aucun employé n'est actuellement affecté à ce profil horaire</div>
+        {% endif %}
     </div>
 
     <!-- Actions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between">
-                <a href="{% url 'accounts:hr_schedule_list' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i>
-                    Retour à la liste
-                </a>
-                {% if employee_count == 0 %}
-                <a href="{% url 'accounts:hr_schedule_delete' schedule.pk %}" 
-                   class="btn btn-danger"
-                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce profil horaire ?')">
-                    <i class="fas fa-trash"></i>
-                    Supprimer ce profil
-                </a>
-                {% endif %}
-            </div>
-        </div>
+    <div class="flex items-center justify-between">
+        <a href="{% url 'hr:hr_schedule_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+            <i class="bi bi-arrow-left mr-2"></i>
+            Retour à la liste
+        </a>
+        {% if employee_count == 0 %}
+        <a href="{% url 'hr:hr_schedule_delete' schedule.pk %}" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce profil horaire ?')">
+            <i class="bi bi-trash mr-2"></i>
+            Supprimer ce profil
+        </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

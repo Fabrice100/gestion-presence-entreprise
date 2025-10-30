@@ -37,28 +37,38 @@
             {% if next_punch_type == 'in' %}
                 <!-- Pointage Entrée -->
                 <form method="post" action="{% url 'attendance:punch' %}" 
-                      x-data="{ loading: false, latitude: '', longitude: '', accuracy: '' }"
+                      x-data="{ loading: false, latitude: '', longitude: '', accuracy: '', gpsReady: false }"
                       @submit="loading = true"
                       x-init="
                           if (navigator.geolocation) {
                               navigator.geolocation.getCurrentPosition(
                                   (position) => {
-                                      latitude = position.coords.latitude;
-                                      longitude = position.coords.longitude;
-                                      accuracy = position.coords.accuracy;
+                                      latitude = position.coords.latitude.toString();
+                                      longitude = position.coords.longitude.toString();
+                                      accuracy = position.coords.accuracy.toString();
+                                      gpsReady = true;
                                   },
                                   (error) => {
                                       console.error('Erreur GPS:', error);
-                                  }
+                                      // Si GPS échoue, laisser vide - le système utilisera les coordonnées du bureau
+                                      latitude = '';
+                                      longitude = '';
+                                      accuracy = '';
+                                      gpsReady = true;
+                                  },
+                                  { timeout: 5000, enableHighAccuracy: false }
                               );
+                          } else {
+                              // GPS non disponible
+                              gpsReady = true;
                           }
                       "
                       class="space-y-6">
                     {% csrf_token %}
                     <input type="hidden" name="punch_type" value="in">
-                    <input type="hidden" name="latitude" :value="latitude">
-                    <input type="hidden" name="longitude" :value="longitude">
-                    <input type="hidden" name="accuracy" :value="accuracy">
+                    <input type="hidden" name="latitude" :value="latitude || ''">
+                    <input type="hidden" name="longitude" :value="longitude || ''">
+                    <input type="hidden" name="accuracy" :value="accuracy || ''">
                     
                     <div class="text-center mb-6">
                         <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
@@ -93,28 +103,38 @@
             {% else %}
                 <!-- Pointage Sortie -->
                 <form method="post" action="{% url 'attendance:punch' %}"
-                      x-data="{ loading: false, latitude: '', longitude: '', accuracy: '' }"
+                      x-data="{ loading: false, latitude: '', longitude: '', accuracy: '', gpsReady: false }"
                       @submit="loading = true"
                       x-init="
                           if (navigator.geolocation) {
                               navigator.geolocation.getCurrentPosition(
                                   (position) => {
-                                      latitude = position.coords.latitude;
-                                      longitude = position.coords.longitude;
-                                      accuracy = position.coords.accuracy;
+                                      latitude = position.coords.latitude.toString();
+                                      longitude = position.coords.longitude.toString();
+                                      accuracy = position.coords.accuracy.toString();
+                                      gpsReady = true;
                                   },
                                   (error) => {
                                       console.error('Erreur GPS:', error);
-                                  }
+                                      // Si GPS échoue, laisser vide - le système utilisera les coordonnées du bureau
+                                      latitude = '';
+                                      longitude = '';
+                                      accuracy = '';
+                                      gpsReady = true;
+                                  },
+                                  { timeout: 5000, enableHighAccuracy: false }
                               );
+                          } else {
+                              // GPS non disponible
+                              gpsReady = true;
                           }
                       "
                       class="space-y-6">
                     {% csrf_token %}
                     <input type="hidden" name="punch_type" value="out">
-                    <input type="hidden" name="latitude" :value="latitude">
-                    <input type="hidden" name="longitude" :value="longitude">
-                    <input type="hidden" name="accuracy" :value="accuracy">
+                    <input type="hidden" name="latitude" :value="latitude || ''">
+                    <input type="hidden" name="longitude" :value="longitude || ''">
+                    <input type="hidden" name="accuracy" :value="accuracy || ''">
                     
                     <div class="text-center mb-6">
                         <div class="inline-flex items-center justify-center w-24 h-24 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">

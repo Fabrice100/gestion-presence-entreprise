@@ -87,6 +87,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 class EmployeeProfileInline(admin.StackedInline):
     """
     Inline admin pour afficher le profil employé dans l'admin User.
+    
+    IMPORTANT: Limitation à un seul compte RH.
     """
     model = EmployeeProfile
     fk_name = 'user'  # Spécifier la clé étrangère à utiliser
@@ -101,7 +103,9 @@ class EmployeeProfileInline(admin.StackedInline):
                 'employee_type',
                 'department',
                 'manager'
-            )
+            ),
+            'description': '⚠️ ATTENTION: Un seul compte RH est autorisé dans le système. '
+                          'Si vous créez un nouveau compte RH, le précédent sera automatiquement désactivé.'
         }),
         ('Contrat', {
             'fields': (
@@ -116,6 +120,45 @@ class EmployeeProfileInline(admin.StackedInline):
             )
         }),
     )
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        """Surcharge pour ajouter la validation RH."""
+        formset = super().get_formset(request, obj, **kwargs)
+        
+        # Vérifier si on essaie de créer un nouveau User avec rôle RH
+        if not obj:  # Nouvelle création
+            original_save = formset.save
+            
+            def custom_save(commit=True):
+                instances = original_save(commit=False)
+                
+                for instance in instances:
+                    # Si on essaie de créer un profil RH
+                    if instance and hasattr(instance, 'role') and instance.role == 'rh':
+                        # Vérifier s'il existe déjà un RH actif
+                        existing_rh = EmployeeProfile.objects.filter(
+                            role='rh',
+                            is_active=True
+                        ).exclude(pk=instance.pk if instance.pk else None).exists()
+                        
+                        if existing_rh:
+                            from django.contrib import messages
+                            messages.error(
+                                request,
+                                "❌ Impossible de créer un nouveau compte RH. "
+                                "Un compte RH existe déjà dans le système. "
+                                "Vous devez d'abord désactiver le compte RH existant."
+                            )
+                            # Ne pas sauvegarder cette instance
+                            continue
+                
+                if commit:
+                    return original_save(commit=True)
+                return instances
+            
+            formset.save = custom_save
+        
+        return formset
 
 
 # Étendre l'admin User existant
@@ -162,6 +205,8 @@ admin.site.register(User, UserAdmin)
 class EmployeeProfileAdmin(admin.ModelAdmin):
     """
     Configuration de l'administration pour le modèle EmployeeProfile.
+    
+    IMPORTANT: Limitation à un seul compte RH.
     """
     
     list_display = [
@@ -192,6 +237,35 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
     ]
     
     ordering = ['employee_id']
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Surcharge pour empêcher la création de plusieurs comptes RH.
+        """
+        # Vérification si on essaie de créer/modifier un compte RH
+        if obj.role == 'rh':
+            # Si c'est une création (pas une modification)
+            if not change:
+                # Vérifier s'il existe déjà un compte RH actif
+                existing_rh = EmployeeProfile.objects.filter(
+                    role='rh',
+                    is_active=True
+                ).exclude(pk=obj.pk if obj.pk else None).exists()
+                
+                if existing_rh:
+                    from django.contrib import messages
+                    messages.error(
+                        request,
+                        "❌ Impossible de créer un nouveau compte RH. "
+                        "Un compte RH existe déjà dans le système. "
+                        "Pour créer un nouveau compte RH, vous devez d'abord désactiver ou supprimer le compte RH existant."
+                    )
+                    return  # Empêcher la sauvegarde
+            
+            # Si c'est une modification, vérifier qu'on ne désactive pas le dernier RH
+            # (permet de modifier le compte RH existant)
+        
+        super().save_model(request, obj, form, change)
     
     fieldsets = (
         ('Informations utilisateur', {

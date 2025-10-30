@@ -2,9 +2,11 @@
 Modèles pour la configuration système du pointage.
 
 Ce module contient les paramètres configurables pour :
-- Horaires de travail
-- Zones géographiques autorisées
-- Règles de pointage
+- Zones géographiques autorisées (GPS)
+- Précision GPS requise
+- Rayon autorisé pour le pointage
+
+Note: Les horaires de travail sont gérés par le RH via WorkSchedule (Profils Horaires).
 """
 
 from django.db import models
@@ -16,34 +18,9 @@ class CompanySettings(models.Model):
     """
     Configuration globale de l'entreprise pour le système de pointage.
     Une seule instance existe (singleton).
+    
+    Note: Les horaires de travail sont gérés par le RH via WorkSchedule (Profils Horaires).
     """
-    
-    # Informations entreprise
-    company_name = models.CharField(
-        max_length=200,
-        default="Mon Entreprise",
-        verbose_name="Nom de l'entreprise"
-    )
-    
-    # Horaires de travail
-    work_start_time = models.TimeField(
-        default='08:00',
-        verbose_name="Heure de début",
-        help_text="Heure d'arrivée attendue (ex: 08:00)"
-    )
-    
-    work_end_time = models.TimeField(
-        default='17:00',
-        verbose_name="Heure de fin",
-        help_text="Heure de sortie attendue (ex: 17:00)"
-    )
-    
-    late_tolerance_minutes = models.IntegerField(
-        default=15,
-        validators=[MinValueValidator(0), MaxValueValidator(60)],
-        verbose_name="Tolérance retard (minutes)",
-        help_text="Nombre de minutes de tolérance avant qu'un retard soit enregistré"
-    )
     
     # Géolocalisation
     gps_required = models.BooleanField(
@@ -99,7 +76,7 @@ class CompanySettings(models.Model):
         verbose_name_plural = "Configuration Entreprise"
     
     def __str__(self):
-        return f"Configuration {self.company_name}"
+        return "Configuration GPS"
     
     def save(self, *args, **kwargs):
         """Assure qu'une seule instance existe (singleton)."""

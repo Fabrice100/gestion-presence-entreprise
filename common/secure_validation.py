@@ -30,7 +30,7 @@ class SecureDataValidator:
     """
     
     # Patterns de validation
-    GPS_PATTERN = re.compile(r'^-?\d{1,3}\.\d{1,15}$')
+    GPS_PATTERN = re.compile(r'^-?\d{1,3}(\.\d{1,18})?$')  # Plus flexible pour accepter plus de décimales
     EMPLOYEE_ID_PATTERN = re.compile(r'^EMP\d{3}$')
     EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
     PHONE_PATTERN = re.compile(r'^\+?[\d\s\-\(\)]{8,20}$')
@@ -67,49 +67,79 @@ class SecureDataValidator:
             Dict avec 'valid', 'latitude', 'longitude', 'accuracy', 'error_message'
         """
         try:
-            # 1. Validation du format
-            if not self._is_valid_gps_format(latitude):
-                return self._error_result("Format de latitude invalide")
+            # Normaliser les valeurs (convertir en string, gérer None)
+            latitude = str(latitude).strip() if latitude is not None else ''
+            longitude = str(longitude).strip() if longitude is not None else ''
+            accuracy = str(accuracy).strip() if accuracy is not None else ''
             
-            if not self._is_valid_gps_format(longitude):
-                return self._error_result("Format de longitude invalide")
+            # Normaliser les valeurs spéciales (accepter comme vides)
+            if not latitude or latitude.lower() in ['none', 'null', 'nan', '', '0', '0.0']:
+                latitude = ''
+            if not longitude or longitude.lower() in ['none', 'null', 'nan', '', '0', '0.0']:
+                longitude = ''
+            if not accuracy or accuracy.lower() in ['none', 'null', 'nan', '', '0', '0.0']:
+                accuracy = ''
             
-            if not self._is_valid_accuracy_format(accuracy):
-                return self._error_result("Format de précision invalide")
+            # 0. Gérer les valeurs vides - si vides, on accepte (sera géré par parse_gps_data qui utilisera les coordonnées du bureau)
+            if not latitude:
+                # Coordonnée vide acceptée - parse_gps_data gérera
+                lat_float = None
+            else:
+                # 1. Validation du format seulement si valeur présente
+                if not self._is_valid_gps_format(latitude):
+                    return self._error_result("Format de latitude invalide")
+                # 2. Conversion en float
+                lat_float = float(latitude)
+                # 3. Validation des limites latitude
+                if not (self.MIN_GPS_COORDINATE <= lat_float <= self.MAX_GPS_COORDINATE):
+                    return self._error_result("Latitude hors limites (-90° à +90°)")
             
-            # 2. Conversion en float
-            lat_float = float(latitude)
-            lng_float = float(longitude)
-            acc_float = float(accuracy)
+            if not longitude:
+                # Coordonnée vide acceptée - parse_gps_data gérera
+                lng_float = None
+            else:
+                # 1. Validation du format seulement si valeur présente
+                if not self._is_valid_gps_format(longitude):
+                    return self._error_result("Format de longitude invalide")
+                # 2. Conversion en float
+                lng_float = float(longitude)
+                # 3. Validation des limites longitude
+                if not (self.MIN_GPS_LONGITUDE <= lng_float <= self.MAX_GPS_LONGITUDE):
+                    return self._error_result("Longitude hors limites (-180° à +180°)")
             
-            # 3. Validation des limites
-            if not (self.MIN_GPS_COORDINATE <= lat_float <= self.MAX_GPS_COORDINATE):
-                return self._error_result("Latitude hors limites (-90° à +90°)")
+            # Si accuracy est vide, utiliser valeur par défaut
+            if not accuracy:
+                acc_float = 50.0  # Précision par défaut acceptable
+            else:
+                # Validation seulement si valeur présente
+                if not self._is_valid_accuracy_format(accuracy):
+                    return self._error_result("Format de précision invalide")
+                acc_float = float(accuracy)
+                # Validation des limites précision
+                if not (self.MIN_GPS_ACCURACY <= acc_float <= self.MAX_GPS_ACCURACY):
+                    return self._error_result(f"Précision hors limites ({self.MIN_GPS_ACCURACY}m à {self.MAX_GPS_ACCURACY}m)")
             
-            if not (self.MIN_GPS_LONGITUDE <= lng_float <= self.MAX_GPS_LONGITUDE):
-                return self._error_result("Longitude hors limites (-180° à +180°)")
+            # 4. Validation de cohérence (pas de coordonnées impossibles) seulement si présentes
+            if lat_float is not None and lng_float is not None:
+                if abs(lat_float) > 90 or abs(lng_float) > 180:
+                    return self._error_result("Coordonnées GPS impossibles")
             
-            if not (self.MIN_GPS_ACCURACY <= acc_float <= self.MAX_GPS_ACCURACY):
-                return self._error_result(f"Précision hors limites ({self.MIN_GPS_ACCURACY}m à {self.MAX_GPS_ACCURACY}m)")
+            # 5. Logging de la validation réussie (si valeurs présentes)
+            if lat_float is not None:
+                self.logger.system_logger.info(
+                    "Validation GPS réussie",
+                    latitude=lat_float,
+                    longitude=lng_float,
+                    accuracy=acc_float,
+                    event_type="gps_validation"
+                )
             
-            # 4. Validation de cohérence (pas de coordonnées impossibles)
-            if abs(lat_float) > 90 or abs(lng_float) > 180:
-                return self._error_result("Coordonnées GPS impossibles")
-            
-            # 5. Logging de la validation réussie
-            self.logger.system_logger.info(
-                "Validation GPS réussie",
-                latitude=lat_float,
-                longitude=lng_float,
-                accuracy=acc_float,
-                event_type="gps_validation"
-            )
-            
+            # 6. Retourner les valeurs validées (None si vides - sera géré par parse_gps_data)
             return {
                 'valid': True,
                 'latitude': lat_float,
                 'longitude': lng_float,
-                'accuracy': acc_float,
+                'accuracy': acc_float if acc_float is not None else 50.0,
                 'error_message': None
             }
             
@@ -123,8 +153,28 @@ class SecureDataValidator:
     def _is_valid_gps_format(self, value: str) -> bool:
         """Vérifie le format d'une coordonnée GPS."""
         if not isinstance(value, str):
+            # Si ce n'est pas une string, essayer de convertir
+            try:
+                value = str(value)
+            except:
+                return False
+        
+        value = value.strip()
+        
+        # Accepter les valeurs vides (sera géré par parse_gps_data)
+        if not value or value == '' or value == 'None' or value == 'null' or value == 'NaN' or value.lower() == 'nan':
+            return True
+        
+        # Essayer de convertir en float pour vérifier que c'est un nombre valide
+        try:
+            float_val = float(value)
+            # Vérifier que ce n'est pas NaN, inf, ou -inf
+            if math.isnan(float_val) or math.isinf(float_val):
+                return False
+            # Si la conversion réussit, c'est un nombre valide
+            return True
+        except (ValueError, OverflowError):
             return False
-        return bool(self.GPS_PATTERN.match(value.strip()))
     
     def _is_valid_accuracy_format(self, value: str) -> bool:
         """Vérifie le format de précision GPS."""
@@ -274,11 +324,13 @@ class SecureDataValidator:
         
         # Sanitisation des coordonnées
         for key in ['latitude', 'longitude', 'accuracy']:
-            if key in gps_data:
+            if key in gps_data and gps_data[key] is not None:
                 value = str(gps_data[key]).strip()
                 # Suppression des caractères non numériques sauf . et -
                 value = re.sub(r'[^\d\.\-]', '', value)
-                sanitized[key] = value
+                sanitized[key] = value if value else ''  # Chaîne vide si tout supprimé
+            else:
+                sanitized[key] = ''  # Chaîne vide si None ou absent
         
         return sanitized
     

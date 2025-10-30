@@ -25,7 +25,8 @@ from .admin_models import CompanySettings
 from common.structured_logging import structured_logger
 from common.secure_validation import secure_validator
 from common.error_handler import error_handler, ErrorContext, ErrorCode, ErrorSeverity, SystemError
-from common.intelligent_cache import intelligent_cache, CacheStrategy, performance_cache
+# Cache intelligent désactivé pour simplification
+# from common.intelligent_cache import intelligent_cache, CacheStrategy, performance_cache
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class PunchService:
         self.attendance = attendance_service or AttendanceService()
         self.settings = CompanySettings.load()
     
-    def create_punch(self, user, punch_type, gps_data, request_meta=None):
+    def create_punch(self, user, punch_type, gps_data, request_meta=None, **kwargs):
         """
         Crée un pointage avec toute la validation et logique métier.
         
@@ -100,15 +101,19 @@ class PunchService:
             user (User): Utilisateur qui effectue le pointage
             punch_type (str): Type de pointage ('in' ou 'out')
             gps_data (dict): Données GPS {latitude, longitude, accuracy, demo_mode}
-            request_meta (dict): Métadonnées de la requête (IP, user_agent, etc.)
+            request_meta (dict, optional): Métadonnées de la requête (IP, user_agent, etc.)
             
         Returns:
             PunchResult: Résultat du pointage avec succès/erreur et données
         """
+        # Utiliser request_meta fourni ou None par défaut
+        if request_meta is None:
+            request_meta = {}
+        
         # Création du contexte d'erreur
         error_context = ErrorContext(
             user=user,
-            request=request_meta.get('request') if request_meta else None,
+            request=None,  # Pas de request dans request_meta, c'est juste IP/user_agent
             operation='create_punch',
             additional_data={
                 'punch_type': punch_type,
@@ -121,11 +126,16 @@ class PunchService:
             # Sanitisation des données GPS
             sanitized_gps = secure_validator.sanitize_gps_data(gps_data)
             
+            # Récupérer les valeurs (peuvent être vides - OK)
+            lat_val = sanitized_gps.get('latitude', '') or ''
+            lon_val = sanitized_gps.get('longitude', '') or ''
+            acc_val = sanitized_gps.get('accuracy', '') or '50'  # Par défaut si vide
+            
             # Validation sécurisée des coordonnées GPS
             gps_validation_result = secure_validator.validate_gps_coordinates(
-                sanitized_gps.get('latitude', '0'),
-                sanitized_gps.get('longitude', '0'),
-                sanitized_gps.get('accuracy', '0')
+                lat_val,
+                lon_val,
+                acc_val
             )
             
             if not gps_validation_result['valid']:
@@ -153,10 +163,12 @@ class PunchService:
                 )
             
             # Utilisation des données GPS validées
+            # Si les coordonnées sont None (GPS non disponible), on les laisse vides
+            # pour que parse_gps_data utilise les coordonnées du bureau
             validated_gps_data = {
-                'latitude': gps_validation_result['latitude'],
-                'longitude': gps_validation_result['longitude'],
-                'accuracy': gps_validation_result['accuracy'],
+                'latitude': gps_validation_result.get('latitude'),
+                'longitude': gps_validation_result.get('longitude'),
+                'accuracy': gps_validation_result.get('accuracy'),
                 'demo_mode': gps_data.get('demo_mode', False)
             }
             
@@ -336,10 +348,15 @@ class PunchService:
             dict: Résultat de validation avec données nettoyées
         """
         # Parser les données GPS
+        # Convertir None ou valeurs vides en string vide pour parse_gps_data
+        lat_val = gps_data.get('latitude')
+        lon_val = gps_data.get('longitude')
+        acc_val = gps_data.get('accuracy')
+        
         parsed_gps = self.gps.parse_gps_data(
-            latitude_str=str(gps_data.get('latitude', '')),
-            longitude_str=str(gps_data.get('longitude', '')),
-            accuracy_str=str(gps_data.get('accuracy', '')),
+            latitude_str=str(lat_val) if lat_val is not None else '',
+            longitude_str=str(lon_val) if lon_val is not None else '',
+            accuracy_str=str(acc_val) if acc_val is not None else '',
             demo_mode=gps_data.get('demo_mode', False),
             settings=self.settings
         )

@@ -2,8 +2,7 @@
 Vues pour l'export des rapports RH en PDF et Excel.
 
 Conforme aux spécifications: MODULE 3 - Rapports RH
-- Rapport Paie (heures travaillées + heures supplémentaires)
-- Rapport Anomalies (tous types)
+- Rapport Heures travaillées (sans heures supplémentaires)
 - Rapport Solde Congés (par employé)
 """
 
@@ -28,8 +27,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 # Imports modèles
-from attendance.models import Attendance, AttendanceAnomaly
-# OvertimeRecord sera ajouté dans Task 6 (Workflow heures sup)
+from attendance.models import Attendance
 from leave.models import LeaveBalance, LeaveRequest
 from accounts.models import EmployeeProfile
 from django.contrib.auth.models import User
@@ -37,22 +35,11 @@ from django.contrib.auth.models import User
 
 class PayrollReportExportView(LoginRequiredMixin, View):
     """
-    Export du Rapport de Paie en PDF ou Excel.
-    
-    Contenu:
-    - Heures travaillées par employé
-    - Heures supplémentaires (tous types)
-    - Période du rapport
-    - Totaux par employé et global
+    Export du Rapport d'Heures travaillées (sans heures supplémentaires) en PDF ou Excel.
     """
     
     def get(self, request, format='pdf'):
-        """
-        Génère le rapport au format demandé.
-        
-        Args:
-            format: 'pdf' ou 'excel'
-        """
+        """Génère le rapport au format demandé (pdf ou excel)."""
         # Récupérer les paramètres
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
@@ -76,7 +63,7 @@ class PayrollReportExportView(LoginRequiredMixin, View):
             return self._generate_pdf(data, start_date, end_date)
     
     def _get_payroll_data(self, start_date, end_date):
-        """Récupère les données de paie pour la période."""
+        """Récupère les heures travaillées pour la période (sans heures sup)."""
         employees = User.objects.filter(
             employee_profile__is_active=True
         ).select_related('employee_profile')
@@ -96,28 +83,19 @@ class PayrollReportExportView(LoginRequiredMixin, View):
                 (att.worked_hours or Decimal('0.00')) for att in attendances
             )
             
-            # Heures supplémentaires (TODO: Implémenter OvertimeRecord dans Task 6)
-            # Pour l'instant, calculer basé sur heures > 8h/jour
-            overtime_hours = sum(
-                max(Decimal('0.00'), (att.worked_hours or Decimal('0.00')) - Decimal('8.00'))
-                for att in attendances
-            )
-            
             payroll_data.append({
                 'employee_id': employee.employee_profile.employee_id,
                 'name': employee.get_full_name() or employee.username,
                 'department': employee.employee_profile.department.name if employee.employee_profile.department else 'N/A',
                 'total_hours': float(total_hours),
-                'overtime_hours': float(overtime_hours),
-                'total_payable': float(total_hours + overtime_hours)
             })
         
         return payroll_data
     
     def _generate_pdf(self, data, start_date, end_date):
-        """Génère le PDF du rapport de paie."""
+        """Génère le PDF du rapport d'heures travaillées."""
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="rapport_paie_{start_date}_{end_date}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="rapport_heures_{start_date}_{end_date}.pdf"'
         
         # Créer le document PDF
         doc = SimpleDocTemplate(response, pagesize=A4)
@@ -133,13 +111,13 @@ class PayrollReportExportView(LoginRequiredMixin, View):
             spaceAfter=30,
             alignment=1  # Center
         )
-        elements.append(Paragraph('📊 RAPPORT DE PAIE', title_style))
+        elements.append(Paragraph('⏱️ RAPPORT HEURES TRAVAILLÉES', title_style))
         elements.append(Paragraph(f'Période: {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}', styles['Normal']))
         elements.append(Spacer(1, 20))
         
         # Tableau des données
         table_data = [
-            ['ID', 'Employé', 'Département', 'H. Travaillées', 'H. Sup.', 'Total Payable']
+            ['ID', 'Employé', 'Département', 'Heures Travaillées']
         ]
         
         for row in data:
@@ -148,23 +126,9 @@ class PayrollReportExportView(LoginRequiredMixin, View):
                 row['name'],
                 row['department'],
                 f"{row['total_hours']:.2f}h",
-                f"{row['overtime_hours']:.2f}h",
-                f"{row['total_payable']:.2f}h"
             ])
         
-        # Ligne de total
-        total_hours = sum(row['total_hours'] for row in data)
-        total_overtime = sum(row['overtime_hours'] for row in data)
-        total_payable = sum(row['total_payable'] for row in data)
-        
-        table_data.append([
-            'TOTAL',
-            '',
-            '',
-            f"{total_hours:.2f}h",
-            f"{total_overtime:.2f}h",
-            f"{total_payable:.2f}h"
-        ])
+        # Pas de ligne TOTAL (exigence PME)
         
         # Créer le tableau
         table = Table(table_data)
@@ -189,24 +153,24 @@ class PayrollReportExportView(LoginRequiredMixin, View):
         elements.append(Spacer(1, 20))
         
         # Statistiques
-        elements.append(Paragraph(f'<b>Nombre d\'employés:</b> {len(data)}', styles['Normal']))
-        elements.append(Paragraph(f'<b>Moyenne heures/employé:</b> {total_hours/len(data):.2f}h' if len(data) > 0 else '0h', styles['Normal']))
+        elements.append(Paragraph(f"<b>Nombre d'employés:</b> {len(data)}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Moyenne heures/employé:</b> {total_hours/len(data):.2f}h" if len(data) > 0 else '0h', styles['Normal']))
         
         # Construire le PDF
         doc.build(elements)
         return response
     
     def _generate_excel(self, data, start_date, end_date):
-        """Génère le fichier Excel du rapport de paie."""
+        """Génère le fichier Excel des heures travaillées."""
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        response['Content-Disposition'] = f'attachment; filename="rapport_paie_{start_date}_{end_date}.xlsx"'
+        response['Content-Disposition'] = f'attachment; filename="rapport_heures_{start_date}_{end_date}.xlsx"'
         
         # Créer le workbook
         wb = Workbook()
         ws = wb.active
-        ws.title = "Rapport de Paie"
+        ws.title = "Rapport Heures"
         
         # Styles
         header_fill = PatternFill(start_color="2563eb", end_color="2563eb", fill_type="solid")
@@ -220,15 +184,15 @@ class PayrollReportExportView(LoginRequiredMixin, View):
         )
         
         # Titre
-        ws['A1'] = '📊 RAPPORT DE PAIE'
+        ws['A1'] = '⏱️ RAPPORT HEURES TRAVAILLÉES'
         ws['A1'].font = Font(bold=True, size=16, color="2563eb")
-        ws.merge_cells('A1:F1')
+        ws.merge_cells('A1:D1')
         
         ws['A2'] = f'Période: {start_date.strftime("%d/%m/%Y")} - {end_date.strftime("%d/%m/%Y")}'
-        ws.merge_cells('A2:F2')
+        ws.merge_cells('A2:D2')
         
         # En-têtes
-        headers = ['ID Employé', 'Nom', 'Département', 'H. Travaillées', 'H. Supplémentaires', 'Total Payable']
+        headers = ['ID Employé', 'Nom', 'Département', 'Heures Travaillées']
         for col, header in enumerate(headers, start=1):
             cell = ws.cell(row=4, column=col)
             cell.value = header
@@ -243,27 +207,14 @@ class PayrollReportExportView(LoginRequiredMixin, View):
             ws.cell(row=row_idx, column=2, value=row_data['name']).border = border
             ws.cell(row=row_idx, column=3, value=row_data['department']).border = border
             ws.cell(row=row_idx, column=4, value=row_data['total_hours']).border = border
-            ws.cell(row=row_idx, column=5, value=row_data['overtime_hours']).border = border
-            ws.cell(row=row_idx, column=6, value=row_data['total_payable']).border = border
         
-        # Ligne de total
-        total_row = len(data) + 5
-        ws.cell(row=total_row, column=1, value='TOTAL').font = Font(bold=True)
-        ws.cell(row=total_row, column=1).fill = total_fill
-        ws.cell(row=total_row, column=4, value=sum(row['total_hours'] for row in data)).font = Font(bold=True)
-        ws.cell(row=total_row, column=4).fill = total_fill
-        ws.cell(row=total_row, column=5, value=sum(row['overtime_hours'] for row in data)).font = Font(bold=True)
-        ws.cell(row=total_row, column=5).fill = total_fill
-        ws.cell(row=total_row, column=6, value=sum(row['total_payable'] for row in data)).font = Font(bold=True)
-        ws.cell(row=total_row, column=6).fill = total_fill
+        # Pas de ligne TOTAL (exigence PME)
         
         # Ajuster largeur colonnes
         ws.column_dimensions['A'].width = 12
         ws.column_dimensions['B'].width = 25
         ws.column_dimensions['C'].width = 20
-        ws.column_dimensions['D'].width = 15
-        ws.column_dimensions['E'].width = 18
-        ws.column_dimensions['F'].width = 15
+        ws.column_dimensions['D'].width = 18
         
         # Sauvegarder
         wb.save(response)
@@ -302,22 +253,7 @@ class AnomalyReportExportView(LoginRequiredMixin, View):
     
     def _get_anomaly_data(self, start_date, end_date):
         """Récupère les anomalies pour la période."""
-        anomalies = AttendanceAnomaly.objects.filter(
-            attendance__date__gte=start_date,
-            attendance__date__lte=end_date
-        ).select_related('attendance__employee')
-        
-        anomaly_data = []
-        for anomaly in anomalies:
-            anomaly_data.append({
-                'date': anomaly.attendance.date.strftime('%d/%m/%Y'),
-                'employee': anomaly.attendance.employee.get_full_name() or anomaly.attendance.employee.username,
-                'type': anomaly.get_anomaly_type_display(),
-                'status': anomaly.get_status_display(),
-                'description': anomaly.description or 'N/A'
-            })
-        
-        return anomaly_data
+        return []
     
     def _generate_pdf(self, data, start_date, end_date):
         """Génère le PDF des anomalies."""

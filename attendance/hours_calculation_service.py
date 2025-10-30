@@ -12,7 +12,9 @@ from datetime import datetime, time, timedelta, date
 from decimal import Decimal
 from django.db.models import Q
 from django.utils import timezone
-from attendance.models import Attendance, AttendanceAnomaly
+from django.conf import settings
+from django.apps import apps
+from attendance.models import Attendance
 
 
 class HoursCalculationService:
@@ -173,15 +175,18 @@ class HoursCalculationService:
             attendance_out.worked_hours = None
             attendance_out.save()
             
-            # Créer anomalie
-            AttendanceAnomaly.objects.get_or_create(
-                attendance=attendance_out,
-                anomaly_type='missing_punch_in',
-                defaults={
-                    'description': f"Sortie pointée sans entrée correspondante le {attendance_out.date}",
-                    'status': 'pending'
-                }
-            )
+            # Créer anomalie (si activé et modèle disponible)
+            if getattr(settings, 'ATTENDANCE_ANOMALIES_ENABLED', False):
+                AnomalyModel = apps.get_model('attendance', 'AttendanceAnomaly')
+                if AnomalyModel is not None:
+                    AnomalyModel.objects.get_or_create(
+                        attendance=attendance_out,
+                        anomaly_type='missing_punch_in',
+                        defaults={
+                            'description': f"Sortie pointée sans entrée correspondante le {attendance_out.date}",
+                            'status': 'pending'
+                        }
+                    )
             return None
         
         # Calculer les heures en utilisant le profil horaire de l'employé
@@ -244,18 +249,20 @@ class HoursCalculationService:
             entry.worked_hours = None
             entry.save()
             
-            # Créer ou récupérer l'anomalie
-            anomaly, created = AttendanceAnomaly.objects.get_or_create(
-                attendance=entry,
-                anomaly_type='missing_punch_out',
-                defaults={
-                    'description': f"Oubli de pointer la sortie le {entry.date}. Contactez votre manager pour correction.",
-                    'status': 'pending'
-                }
-            )
-            
-            if created:
-                anomalies_created.append(anomaly)
+            # Créer ou récupérer l'anomalie (si activé et modèle disponible)
+            if getattr(settings, 'ATTENDANCE_ANOMALIES_ENABLED', False):
+                AnomalyModel = apps.get_model('attendance', 'AttendanceAnomaly')
+                if AnomalyModel is not None:
+                    anomaly, created = AnomalyModel.objects.get_or_create(
+                        attendance=entry,
+                        anomaly_type='missing_punch_out',
+                        defaults={
+                            'description': f"Oubli de pointer la sortie le {entry.date}. Contactez votre manager pour correction.",
+                            'status': 'pending'
+                        }
+                    )
+                    if created:
+                        anomalies_created.append(anomaly)
         
         return anomalies_created
     

@@ -97,16 +97,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'accounts.force_password_middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire (NOUVEAU)
+    'accounts.force_password_middleware.ForcePasswordChangeMiddleware',  # Changement mdp obligatoire
     'accounts.admin_middleware.AdminRedirectMiddleware',   # Redirection admin vers Django Admin
-    # Middleware personnalisés pour gestion d'erreurs
+    # Middleware personnalisés pour gestion d'erreurs (essentiels)
     'common.middleware.RequestLoggingMiddleware',
     'common.middleware.ErrorHandlingMiddleware',
-    # Middleware d'optimisation des performances
-    'common.performance_middleware.CompressionMiddleware',
-    'common.performance_middleware.CacheHeadersMiddleware',
-    'common.performance_middleware.PerformanceMonitoringMiddleware',
-    'common.performance_middleware.SessionOptimizationMiddleware',
+    # Middleware de performance désactivés pour simplification du projet
+    # 'common.performance_middleware.CompressionMiddleware',
+    # 'common.performance_middleware.CacheHeadersMiddleware',
+    # 'common.performance_middleware.PerformanceMonitoringMiddleware',
+    # 'common.performance_middleware.SessionOptimizationMiddleware',
 ]
 
 ROOT_URLCONF = 'attendance_system.urls'
@@ -220,6 +220,9 @@ GPS_REQUIRED = config('GPS_REQUIRED', default=True, cast=bool)  # GPS obligatoir
 WORK_START_TIME = '08:00'  # Heure d'arrivée attendue
 WORK_END_TIME = '17:00'    # Heure de sortie attendue
 LATE_TOLERANCE_MINUTES = 15  # Tolérance retard (15 minutes)
+
+# Anomalies (désactivées pour simplification du projet)
+ATTENDANCE_ANOMALIES_ENABLED = config('ATTENDANCE_ANOMALIES_ENABLED', default=False, cast=bool)
 
 # Configuration des messages
 from django.contrib.messages import constants as messages

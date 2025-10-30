@@ -309,7 +309,7 @@ class WorkScheduleListView(HRRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        return WorkSchedule.objects.all().order_by('name')
+        return self.model.objects.all().order_by('name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -359,7 +359,7 @@ class WorkScheduleUpdateView(HRRequiredMixin, UpdateView):
     success_url = reverse_lazy('hr:hr_schedule_list')
     
     def get_queryset(self):
-        return WorkSchedule.objects.all()
+        return self.model.objects.all()
     
     def form_valid(self, form):
         messages.success(self.request, f'✅ Profil horaire "{form.instance.name}" modifié avec succès.')

@@ -126,7 +126,11 @@ class GPSValidationService:
             return {
                 'valid': False,
                 'distance': None,
-                'error_message': accuracy_error
+                'error_message': (
+                    f'{accuracy_error} '
+                    f'\n📍 Précision reçue: {accuracy:.0f}m | Maximum autorisé: {max_accuracy}m. '
+                    f'\n💡 Sortez à l\'extérieur ou attendez que le GPS se stabilise.'
+                )
             }
         
         # Calculer la distance
@@ -138,8 +142,10 @@ class GPSValidationService:
                 'valid': False,
                 'distance': distance,
                 'error_message': (
-                    f'Vous êtes trop loin du lieu de travail ({distance:.0f}m). '
-                    f'Distance maximale autorisée: {allowed_radius}m.'
+                    f'Vous êtes trop loin du lieu de travail ({distance:.0f}m, soit {distance/1000:.2f}km). '
+                    f'Distance maximale autorisée: {allowed_radius}m. '
+                    f'\n📍 Coordonnées reçues: {lat}, {lon} | Bureau configuré: {site_lat}, {site_lon}. '
+                    f'\n💡 Vérifiez que les coordonnées du bureau sont correctes dans /attendance/settings/'
                 )
             }
         

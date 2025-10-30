@@ -21,10 +21,10 @@ from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.db.models import Count, Q
 from django.utils import timezone
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from accounts.models import EmployeeProfile, Department
-from attendance.models import Attendance, AttendanceAnomaly
+from attendance.models import Attendance
 from leave.models import LeaveRequest, LeaveBalance
 
 # Import du mixin centralisé (principe DRY)
@@ -124,11 +124,7 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             if duration:
                 today_hours += duration
         
-        # Anomalies en attente
-        pending_anomalies = AttendanceAnomaly.objects.filter(
-            attendance__employee=user,
-            status='pending'
-        ).count()
+        # Anomalies désactivées → pas de compteur
         
         # Solde total de congés (somme de tous les types)
         total_leave_balance = sum([lb.remaining_balance for lb in leave_balances])
@@ -136,7 +132,10 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
         # Statut actuel (dernier pointage)
         last_punch = today_attendance.last() if today_attendance.exists() else None
         current_status = 'present' if last_punch and last_punch.punch_type == 'in' else 'absent'
-        last_punch_time = last_punch.timestamp if last_punch else None
+        # Utiliser time au lieu de timestamp (qui n'existe pas dans le modèle)
+        last_punch_time = None
+        if last_punch:
+            last_punch_time = datetime.combine(last_punch.date, last_punch.time)
         
         # Pointages d'aujourd'hui pour la timeline
         today_punches = today_attendance.all()
@@ -171,7 +170,7 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             'total_work_days': total_work_days,
             'month_hours': round(total_hours, 1),
             'today_hours': round(today_hours, 1),
-            'pending_anomalies': pending_anomalies,
+            # 'pending_anomalies': 0,
             'leave_balance': total_leave_balance,
             'current_status': current_status,
             'last_punch_time': last_punch_time,
@@ -225,18 +224,14 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
             status='pending'
         ).select_related('employee', 'leave_type')
         
-        # Anomalies de l'équipe
-        team_anomalies = AttendanceAnomaly.objects.filter(
-            attendance__employee__in=managed_users,
-            status='pending'
-        ).select_related('attendance__employee')
+        # Anomalies désactivées
         
         # Statistiques de l'équipe
         team_stats = {
             'total_employees': managed_profiles.count(),
             'present_today': team_attendance_today.filter(punch_type='in').count(),
             'pending_requests': pending_leave_requests.count(),
-            'pending_anomalies': team_anomalies.count(),
+            # 'pending_anomalies': 0,
         }
         
         # Graphique des présences de la semaine
@@ -253,7 +248,7 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
             'managed_employees': managed_profiles,
             'team_attendance_today': team_attendance_today,
             'pending_leave_requests': pending_leave_requests,
-            'team_anomalies': team_anomalies,
+            # 'team_anomalies': [],
             'team_stats': team_stats,
             'week_attendance': week_attendance,
             'today': today,
@@ -266,7 +261,7 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
     """
     Tableau de bord pour les RH et DG.
     """
-    template_name = 'dashboard/rh_dashboard_ultra_modern.html'
+    template_name = 'dashboard/rh_dg_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -286,17 +281,14 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
             status='approved_manager'
         ).select_related('employee__employee_profile', 'leave_type', 'manager')
         
-        # Anomalies globales
-        global_anomalies = AttendanceAnomaly.objects.filter(
-            status='pending'
-        ).select_related('attendance__employee__employee_profile')
+        # Anomalies désactivées
         
         # Statistiques globales
         global_stats = {
             'total_employees': all_employees.count(),
             'present_today': global_attendance_today.filter(punch_type='in').count(),
             'pending_rh_requests': pending_rh_requests.count(),
-            'pending_anomalies': global_anomalies.count(),
+            # 'pending_anomalies': 0,
         }
         
         # Statistiques par département
@@ -333,7 +325,7 @@ class RhDgDashboardView(RHRequiredMixin, TemplateView):
             'all_employees': all_employees,
             'global_attendance_today': global_attendance_today,
             'pending_rh_requests': pending_rh_requests,
-            'global_anomalies': global_anomalies,
+            # 'global_anomalies': [],
             'global_stats': global_stats,
             'department_stats': department_stats,
             'monthly_attendance': monthly_attendance,

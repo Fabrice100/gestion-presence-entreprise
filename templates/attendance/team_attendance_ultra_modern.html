@@ -16,14 +16,41 @@
                 Consultez et gérez les pointages de votre équipe
             </p>
         </div>
-        {% include 'components/action_button.html' with text='Exporter Excel' icon='bi-file-earmark-excel' style='success' onclick='exportToExcel()' %}
+        <button onclick="exportToExcel()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center space-x-2">
+            <i class="bi bi-file-earmark-excel"></i>
+            <span>Exporter Excel</span>
+        </button>
     </div>
 
     <!-- Statistiques -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {% include 'components/stat_card.html' with icon='bi-people' title='Total pointages' value=total_attendances color='blue' %}
-        {% include 'components/stat_card.html' with icon='bi-box-arrow-in-right' title='Entrées' value=punch_in_count color='green' %}
-        {% include 'components/stat_card.html' with icon='bi-box-arrow-left' title='Sorties' value=punch_out_count color='orange' %}
+        <div class="bg-blue-500 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">Total pointages</p>
+                    <p class="text-3xl font-bold mt-2">{{ total_attendances }}</p>
+                </div>
+                <i class="bi bi-people text-4xl opacity-50"></i>
+            </div>
+        </div>
+        <div class="bg-green-500 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium">Entrées</p>
+                    <p class="text-3xl font-bold mt-2">{{ punch_in_count }}</p>
+                </div>
+                <i class="bi bi-box-arrow-in-right text-4xl opacity-50"></i>
+            </div>
+        </div>
+        <div class="bg-orange-500 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm font-medium">Sorties</p>
+                    <p class="text-3xl font-bold mt-2">{{ punch_out_count }}</p>
+                </div>
+                <i class="bi bi-box-arrow-left text-4xl opacity-50"></i>
+            </div>
+        </div>
     </div>
 
     <!-- Filtres -->
@@ -68,7 +95,10 @@
         </div>
         
         <div class="flex items-center space-x-3 mt-4">
-            {% include 'components/action_button.html' with text='Filtrer' icon='bi-funnel' type='submit' style='primary' %}
+            <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center space-x-2">
+                <i class="bi bi-funnel"></i>
+                <span>Filtrer</span>
+            </button>
             <a href="{% url 'attendance:team_attendance' %}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
                 Réinitialiser
             </a>
@@ -100,7 +130,7 @@
                                 </div>
                                 <div>
                                     <p class="font-semibold text-gray-900 dark:text-white">{{ attendance.employee.get_full_name }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ attendance.employee.employeeprofile.employee_id }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ attendance.employee.employee_profile.employee_id }}</p>
                                 </div>
                             </div>
                         </td>
@@ -112,13 +142,19 @@
                         </td>
                         <td class="px-6 py-4">
                             {% if attendance.punch_type == 'in' %}
-                                {% include 'components/status_badge.html' with color='green' icon='bi-box-arrow-in-right' text='Entrée' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    <i class="bi bi-box-arrow-in-right mr-2"></i>
+                                    Entrée
+                                </span>
                             {% else %}
-                                {% include 'components/status_badge.html' with color='orange' icon='bi-box-arrow-left' text='Sortie' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                                    <i class="bi bi-box-arrow-left mr-2"></i>
+                                    Sortie
+                                </span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
-                            {{ attendance.employee.employeeprofile.department|default:'N/A' }}
+                            {{ attendance.employee.employee_profile.department.name|default:'N/A' }}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                             {% if attendance.latitude and attendance.longitude %}
@@ -160,8 +196,10 @@
         {% endif %}
         
         {% else %}
-        <div class="p-12">
-            {% include 'components/empty_state.html' with icon='bi-calendar-x' title='Aucun pointage' message='Aucun pointage trouvé pour les critères sélectionnés' %}
+        <div class="p-12 text-center">
+            <i class="bi bi-calendar-x text-6xl text-gray-400 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Aucun pointage</h3>
+            <p class="text-gray-600 dark:text-gray-400">Aucun pointage trouvé pour les critères sélectionnés</p>
         </div>
         {% endif %}
     </div>

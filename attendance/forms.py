@@ -37,9 +37,7 @@ class PunchForm(forms.Form):
         }
     )
     
-    latitude = forms.DecimalField(
-        max_digits=10,
-        decimal_places=7,
+    latitude = forms.FloatField(
         required=False,
         validators=[
             MinValueValidator(-90, message='La latitude doit être entre -90 et 90.'),
@@ -50,9 +48,7 @@ class PunchForm(forms.Form):
         }
     )
     
-    longitude = forms.DecimalField(
-        max_digits=10,
-        decimal_places=7,
+    longitude = forms.FloatField(
         required=False,
         validators=[
             MinValueValidator(-180, message='La longitude doit être entre -180 et 180.'),
@@ -63,9 +59,7 @@ class PunchForm(forms.Form):
         }
     )
     
-    accuracy = forms.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    accuracy = forms.FloatField(
         required=False,
         validators=[
             MinValueValidator(0, message='La précision GPS ne peut pas être négative.'),
@@ -163,9 +157,7 @@ class PunchAPIForm(PunchForm):
     """
     
     # Rendre les coordonnées obligatoires pour l'API
-    latitude = forms.DecimalField(
-        max_digits=10,
-        decimal_places=7,
+    latitude = forms.FloatField(
         required=True,
         validators=[
             MinValueValidator(-90),
@@ -177,9 +169,7 @@ class PunchAPIForm(PunchForm):
         }
     )
     
-    longitude = forms.DecimalField(
-        max_digits=10,
-        decimal_places=7,
+    longitude = forms.FloatField(
         required=True,
         validators=[
             MinValueValidator(-180),
@@ -191,9 +181,7 @@ class PunchAPIForm(PunchForm):
         }
     )
     
-    accuracy = forms.DecimalField(
-        max_digits=10,
-        decimal_places=2,
+    accuracy = forms.FloatField(
         required=True,
         validators=[
             MinValueValidator(0),

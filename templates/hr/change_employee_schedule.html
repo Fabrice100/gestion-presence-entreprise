@@ -1,155 +1,97 @@
-{% extends 'base.html' %}
+{% extends 'base_ultra_modern.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+<div class="max-w-4xl mx-auto p-6 space-y-6">
             <!-- En-tête -->
-            <div class="mb-4">
-                <h1 class="h3">
-                    <i class="fas fa-exchange-alt text-primary"></i>
-                    {{ page_title }}
-                </h1>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
             </div>
 
             <!-- Informations employé actuel -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="fas fa-user"></i>
-                        Employé
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="text-muted small">ID Employé</label>
-                            <div class="h5"><code>{{ employee.employee_id }}</code></div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Nom complet</label>
-                            <div class="h5">{{ employee.user.get_full_name }}</div>
-                        </div>
+            <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <h5 class="text-lg font-semibold mb-4">Employé</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm text-gray-500">ID Employé</label>
+                        <div class="font-semibold"><code>{{ employee.employee_id }}</code></div>
                     </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <label class="text-muted small">Département</label>
-                            <div>
-                                {% if employee.department %}
-                                {{ employee.department.name }}
-                                {% else %}
-                                <span class="text-muted">-</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Rôle</label>
-                            <div>
-                                {% if employee.role == 'manager' %}
-                                <span class="badge bg-warning">Manager</span>
-                                {% elif employee.role == 'rh_dg' %}
-                                <span class="badge bg-danger">RH/DG</span>
-                                {% else %}
-                                <span class="badge bg-info">Employé</span>
-                                {% endif %}
-                            </div>
-                        </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Nom complet</label>
+                        <div class="font-semibold">{{ employee.user.get_full_name }}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Département</label>
+                        <div>{{ employee.department.name|default:'-' }}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Rôle</label>
+                        <div class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{{ employee.get_role_display }}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Profil horaire actuel -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-clock"></i>
-                        Profil horaire actuel
-                    </h5>
-                </div>
-                <div class="card-body">
+            <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <h5 class="text-lg font-semibold mb-4">Profil horaire actuel</h5>
                     {% if employee.current_work_schedule %}
-                    <div class="row">
-                        <div class="col-md-12 mb-2">
-                            <h4>{{ employee.current_work_schedule.name }}</h4>
-                            {% if employee.current_work_schedule.description %}
-                            <p class="text-muted">{{ employee.current_work_schedule.description }}</p>
-                            {% endif %}
-                        </div>
+                    <div class="mb-2">
+                        <h4 class="text-xl font-semibold">{{ employee.current_work_schedule.name }}</h4>
+                        {% if employee.current_work_schedule.description %}
+                        <p class="text-gray-500">{{ employee.current_work_schedule.description }}</p>
+                        {% endif %}
                     </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label class="text-muted small">Horaires</label>
-                            <div>
-                                <i class="fas fa-sign-in-alt text-success"></i> {{ employee.current_work_schedule.start_time|time:"H:i" }}
-                                →
-                                <i class="fas fa-sign-out-alt text-danger"></i> {{ employee.current_work_schedule.end_time|time:"H:i" }}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-500">Horaires</label>
+                            <div>{{ employee.current_work_schedule.start_time|time:"H:i" }} → {{ employee.current_work_schedule.end_time|time:"H:i" }}</div>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">Pause</label>
+                            <div>{{ employee.current_work_schedule.pause_start|time:"H:i" }} - {{ employee.current_work_schedule.pause_end|time:"H:i" }}
+                                <span class="text-xs text-gray-400">({{ employee.current_work_schedule.get_pause_duration_hours }}h)</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="text-muted small">Pause</label>
-                            <div>
-                                {{ employee.current_work_schedule.pause_start|time:"H:i" }} - {{ employee.current_work_schedule.pause_end|time:"H:i" }}
-                                <small class="text-muted">({{ employee.current_work_schedule.get_pause_duration_hours }}h)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="text-muted small">Durée travail</label>
-                            <div>
-                                <span class="badge bg-success">{{ employee.current_work_schedule.get_contractual_duration_hours }}h/jour</span>
-                            </div>
+                        <div>
+                            <label class="text-sm text-gray-500">Durée travail</label>
+                            <div class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">{{ employee.current_work_schedule.get_contractual_duration_hours }}h/jour</div>
                         </div>
                     </div>
                     {% else %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Aucun profil horaire défini
-                    </div>
+                    <div class="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">Aucun profil horaire défini</div>
                     {% endif %}
-                </div>
             </div>
 
             <!-- Formulaire de changement -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-exchange-alt"></i>
-                        Nouveau profil horaire
-                    </h5>
-                </div>
-                <div class="card-body">
+            <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <h5 class="text-lg font-semibold mb-4">Nouveau profil horaire</h5>
                     <form method="post">
                         {% csrf_token %}
 
-                        <div class="mb-3">
-                            <label for="{{ form.new_schedule.id_for_label }}" class="form-label">
-                                {{ form.new_schedule.label }} <span class="text-danger">*</span>
-                            </label>
-                            {{ form.new_schedule }}
+                        <div class="mb-4">
+                            <label for="{{ form.new_schedule.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.new_schedule.label }} <span class="text-red-600">*</span></label>
+                            <div class="mt-1">{{ form.new_schedule }}</div>
                             {% if form.new_schedule.help_text %}
-                            <small class="form-text text-muted">{{ form.new_schedule.help_text }}</small>
+                            <p class="text-xs text-gray-500 mt-1">{{ form.new_schedule.help_text }}</p>
                             {% endif %}
                             {% if form.new_schedule.errors %}
-                            <div class="text-danger mt-1">{{ form.new_schedule.errors }}</div>
+                            <div class="text-sm text-red-600 mt-1">{{ form.new_schedule.errors }}</div>
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.reason.id_for_label }}" class="form-label">
-                                {{ form.reason.label }}
-                            </label>
-                            {{ form.reason }}
+                        <div class="mb-4">
+                            <label for="{{ form.reason.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.reason.label }}</label>
+                            <div class="mt-1">{{ form.reason }}</div>
                             {% if form.reason.help_text %}
-                            <small class="form-text text-muted">{{ form.reason.help_text }}</small>
+                            <p class="text-xs text-gray-500 mt-1">{{ form.reason.help_text }}</p>
                             {% endif %}
                         </div>
 
-                        <div class="alert alert-warning">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Important :</strong>
-                            <ul class="mb-0 mt-2">
+                        <div class="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+                            <p class="font-semibold">Important :</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
                                 <li>Le changement sera effectif immédiatement</li>
                                 <li>Les pointages passés ne seront PAS modifiés (immuabilité des paies)</li>
                                 <li>Les futurs pointages utiliseront le nouveau profil horaire</li>
@@ -157,20 +99,11 @@
                             </ul>
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'accounts:hr_schedule_detail' employee.current_work_schedule.pk %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i>
-                                Annuler
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
-                                Changer le profil
-                            </button>
+                        <div class="flex items-center justify-between mt-6">
+                            <a href="{% url 'accounts:hr_schedule_detail' employee.current_work_schedule.pk %}" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Annuler</a>
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700">Changer le profil</button>
                         </div>
                     </form>
-                </div>
             </div>
-        </div>
-    </div>
 </div>
 {% endblock %}

@@ -46,12 +46,9 @@ class CompanySettingsView(LoginRequiredMixin, UpdateView):
         """
         # SÉCURITÉ : Seul le superuser peut configurer le système
         if self.request.user.is_superuser:
-            # SUPERUSER : Configuration complète (GPS + horaires)
+            # SUPERUSER : Configuration GPS uniquement
+            # Note: Les horaires sont gérés par RH via WorkSchedule (Profils Horaires)
             return [
-                'company_name',
-                'work_start_time',
-                'work_end_time',
-                'late_tolerance_minutes',
                 'gps_required',
                 'site_center_latitude',
                 'site_center_longitude',

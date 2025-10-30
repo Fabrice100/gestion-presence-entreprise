@@ -1,178 +1,106 @@
-{% extends 'base.html' %}
+{% extends 'base_ultra_modern.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- En-tête -->
-            <div class="mb-4">
-                <h1 class="h3">
-                    <i class="fas fa-clock text-primary"></i>
-                    {{ page_title }}
-                </h1>
-                <p class="text-muted">
-                    Définissez les horaires contractuels pour ce profil
-                </p>
-            </div>
+<div class="p-6 max-w-4xl mx-auto">
+    <!-- En-tête -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="bi bi-clock text-primary-600 mr-2"></i>
+            {{ page_title }}
+        </h1>
+        <p class="text-gray-600">Définissez les horaires contractuels pour ce profil</p>
+    </div>
 
-            <!-- Formulaire -->
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
+    <!-- Formulaire -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <form method="post" novalidate class="space-y-6">
+            {% csrf_token %}
 
-                        <!-- Messages d'erreur globaux -->
-                        {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {{ form.non_field_errors }}
-                        </div>
-                        {% endif %}
+            {% if form.non_field_errors %}
+            <div class="rounded-lg bg-red-50 text-red-700 p-3">{{ form.non_field_errors }}</div>
+            {% endif %}
 
-                        <!-- Nom du profil -->
-                        <div class="mb-3">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">
-                                {{ form.name.label }} <span class="text-danger">*</span>
-                            </label>
-                            {{ form.name }}
-                            {% if form.name.help_text %}
-                            <small class="form-text text-muted">{{ form.name.help_text }}</small>
-                            {% endif %}
-                            {% if form.name.errors %}
-                            <div class="text-danger mt-1">{{ form.name.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Description -->
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {{ form.description.label }}
-                            </label>
-                            {{ form.description }}
-                            {% if form.description.help_text %}
-                            <small class="form-text text-muted">{{ form.description.help_text }}</small>
-                            {% endif %}
-                        </div>
-
-                        <hr class="my-4">
-
-                        <!-- Horaires de travail -->
-                        <h5 class="mb-3">
-                            <i class="fas fa-business-time"></i>
-                            Horaires de travail
-                        </h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.start_time.id_for_label }}" class="form-label">
-                                    {{ form.start_time.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.start_time }}
-                                {% if form.start_time.help_text %}
-                                <small class="form-text text-muted">{{ form.start_time.help_text }}</small>
-                                {% endif %}
-                                {% if form.start_time.errors %}
-                                <div class="text-danger mt-1">{{ form.start_time.errors }}</div>
-                                {% endif %}
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.end_time.id_for_label }}" class="form-label">
-                                    {{ form.end_time.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.end_time }}
-                                {% if form.end_time.help_text %}
-                                <small class="form-text text-muted">{{ form.end_time.help_text }}</small>
-                                {% endif %}
-                                {% if form.end_time.errors %}
-                                <div class="text-danger mt-1">{{ form.end_time.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <!-- Pause -->
-                        <h5 class="mb-3">
-                            <i class="fas fa-coffee"></i>
-                            Pause
-                        </h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.pause_start.id_for_label }}" class="form-label">
-                                    {{ form.pause_start.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.pause_start }}
-                                {% if form.pause_start.help_text %}
-                                <small class="form-text text-muted">{{ form.pause_start.help_text }}</small>
-                                {% endif %}
-                                {% if form.pause_start.errors %}
-                                <div class="text-danger mt-1">{{ form.pause_start.errors }}</div>
-                                {% endif %}
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.pause_end.id_for_label }}" class="form-label">
-                                    {{ form.pause_end.label }} <span class="text-danger">*</span>
-                                </label>
-                                {{ form.pause_end }}
-                                {% if form.pause_end.help_text %}
-                                <small class="form-text text-muted">{{ form.pause_end.help_text }}</small>
-                                {% endif %}
-                                {% if form.pause_end.errors %}
-                                <div class="text-danger mt-1">{{ form.pause_end.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <!-- Profil par défaut -->
-                        <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.is_default }}
-                                <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
-                                    {{ form.is_default.label }}
-                                </label>
-                            </div>
-                            {% if form.is_default.help_text %}
-                            <small class="form-text text-muted">{{ form.is_default.help_text }}</small>
-                            {% endif %}
-                            {% if form.is_default.errors %}
-                            <div class="text-danger mt-1">{{ form.is_default.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Boutons -->
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'accounts:hr_schedule_list' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i>
-                                Annuler
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
-                                {{ submit_text }}
-                            </button>
-                        </div>
-                    </form>
+            <!-- Nom & Description -->
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.name.label }} <span class="text-red-600">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.name.help_text }}</p>{% endif %}
+                    {% if form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.name.errors }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.description.label }}</label>
+                    {{ form.description }}
                 </div>
             </div>
 
-            <!-- Aide -->
-            <div class="alert alert-info mt-4">
-                <i class="fas fa-lightbulb"></i>
-                <strong>Astuce :</strong>
-                <ul class="mb-0 mt-2">
-                    <li>Les heures de début et fin définissent la plage horaire contractuelle (HDC et HFC)</li>
-                    <li>Si un employé pointe avant l'HDC, l'heure sera ajustée à l'HDC pour le calcul</li>
-                    <li>Si un employé pointe après l'HFC, l'heure sera ajustée à l'HFC (pas d'heures sup)</li>
-                    <li>La pause est automatiquement déduite du temps de travail</li>
-                </ul>
+            <!-- Horaires de travail -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center"><i class="bi bi-briefcase mr-2"></i> Horaires de travail</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.start_time.label }} <span class="text-red-600">*</span></label>
+                        {{ form.start_time }}
+                        {% if form.start_time.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.start_time.help_text }}</p>{% endif %}
+                        {% if form.start_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.start_time.errors }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.end_time.label }} <span class="text-red-600">*</span></label>
+                        {{ form.end_time }}
+                        {% if form.end_time.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.end_time.help_text }}</p>{% endif %}
+                        {% if form.end_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.end_time.errors }}</p>{% endif %}
+                    </div>
+                </div>
             </div>
-        </div>
+
+            <!-- Pause -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center"><i class="bi bi-cup-hot mr-2"></i> Pause</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.pause_start.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.pause_start.label }} <span class="text-red-600">*</span></label>
+                        {{ form.pause_start }}
+                    </div>
+                    <div>
+                        <label for="{{ form.pause_end.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.pause_end.label }} <span class="text-red-600">*</span></label>
+                        {{ form.pause_end }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profil par défaut -->
+            <div>
+                <label class="inline-flex items-center">
+                    {{ form.is_default }}
+                    <span class="text-sm text-gray-700">{{ form.is_default.label }}</span>
+                </label>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex items-center justify-between">
+                <a href="{% url 'hr:hr_schedule_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+                    <i class="bi bi-arrow-left mr-2"></i> Annuler
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    <i class="bi bi-save mr-2"></i>
+                    {{ submit_text }}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Aide -->
+    <div class="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <h3 class="text-blue-900 font-semibold mb-1 flex items-center"><i class="bi bi-lightbulb mr-2"></i> Astuce</h3>
+        <ul class="text-sm text-blue-800 list-disc ml-6 space-y-1">
+            <li>Les heures de début et fin définissent la plage horaire contractuelle (HDC et HFC)</li>
+            <li>Si un employé pointe avant l'HDC, l'heure sera ajustée à l'HDC pour le calcul</li>
+            <li>Si un employé pointe après l'HFC, l'heure sera ajustée à l'HFC (pas d'heures sup)</li>
+            <li>La pause est automatiquement déduite du temps de travail</li>
+        </ul>
     </div>
 </div>
 {% endblock %}

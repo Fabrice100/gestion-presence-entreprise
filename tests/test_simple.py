@@ -162,10 +162,11 @@ class ConfigurationTest(TestCase):
         
         settings = CompanySettings.load()
         
-        # Vérifier que les valeurs par défaut sont cohérentes
-        self.assertIsNotNone(settings.company_name)
+        # Vérifier que les valeurs par défaut GPS sont cohérentes
+        # Note: Les horaires sont gérés par WorkSchedule (Profils Horaires)
         self.assertGreater(settings.allowed_radius_meters, 0)
         self.assertGreater(settings.gps_accuracy_max_meters, 0)
+        self.assertIsNotNone(settings.gps_required)
         
         # Coordonnées GPS valides
         self.assertGreaterEqual(settings.site_center_latitude, -90)

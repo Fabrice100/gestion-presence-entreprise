@@ -62,11 +62,7 @@ class AttendanceModelTest(ModelTestCase):
     @unittest.skip("TODO: Implémenter le calcul automatique du statut 'late'")
     def test_late_status_detection(self):
         """Test de détection des retards."""
-        # Utiliser le singleton
-        settings = CompanySettings.load()
-        settings.work_start_time = time(8, 0)
-        settings.save()
-        
+        # Note: Les horaires sont maintenant gérés par WorkSchedule (Profils Horaires)
         # Pointage en retard
         late_attendance = AttendanceFactory(
             punch_type='in',
@@ -105,9 +101,10 @@ class CompanySettingsModelTest(ModelTestCase):
         """Test des valeurs par défaut."""
         settings = CompanySettings.load()
         
-        self.assertIsNotNone(settings.company_name)
+        # Vérifier les valeurs GPS par défaut
         self.assertGreater(settings.allowed_radius_meters, 0)
         self.assertGreater(settings.gps_accuracy_max_meters, 0)
+        self.assertIsNotNone(settings.gps_required)
     
     def test_gps_coordinates_validation(self):
         """Test de validation des coordonnées GPS."""

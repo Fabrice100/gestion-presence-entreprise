@@ -3,7 +3,6 @@ Modèles pour la gestion du pointage et des présences.
 
 Ce module contient les modèles Django pour :
 - Attendance : Pointages d'entrée et de sortie avec géolocalisation
-- AttendanceAnomaly : Anomalies détectées lors du pointage
 - OvertimeConfiguration : Configuration des règles d'heures supplémentaires
 - OvertimeRequest : Demandes d'heures supplémentaires
 - OvertimeCalculation : Calculs automatiques des heures supplémentaires
@@ -44,23 +43,16 @@ class Attendance(models.Model):
         ('out', 'Sortie'),
     ]
     
-    # Choix pour les statuts
+    # Choix pour les statuts (nettoyé - seulement les statuts réellement utilisés)
     STATUS_CHOICES = [
         ('normal', 'Normal'),
         ('late', 'En retard'),
         ('early', 'Sortie anticipée'),
-        ('missing_out', 'Sortie oubliée'),
-        ('double_punch', 'Double pointage'),
-        ('outside_zone', 'Hors zone'),
-        ('low_accuracy', 'Précision faible'),
     ]
     
-    # Choix pour les sources de pointage
+    # Choix pour les sources de pointage (système web uniquement)
     SOURCE_CHOICES = [
         ('web', 'Web'),
-        ('mobile', 'Mobile'),
-        ('kiosk', 'Kiosque'),
-        ('admin', 'Administration'),
     ]
     
     employee = models.ForeignKey(
@@ -203,7 +195,7 @@ class Attendance(models.Model):
         if self.latitude and self.longitude:
             self.distance_from_site = self.calculate_distance_from_site()
         
-        # Détecter les anomalies
+        # Déduire un statut simple (retard/départ anticipé) sans créer d'anomalies
         self.detect_anomalies()
         
         super().save(*args, **kwargs)
@@ -259,15 +251,6 @@ class Attendance(models.Model):
             else:
                 self.status = 'early' if hour < 16 else 'normal'
         
-    
-    def is_within_zone(self):
-        """Vérifie si le pointage est dans la zone autorisée."""
-        return self.distance_from_site <= settings.RADIUS_METERS if self.distance_from_site else False
-    
-    def is_accurate(self):
-        """Vérifie si la précision GPS est acceptable."""
-        return self.accuracy <= settings.ACCURACY_MAX_METERS if self.accuracy else False
-    
     def get_duration_with_previous(self):
         """
         Calcule la durée travaillée avec le pointage précédent.
@@ -289,113 +272,7 @@ class Attendance(models.Model):
         return None
 
 
-class AttendanceAnomaly(models.Model):
-    """
-    Modèle pour enregistrer les anomalies détectées lors du pointage.
-    
-    Permet le suivi et la gestion des anomalies par les managers.
-    """
-    
-    # Choix pour les types d'anomalies (simplifié pour projet de fin de cycle)
-    ANOMALY_TYPE_CHOICES = [
-        ('late_arrival', 'Arrivée en retard'),
-        ('early_departure', 'Départ anticipé'),
-        ('missing_punch_out', 'Oubli de sortie'),
-        ('missing_punch_in', 'Oubli d\'entrée'),
-    ]
-    
-    # Choix pour les statuts de résolution
-    STATUS_CHOICES = [
-        ('pending', 'En attente'),
-        ('justified', 'Justifiée'),
-        ('resolved', 'Résolue'),
-        ('ignored', 'Ignorée'),
-    ]
-    
-    attendance = models.ForeignKey(
-        Attendance,
-        on_delete=models.CASCADE,
-        related_name='anomalies',
-        verbose_name="Pointage",
-        help_text="Pointage concerné par l'anomalie"
-    )
-    
-    anomaly_type = models.CharField(
-        max_length=20,
-        choices=ANOMALY_TYPE_CHOICES,
-        verbose_name="Type d'anomalie",
-        help_text="Type d'anomalie détectée"
-    )
-    
-    description = models.TextField(
-        verbose_name="Description",
-        help_text="Description détaillée de l'anomalie"
-    )
-    
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending',
-        verbose_name="Statut",
-        help_text="Statut de résolution de l'anomalie"
-    )
-    
-    justification = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Justification",
-        help_text="Justification fournie par l'employé ou le manager"
-    )
-    
-    resolved_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='resolved_anomalies',
-        verbose_name="Résolu par",
-        help_text="Manager qui a résolu l'anomalie"
-    )
-    
-    resolved_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        verbose_name="Résolu le",
-        help_text="Date de résolution de l'anomalie"
-    )
-    
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Date de création"
-    )
-    
-    class Meta:
-        verbose_name = "Anomalie de pointage"
-        verbose_name_plural = "Anomalies de pointage"
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        """Représentation string de l'anomalie."""
-        return f"{self.attendance.employee.get_full_name()} - {self.get_anomaly_type_display()}"
-    
-    def resolve(self, user, justification=None):
-        """
-        Marque l'anomalie comme résolue.
-        """
-        self.status = 'resolved'
-        self.resolved_by = user
-        self.resolved_at = timezone.now()
-        if justification:
-            self.justification = justification
-        self.save()
-    
-    def justify(self, justification):
-        """
-        Marque l'anomalie comme justifiée.
-        """
-        self.status = 'justified'
-        self.justification = justification
-        self.save()
+# Modèle AttendanceAnomaly supprimé (fonctionnalité anomalies désactivée)
 
 
 # Les imports des modèles d'heures supplémentaires et de configuration

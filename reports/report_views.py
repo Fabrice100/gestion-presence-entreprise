@@ -29,7 +29,7 @@ import json
 
 from .models import SystemSettings, ReportTemplate
 from accounts.models import EmployeeProfile, Department
-from attendance.models import Attendance, AttendanceAnomaly
+from attendance.models import Attendance
 from leave.models import LeaveRequest, LeaveBalance, LeaveType
 
 
@@ -69,7 +69,6 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
                 'absent_today': self._get_absent_today_count(),
                 'on_leave_today': self._get_on_leave_today_count(),
                 'pending_leave_requests': LeaveRequest.objects.filter(status='pending').count(),
-                'anomalies_pending': AttendanceAnomaly.objects.filter(status='pending').count(),
             })
         elif profile.role == 'manager':
             # Statistiques pour manager (son équipe)
@@ -89,9 +88,6 @@ class ReportsDashboardView(LoginRequiredMixin, TemplateView):
                 'present_today': self._get_present_today_count([self.request.user]),
                 'leave_requests_pending': LeaveRequest.objects.filter(
                     employee=self.request.user, status='pending'
-                ).count(),
-                'anomalies_pending': AttendanceAnomaly.objects.filter(
-                    attendance__employee=self.request.user, status='pending'
                 ).count(),
             })
         
@@ -353,12 +349,16 @@ class AttendanceReportView(LoginRequiredMixin, TemplateView):
             
             # Calcul des statistiques
             total_days = (end_date - start_date).days + 1
-            present_days = emp_attendance.filter(punch_type='in').count()
-            absent_days = total_days - present_days
+            # Jours présents: distinct par date (entrées)
+            present_days = emp_attendance.filter(punch_type='in').values('date').distinct().count()
+            absent_days = max(0, total_days - present_days)
             
-            # Heures de travail (estimation basée sur les pointages)
-            # Pour l'instant, on estime 8h par jour de présence
-            total_hours = present_days * 8
+            # Heures de travail réelles: somme de worked_hours sur les sorties
+            worked_out = emp_attendance.filter(punch_type='out')
+            total_hours = 0
+            for att in worked_out:
+                if att.worked_hours is not None:
+                    total_hours += float(att.worked_hours)
             
             employee_stats.append({
                 'employee': employee,
@@ -487,92 +487,11 @@ class LeaveReportView(LoginRequiredMixin, TemplateView):
 
 
 class AnomalyReportView(LoginRequiredMixin, TemplateView):
-    """
-    Rapport d'anomalies de présence.
-    """
-    template_name = 'reports/anomaly_report.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        profile = user.employee_profile
-        
-        # Paramètres du rapport
-        start_date = self.request.GET.get('start_date', (date.today() - timedelta(days=30)).strftime('%Y-%m-%d'))
-        end_date = self.request.GET.get('end_date', date.today().strftime('%Y-%m-%d'))
-        anomaly_type = self.request.GET.get('anomaly_type')
-        
-        # Conversion des dates
-        try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        except ValueError:
-            start_date = date.today() - timedelta(days=30)
-            end_date = date.today()
-        
-        context.update({
-            'start_date': start_date,
-            'end_date': end_date,
-            'selected_anomaly_type': anomaly_type,
-        })
-        
-        # Données du rapport
-        context.update(self._get_anomaly_data(start_date, end_date, anomaly_type, profile))
-        
-        return context
-    
-    def _get_anomaly_data(self, start_date, end_date, anomaly_type, profile):
-        """Récupère les données d'anomalies pour le rapport."""
-        data = {}
-        
-        # Filtres de base
-        filters = {
-            'attendance__date__range': [start_date, end_date],
-        }
-        
-        if anomaly_type:
-            filters['anomaly_type'] = anomaly_type
-        
-        # Déterminer les employés à inclure
-        if profile.role == 'rh':
-            # Toutes les anomalies
-            anomalies = AttendanceAnomaly.objects.filter(**filters)
-        elif profile.role == 'manager':
-            # Anomalies de l'équipe
-            managed_employees = User.objects.filter(employee_profile__manager=self.request.user)
-            anomalies = AttendanceAnomaly.objects.filter(
-                attendance__employee__in=managed_employees,
-                **filters
-            )
-        else:
-            # Anomalies de l'employé
-            anomalies = AttendanceAnomaly.objects.filter(
-                attendance__employee=self.request.user,
-                **filters
-            )
-        
-        # Statistiques par type d'anomalie
-        anomaly_type_stats = anomalies.values('anomaly_type').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        # Statistiques par employé
-        employee_anomaly_stats = anomalies.values(
-            'attendance__employee__username',
-            'attendance__employee__first_name',
-            'attendance__employee__last_name'
-        ).annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        data.update({
-            'anomalies': anomalies.select_related('attendance__employee').order_by('-created_at'),
-            'anomaly_type_stats': list(anomaly_type_stats),
-            'employee_anomaly_stats': list(employee_anomaly_stats),
-            'total_anomalies': anomalies.count(),
-        })
-        
-        return data
+    """Désactivé: redirection vers le tableau de bord des rapports."""
+    def dispatch(self, request, *args, **kwargs):
+        from django.shortcuts import redirect
+        messages.info(request, "Le rapport d'anomalies est désactivé.")
+        return redirect('reports:reports_dashboard')
 
 
 @login_required

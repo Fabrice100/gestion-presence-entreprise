@@ -174,14 +174,6 @@ class LeaveRequest(models.Model):
         ('cancelled', 'Annulé'),
     ]
     
-    # Choix pour les priorités
-    PRIORITY_CHOICES = [
-        ('low', 'Basse'),
-        ('normal', 'Normale'),
-        ('high', 'Haute'),
-        ('urgent', 'Urgente'),
-    ]
-    
     employee = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -223,14 +215,6 @@ class LeaveRequest(models.Model):
         help_text="Statut actuel de la demande"
     )
     
-    priority = models.CharField(
-        max_length=10,
-        choices=PRIORITY_CHOICES,
-        default='normal',
-        verbose_name="Priorité",
-        help_text="Priorité de la demande"
-    )
-    
     reason = models.TextField(
         validators=[validate_reason_text],
         verbose_name="Motif",
@@ -243,14 +227,6 @@ class LeaveRequest(models.Model):
         validators=[validate_reason_text],
         verbose_name="Justification",
         help_text="Justification détaillée si nécessaire"
-    )
-    
-    medical_certificate = models.FileField(
-        upload_to='medical_certificates/',
-        blank=True,
-        null=True,
-        verbose_name="Certificat médical",
-        help_text="Certificat médical si requis"
     )
     
     # Workflow de validation

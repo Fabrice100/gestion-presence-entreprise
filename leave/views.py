@@ -235,10 +235,6 @@ class ManagerLeaveValidationView(EnhancedLoginRequiredMixin, ListView):
         ).order_by('-created_at')
         
         # Filtres
-        priority = self.request.GET.get('priority')
-        if priority:
-            queryset = queryset.filter(priority=priority)
-            
         leave_type = self.request.GET.get('leave_type')
         if leave_type:
             queryset = queryset.filter(leave_type_id=leave_type)
@@ -319,7 +315,7 @@ class LeaveRequestEditView(EmployeeRequiredMixin, UpdateView):
     model = LeaveRequest
     template_name = 'leave/leave_request_edit.html'
     context_object_name = 'leave_request'
-    fields = ['leave_type', 'start_date', 'end_date', 'reason', 'justification', 'priority']
+    fields = ['leave_type', 'start_date', 'end_date', 'reason', 'justification']
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

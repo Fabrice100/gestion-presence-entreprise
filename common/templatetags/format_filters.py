@@ -46,3 +46,4 @@ def format_balance(value):
         return f"{value} jours"
 
 
+

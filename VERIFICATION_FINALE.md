@@ -145,3 +145,4 @@ Il y a seulement **2 différences d'implémentation technique** (Haversine au li
 **Score Final : 98% de conformité** (2% différence technique seulement)
 
 
+

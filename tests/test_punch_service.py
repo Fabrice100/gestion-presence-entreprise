@@ -321,3 +321,4 @@ class PunchServiceIntegrationTest(TestCase):
         self.assertEqual(attendances.count(), 2)
 
 
+

@@ -11,10 +11,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <!-- En-tête -->
         <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
-            <h2 class="text-xl font-bold text-white flex items-center">
-                <i class="bi bi-person-badge-fill mr-3"></i>
-                Nouveau Manager
-            </h2>
+            <h2 class="text-xl font-bold text-white">Nouveau Manager</h2>
         </div>
 
         <!-- Formulaire -->
@@ -23,12 +20,7 @@
 
             {% if form.non_field_errors %}
             <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <div class="flex">
-                    <i class="bi bi-exclamation-triangle-fill text-red-500 mr-3"></i>
-                    <div>
-                        {{ form.non_field_errors }}
-                    </div>
-                </div>
+                {{ form.non_field_errors }}
             </div>
             {% endif %}
 
@@ -83,15 +75,11 @@
                 <!-- Profil Horaire -->
                 <div>
                     <label for="{{ form.current_work_schedule.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="bi bi-clock-history text-amber-600 mr-1"></i>
                         Profil Horaire
                     </label>
                     {{ form.current_work_schedule }}
                     {% if form.current_work_schedule.help_text %}
-                    <p class="mt-1 text-sm text-gray-500">
-                        <i class="bi bi-info-circle mr-1"></i>
-                        {{ form.current_work_schedule.help_text }}
-                    </p>
+                    <p class="mt-1 text-sm text-gray-500">{{ form.current_work_schedule.help_text }}</p>
                     {% endif %}
                     {% if form.current_work_schedule.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ form.current_work_schedule.errors.0 }}</p>
@@ -99,48 +87,12 @@
                 </div>
             </div>
 
-            <!-- Badge Manager -->
-            <div class="mt-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
-                <div class="flex">
-                    <i class="bi bi-shield-check text-amber-600 mr-3 mt-0.5 text-xl"></i>
-                    <div class="text-sm text-amber-800">
-                        <p class="font-semibold mb-2">Privilèges Manager :</p>
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>Peut valider les demandes de congés de son équipe</li>
-                            <li>Accès aux rapports de son département</li>
-                            <li>Peut consulter les pointages de ses employés</li>
-                            <li>Les managers n'ont pas de manager assigné</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Informations importantes -->
-            <div class="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <div class="flex">
-                    <i class="bi bi-info-circle-fill text-blue-500 mr-3 mt-0.5"></i>
-                    <div class="text-sm text-blue-800">
-                        <p class="font-semibold mb-2">Informations importantes :</p>
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>Un identifiant employé sera généré automatiquement</li>
-                            <li>Un mot de passe temporaire sera créé et envoyé par email</li>
-                            <li>Le manager devra changer son mot de passe à la première connexion</li>
-                            <li>Si aucun profil horaire n'est sélectionné, le profil par défaut sera utilisé</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            
 
             <!-- Boutons d'action -->
             <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-                <a href="{% url 'hr:user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i class="bi bi-arrow-left mr-2"></i>
-                    Annuler
-                </a>
-                <button type="submit" class="inline-flex items-center px-6 py-2 bg-amber-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">
-                    <i class="bi bi-check-lg mr-2"></i>
-                    Créer le manager
-                </button>
+                <a href="{% url 'hr:user_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">Annuler</a>
+                <button type="submit" class="px-6 py-2 bg-amber-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors">Créer le manager</button>
             </div>
         </form>
     </div>

@@ -68,11 +68,11 @@ class LeaveRequestAdmin(admin.ModelAdmin):
     
     list_display = [
         'employee_name', 'leave_type_name', 'start_date', 'end_date',
-        'duration_days', 'priority_display', 'status_display', 'created_at'
+        'duration_days', 'status_display', 'created_at'
     ]
     
     list_filter = [
-        'leave_type', 'status', 'priority', 'start_date', 'created_at',
+        'leave_type', 'status', 'start_date', 'created_at',
         'employee__employee_profile__department'
     ]
     
@@ -98,15 +98,6 @@ class LeaveRequestAdmin(admin.ModelAdmin):
             obj.leave_type.color, obj.leave_type.name
         )
     leave_type_name.short_description = "Type de congé"
-    
-    def priority_display(self, obj):
-        colors = {'low': 'gray', 'normal': 'blue', 'high': 'orange', 'urgent': 'red'}
-        color = colors.get(obj.priority, 'black')
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, obj.get_priority_display()
-        )
-    priority_display.short_description = "Priorité"
     
     def status_display(self, obj):
         colors = {

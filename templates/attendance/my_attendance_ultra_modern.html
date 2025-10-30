@@ -94,62 +94,13 @@
 }">
     <!-- En-tête -->
     <div class="mb-6">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
-                    <span class="mr-3">📊</span>
-                    Mon historique de présence
-                </h1>
-                <p class="text-gray-600 dark:text-gray-400">
-                    Consultez et analysez vos pointages
-                </p>
-            </div>
-            <div class="flex items-center space-x-3">
-                <!-- Bouton export -->
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" 
-                            class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium transition-colors duration-200">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg>
-                        Exporter
-                    </button>
-                    <div x-show="open" @click.away="open = false" 
-                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10"
-                         style="display: none;">
-                        <button @click="exportData('pdf'); open = false" 
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                            </svg>
-                            PDF
-                        </button>
-                        <button @click="exportData('excel'); open = false" 
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            Excel
-                        </button>
-                        <button @click="exportData('csv'); open = false" 
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            CSV
-                        </button>
-                    </div>
-                </div>
-                
-                <a href="{% url 'attendance:punch' %}" 
-                   class="inline-flex items-center px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Pointer
-                </a>
-            </div>
-        </div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
+            <span class="mr-3">📊</span>
+            Mon historique de présence
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+            Consultez et analysez vos pointages
+        </p>
     </div>
 
     <!-- Statistiques -->
