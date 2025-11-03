@@ -49,13 +49,6 @@ class LeaveRequestListView(LoginRequiredMixin, ListView):
             employee=user
         ).select_related('leave_type').order_by('-created_at')
         
-        # Debug temporaire
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"LeaveRequestListView: User {user.username} (id={user.id}) has {queryset.count()} requests")
-        for req in queryset[:5]:
-            logger.info(f"  - Request {req.id}: {req.leave_type.name}, status={req.status}, created={req.created_at}")
-        
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -199,11 +192,6 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
                 # Sauvegarder avec gestion d'erreur explicite
                 leave_request.save()
                 
-                # Debug: logger les infos (sans requête DB dans la transaction)
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"✅ Demande créée dans transaction: ID={leave_request.id}, Employee={leave_request.employee.id} ({leave_request.employee.username}), Type={leave_request.leave_type.name}, Status={leave_request.status}")
-                
                 # Sauvegarder l'ID pour les notifications et le UPDATE (après le commit)
                 leave_request_id = leave_request.id
                 leave_request_status = leave_request.status
@@ -230,10 +218,10 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
                         # Recharger la demande depuis la DB après le commit
                         saved_request = LeaveRequest.objects.filter(id=leave_request_id).first()
                         if not saved_request:
-                            logger.error(f"❌ ERREUR: Demande {leave_request_id} non trouvée après commit!")
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.error(f"Erreur: Demande {leave_request_id} non trouvée après commit pour envoi de notification")
                             return
-                        
-                        logger.info(f"✅ Demande {saved_request.id} vérifiée après commit pour employee {saved_request.employee.id}")
                         
                         # Envoyer les notifications
                         if saved_request.status == 'pending' and hasattr(saved_request, 'manager') and saved_request.manager:
@@ -260,18 +248,16 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
         
         # Après la transaction réussie, vérifier que la demande existe vraiment
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        # Le bloc atomic() est terminé, la transaction devrait être commitée
-        # Vérifier une dernière fois que la demande existe
+        # (sécurité supplémentaire en cas de problème inattendu)
         final_check = LeaveRequest.objects.filter(id=leave_request_id).first()
         if final_check:
-            logger.info(f"✅ Vérification finale: Demande {final_check.id} confirmée en base après transaction")
             messages.success(self.request, f'Demande de congé créée avec succès ! ({days_requested} jours)')
             return HttpResponseRedirect(reverse('leave:leave_request_list'))
         else:
-            logger.error(f"❌ ERREUR CRITIQUE: Demande {leave_request_id} NON TROUVÉE après commit de transaction!")
+            # Cas improbable mais on le gère pour être sûr
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur critique: Demande {leave_request_id} non trouvée après commit de transaction")
             form.add_error(None, 'Erreur: La demande n\'a pas pu être sauvegardée. Veuillez réessayer.')
             return self.form_invalid(form)
 
