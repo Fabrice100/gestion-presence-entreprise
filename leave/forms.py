@@ -31,22 +31,22 @@ class LeaveRequestForm(forms.ModelForm):
         fields = ['leave_type', 'start_date', 'end_date', 'reason']
         widgets = {
             'leave_type': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'start_date': forms.DateInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'date',
                 'min': date.today().strftime('%Y-%m-%d')
             }),
             'end_date': forms.DateInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'date',
                 'min': date.today().strftime('%Y-%m-%d')
             }),
             'reason': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'rows': 4,
-                'placeholder': 'Motif de votre demande de congé...'
+                'placeholder': 'Décrivez la raison de votre demande (obligatoire pour "Autre")...'
             })
         }
     
@@ -54,22 +54,36 @@ class LeaveRequestForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Filtrer les types de congés disponibles
-        if user:
-            available_types = LeaveType.objects.filter(is_active=True)
-            self.fields['leave_type'].queryset = available_types
-            self.fields['leave_type'].empty_label = "Sélectionner un type de congé"
+        # Filtrer les types de congés disponibles (robuste en cas d'erreur DB)
+        try:
+            if user:
+                # N'afficher que 'Congés payés' (CP) et 'Autre' (CSS)
+                available_types = LeaveType.objects.filter(
+                    is_active=True,
+                    code__in=['CP', 'CSS']
+                ).order_by('name')
+                self.fields['leave_type'].queryset = available_types
+                self.fields['leave_type'].empty_label = "Sélectionner un type de congé"
+        except Exception:
+            # En cas d'erreur base, éviter l'écran d'erreur et présenter une liste vide
+            from django.db.models.query import EmptyQuerySet
+            self.fields['leave_type'].queryset = LeaveType.objects.none()
+            self.fields['leave_type'].empty_label = "(types indisponibles)"
         
         # Mettre à jour min dynamiquement pour empêcher la sélection de dates passées
         today_str = date.today().strftime('%Y-%m-%d')
         self.fields['start_date'].widget.attrs['min'] = today_str
         self.fields['end_date'].widget.attrs['min'] = today_str
+        
+        # Rendre le champ reason optionnel par défaut (sera validé dans clean())
+        self.fields['reason'].required = False
     
     def clean(self):
         cleaned_data = super().clean()
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
         leave_type = cleaned_data.get('leave_type')
+        reason = (cleaned_data.get('reason') or '').strip()
         
         if start_date and end_date:
             # Vérifier que la date de fin est après la date de début
@@ -86,6 +100,12 @@ class LeaveRequestForm(forms.ModelForm):
             if leave_type and leave_type.max_consecutive_days and days_requested > leave_type.max_consecutive_days:
                 raise ValidationError(f'La durée maximale pour ce type de congé est de {leave_type.max_consecutive_days} jours.')
         
+        # Règle métier: motif facultatif pour Congés payés (CP), obligatoire pour Autre (CSS)
+        if leave_type:
+            if getattr(leave_type, 'code', '') == 'CSS' and not reason:
+                raise ValidationError({'reason': 'Le motif est obligatoire pour le type "Autre".'})
+            # Pour les congés payés (CP), le motif peut rester vide (null)
+            # Pas besoin de mettre 'N/A', on laisse blank=True faire son travail
         return cleaned_data
     
     def clean_start_date(self):
@@ -118,14 +138,14 @@ class LeaveApprovalForm(forms.Form):
     action = forms.ChoiceField(
         choices=ACTION_CHOICES,
         widget=forms.RadioSelect(attrs={
-            'class': 'form-check-input'
+            'class': 'w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500'
         })
     )
     
     comment = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
-            'class': 'form-control',
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
             'rows': 3,
             'placeholder': 'Commentaire (optionnel)...'
         }),
@@ -164,26 +184,26 @@ class LeaveBalanceForm(forms.ModelForm):
         fields = ['employee', 'leave_type', 'year', 'allocated_balance', 'taken_balance', 'carried_over_balance']
         widgets = {
             'employee': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'leave_type': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'year': forms.NumberInput(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'allocated_balance': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '0',
                 'step': '0.01'
             }),
             'taken_balance': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '0',
                 'step': '0.01'
             }),
             'carried_over_balance': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '0',
                 'step': '0.01'
             })
@@ -222,43 +242,43 @@ class LeaveTypeForm(forms.ModelForm):
         ]
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'placeholder': 'Nom du type de congé'
             }),
             'description': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'rows': 3,
                 'placeholder': 'Description du type de congé'
             }),
             'allocation_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '0'
             }),
             'unit': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'allocation_type': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
             'max_consecutive_days': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '1'
             }),
             'requires_justification': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
             }),
             'requires_medical_certificate': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
             }),
             'advance_notice_days': forms.NumberInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'min': '0'
             }),
             'is_paid': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
             }),
             'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
             })
         }
     
