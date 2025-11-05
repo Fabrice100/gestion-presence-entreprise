@@ -49,6 +49,12 @@ if DEBUG:
 # Hosts autorisés pour le déploiement
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver').split(',')
 
+# CSRF en développement: autoriser localhost et 127.0.0.1 avec port
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:8000,http://127.0.0.1:8000',
+).split(',')
+
 
 # Application definition
 # Liste des applications Django installées dans le projet
@@ -319,6 +325,7 @@ RATELIMIT_DEFAULT_METHOD = 'GET,POST'
 # Limites spécifiques pour les vues critiques
 RATELIMIT_PUNCH_RATE = '10/m'     # 10 pointages par minute par utilisateur
 RATELIMIT_LOGIN_RATE = '5/m'      # 5 tentatives de connexion par minute par IP
+RATELIMIT_LEAVE_RATE = '5/d'      # 5 demandes de congés par jour par utilisateur
 RATELIMIT_API_RATE = '60/m'       # 60 requêtes API par minute par utilisateur
 
 # ===================================================================

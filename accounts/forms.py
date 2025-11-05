@@ -19,6 +19,16 @@ from django.core.exceptions import ValidationError
 from .models import EmployeeProfile, Department, WorkSchedule
 
 
+class ManagerChoiceField(forms.ModelChoiceField):
+    """
+    Affiche le nom complet du manager dans les listes déroulantes
+    au lieu du username par défaut.
+    """
+    def label_from_instance(self, obj):  # pragma: no cover - simple présentation
+        full_name = (obj.get_full_name() or '').strip()
+        return full_name if full_name else obj.username
+
+
 class DepartmentForm(forms.ModelForm):
     """
     Formulaire pour la création/modification d'un département.
@@ -29,24 +39,33 @@ class DepartmentForm(forms.ModelForm):
         fields = ['name', 'description', 'manager', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
                 'placeholder': 'Nom du département'
             }),
             'description': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
                 'rows': 3,
                 'placeholder': 'Description du département'
             }),
             'manager': forms.Select(attrs={
-                'class': 'form-control'
+                'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
             }),
             'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'h-4 w-4 text-primary-600 border-gray-300 rounded'
             })
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Remplacer le champ pour afficher le nom complet
+        current_widget = self.fields['manager'].widget
+        self.fields['manager'] = ManagerChoiceField(
+            queryset=User.objects.none(),
+            required=False,
+            widget=current_widget,
+            empty_label=None,
+        )
+
         # Filtrer les managers actifs
         self.fields['manager'].queryset = User.objects.filter(
             employee_profile__role='manager',
@@ -64,7 +83,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={
-            'class': 'form-control',
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'placeholder': 'Email professionnel',
             'required': 'required'
         }),
@@ -76,7 +95,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         max_length=30,
         min_length=2,
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'placeholder': 'Prénom',
             'required': 'required',
             'pattern': r'[A-Za-zÀ-ÿ\s\-]+',
@@ -89,7 +108,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         max_length=30,
         min_length=2,
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'placeholder': 'Nom',
             'required': 'required',
             'pattern': r'[A-Za-zÀ-ÿ\s\-]+',
@@ -102,17 +121,17 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         empty_label="Sélectionner un département",
         required=True,
         widget=forms.Select(attrs={
-            'class': 'form-control',
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'required': 'required'
         })
     )
     
-    manager = forms.ModelChoiceField(
+    manager = ManagerChoiceField(
         queryset=User.objects.none(),
         required=False,
         empty_label="Aucun manager",
         widget=forms.Select(attrs={
-            'class': 'form-control'
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
         })
     )
     
@@ -121,7 +140,7 @@ class EmployeeCreateFormSimple(forms.ModelForm):
         required=False,
         empty_label="Sélectionner un profil horaire",
         widget=forms.Select(attrs={
-            'class': 'form-control'
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
         }),
         help_text='Profil horaire à assigner à cet employé. Si aucun n\'est sélectionné, le profil par défaut sera utilisé.'
     )
@@ -202,35 +221,15 @@ class EmployeeProfileForm(forms.ModelForm):
             'is_active', 'can_punch'
         ]
         widgets = {
-            'department': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'manager': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'role': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'employee_type': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'hire_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'contract_end_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'current_work_schedule': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
-            'can_punch': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            })
+            'department': forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'}),
+            'manager': forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'}),
+            'role': forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'}),
+            'employee_type': forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'}),
+            'hire_date': forms.DateInput(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500', 'type': 'date'}),
+            'contract_end_date': forms.DateInput(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500', 'type': 'date'}),
+            'current_work_schedule': forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'h-4 w-4 text-primary-600 border-gray-300 rounded'}),
+            'can_punch': forms.CheckboxInput(attrs={'class': 'h-4 w-4 text-primary-600 border-gray-300 rounded'})
         }
     
     def __init__(self, *args, **kwargs):
@@ -239,6 +238,15 @@ class EmployeeProfileForm(forms.ModelForm):
         self.fields['department'].queryset = Department.objects.filter(is_active=True)
         self.fields['department'].empty_label = "Aucun département"
         
+        # Remplacer le champ manager pour afficher le nom complet
+        current_widget = self.fields['manager'].widget
+        required = self.fields['manager'].required
+        self.fields['manager'] = ManagerChoiceField(
+            queryset=User.objects.none(),
+            required=required,
+            widget=current_widget,
+            empty_label=None,
+        )
         # Filtrer les managers actifs
         self.fields['manager'].queryset = User.objects.filter(
             employee_profile__role='manager',
@@ -264,7 +272,7 @@ class UserSearchForm(forms.Form):
         required=False,
         max_length=100,
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
+            'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'placeholder': 'Rechercher par nom, email ou ID employé...'
         })
     )
@@ -272,24 +280,18 @@ class UserSearchForm(forms.Form):
     role = forms.ChoiceField(
         required=False,
         choices=[('', 'Tous les rôles')] + EmployeeProfile.ROLE_CHOICES,
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        })
+        widget=forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'})
     )
     
     department = forms.ModelChoiceField(
         queryset=Department.objects.filter(is_active=True),
         required=False,
         empty_label="Tous les départements",
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        })
+        widget=forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'})
     )
     
     is_active = forms.ChoiceField(
         required=False,
         choices=[('', 'Tous'), ('true', 'Actif'), ('false', 'Inactif')],
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        })
+        widget=forms.Select(attrs={'class': 'block w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'})
     )

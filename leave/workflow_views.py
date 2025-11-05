@@ -27,6 +27,8 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from datetime import date, timedelta
 from django.db import transaction, connection
+from django.conf import settings
+from django_ratelimit.decorators import ratelimit
 
 from .models import LeaveRequest, LeaveType, LeaveBalance
 from .forms import LeaveRequestForm, LeaveApprovalForm
@@ -74,6 +76,11 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
     template_name = 'leave/leave_request_create_ultra_modern.html'
     success_url = reverse_lazy('leave:leave_request_list')
     
+    @method_decorator(ratelimit(key='user', rate=settings.RATELIMIT_LEAVE_RATE, method='POST', block=True))
+    def dispatch(self, *args, **kwargs):
+        """Dispatch avec protection rate limiting."""
+        return super().dispatch(*args, **kwargs)
+    
     def get_context_data(self, **kwargs):
         """Ajoute le solde de congés au contexte."""
         context = super().get_context_data(**kwargs)
@@ -118,16 +125,17 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
         days_requested = (end_date - start_date).days + 1
         
         # VÉRIFICATION CRITIQUE : Vérifier le solde SEULEMENT pour les congés qui déduisent du solde
-        # TOUS les congés payés (vacances, maladie, événements) déduisent du MÊME solde de 30j
-        if hasattr(leave_type, 'deducts_balance') and leave_type.deducts_balance:
-            # Récupérer le type "Congés payés" comme solde unique
-            conges_payes_type = LeaveType.objects.filter(name__icontains='payé').first()
+        # Seuls les "Congés payés" déduisent du solde de 30 jours
+        # Les autres types (maladie, événements) ne déduisent PAS
+        if leave_type.deducts_balance:
+            # Trouver le type "Congés payés" par code (plus fiable que le nom)
+            conges_payes_type = LeaveType.objects.filter(code='CP').first()
             
             if not conges_payes_type:
-                form.add_error(None, 'Erreur de configuration: Type "Congés payés" non trouvé')
+                form.add_error(None, 'Erreur de configuration: Type "Congés payés" (CP) non trouvé')
                 return self.form_invalid(form)
             
-            # Vérifier le solde global de 30 jours (pas le solde du type spécifique)
+            # Vérifier le solde de 30 jours pour les congés payés uniquement
             balance, created = LeaveBalance.objects.get_or_create(
                 employee=self.request.user,
                 leave_type=conges_payes_type,  # Toujours utiliser le type "Congés payés"
@@ -280,58 +288,118 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
         profile = user.employee_profile
         
         if profile.role == 'manager':
-            # Manager : voir les demandes de SON département uniquement
-            # Trouver le département que ce manager gère
-            managed_department = Department.objects.filter(manager=user).first()
+            # Manager : voir les demandes des employés de SON département
+            # 1. Demandes en attente (pending) - à traiter
+            # 2. Demandes validées par lui (approved_manager avec manager=user) - historique
+            # 3. Demandes rejetées par lui (rejected_manager avec manager=user) - historique
+            # ❌ NE VOIT PAS: ses propres demandes (celles qu'il a créées)
+            managed_department = profile.department
             
             if not managed_department:
                 # Manager sans département : aucune demande
                 return LeaveRequest.objects.none()
             
-            # Filtrer par département du manager et gérer les filtres de statut
+            # Filtrer selon le statut demandé (si filtre présent)
             status_filter = self.request.GET.get('status')
             
             if status_filter:
-                # Filtrer selon le statut demandé
                 if status_filter == 'pending':
+                    # Seulement les demandes en attente de traitement
                     status_query = ['pending']
                 elif status_filter == 'approved':
+                    # Demandes validées par ce manager (en attente RH)
                     status_query = ['approved_manager']
                 elif status_filter == 'rejected':
+                    # Demandes rejetées par ce manager
                     status_query = ['rejected_manager']
                 else:
                     status_query = ['pending']  # Par défaut
             else:
-                # Pas de filtre : afficher tous les statuts
+                # Pas de filtre : voir les demandes à traiter ET l'historique
                 status_query = ['pending', 'approved_manager', 'rejected_manager']
             
-            queryset = LeaveRequest.objects.filter(
-                employee__employee_profile__department=managed_department,
-                status__in=status_query
-            ).select_related('employee', 'leave_type', 'employee__employee_profile')
+            # Construire le queryset avec filtrage intelligent
+            # Base: demandes du département (sauf propres demandes du manager)
+            base_queryset = LeaveRequest.objects.filter(
+                employee__employee_profile__department=managed_department
+            ).exclude(
+                employee=user  # Le manager ne doit pas voir ses propres demandes
+            )
+            
+            # Filtrer selon le type de demande
+            if status_query == ['pending']:
+                # Seulement les demandes en attente (non traitées)
+                queryset = base_queryset.filter(status='pending')
+            elif 'pending' in status_query:
+                # Mixte: voir pending ET demandes traitées par ce manager (historique complet)
+                # Inclure aussi les demandes finalisées par RH (approved_rh/rejected_rh) si ce manager les a validées initialement
+                queryset = base_queryset.filter(
+                    Q(status='pending') | 
+                    Q(
+                        status__in=['approved_manager', 'rejected_manager']
+                    ) & (
+                        Q(manager=user) | Q(employee__employee_profile__manager=user)
+                    ) |
+                    Q(
+                        status__in=['approved_rh'],
+                        manager=user  # Finalisées par RH (approuvées) mais validées initialement par ce manager
+                    ) |
+                    Q(
+                        status__in=['rejected_rh'],
+                        manager=user  # Finalisées par RH (rejetées) mais validées initialement par ce manager
+                    )
+                )
+            else:
+                # Seulement les demandes traitées par ce manager
+                # Inclure les anciennes (manager=user) ET celles où l'employé a ce manager (employee.manager=user)
+                # Pour les demandes approved/rejected: inclure aussi approved_rh/rejected_rh si ce manager les a validées
+                if 'approved_manager' in status_query:
+                    # Inclure aussi approved_rh si ce manager a validé initialement (historique complet)
+                    queryset = base_queryset.filter(
+                        Q(status__in=status_query, manager=user) | 
+                        Q(status__in=status_query, employee__employee_profile__manager=user) |
+                        Q(status='approved_rh', manager=user)  # Finalisées par RH mais validées par ce manager
+                    )
+                elif 'rejected_manager' in status_query:
+                    # Pour rejetées: rejected_manager (rejet direct) OU rejected_rh (rejeté par RH après validation manager)
+                    queryset = base_queryset.filter(
+                        Q(status__in=status_query, manager=user) |
+                        Q(status__in=status_query, employee__employee_profile__manager=user) |
+                        Q(status='rejected_rh', manager=user)  # Rejetées par RH mais validées initialement par ce manager
+                    )
+                else:
+                    queryset = base_queryset.filter(
+                        status__in=status_query
+                    ).filter(
+                        Q(manager=user) | Q(employee__employee_profile__manager=user)
+                    )
+            
+            queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile')
         elif profile.role == 'rh':
-            # RH : voir TOUTES les demandes de TOUS les départements (employés + managers)
-            # Filtre par statut si demandé, sinon affiche pending et approved_manager par défaut
+            # RH : voir les demandes 'approved_manager' qui attendent validation finale
+            # Cela inclut :
+            # 1. Demandes des employés validées par leur manager (status='approved_manager' avec manager_decision)
+            # 2. Demandes des managers directement (status='approved_manager' sans manager_decision)
             status_filter = self.request.GET.get('status')
             if status_filter:
                 if status_filter == 'pending':
-                    # Pour RH, "en attente" = approuvé par manager
+                    # Pour RH, "en attente" = approuvé par manager (en attente de validation finale RH)
                     queryset = LeaveRequest.objects.filter(status='approved_manager')
                 elif status_filter == 'approved':
-                    # Approuvées finales uniquement
-                    queryset = LeaveRequest.objects.filter(status__in=['approved_rh'])
+                    # Approuvées finales par RH uniquement
+                    queryset = LeaveRequest.objects.filter(status='approved_rh')
                 elif status_filter == 'rejected':
-                    # Rejetées finales uniquement
-                    queryset = LeaveRequest.objects.filter(status__in=['rejected_rh'])
+                    # Rejetées par RH uniquement
+                    queryset = LeaveRequest.objects.filter(status='rejected_rh')
                 else:
                     queryset = LeaveRequest.objects.filter(status=status_filter)
             else:
-                # Par défaut: voir toutes les demandes pertinentes pour RH
+                # Par défaut: voir toutes les demandes pertinentes pour RH (validation finale)
                 queryset = LeaveRequest.objects.filter(
                     status__in=['approved_manager', 'approved_rh', 'rejected_rh']
                 )
             
-            queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile')
+            queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile', 'employee__employee_profile__department')
         else:
             queryset = LeaveRequest.objects.none()
         
@@ -351,23 +419,33 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
         
         if profile.role == 'manager':
             # Pour le manager : calculer les statistiques de SON département
-            managed_department = Department.objects.filter(manager=user).first()
+            managed_department = profile.department
             if managed_department:
-                # Demandes en attente à TRAITER par ce manager
+                # Demandes en attente à TRAITER par ce manager (employés de son département uniquement)
                 pending_qs = LeaveRequest.objects.filter(
                     employee__employee_profile__department=managed_department,
                     status='pending'
                 ).exclude(employee=user)
 
-                # Demandes TRAITÉES par CE manager
+                # Demandes TRAITÉES par CE manager (historique)
+                # Inclure les anciennes (manager=user) ET celles où l'employé a ce manager (employee.manager=user)
+                # Inclure aussi approved_rh si ce manager les a validées initialement
                 approved_by_me_qs = LeaveRequest.objects.filter(
-                    manager=user,
-                    manager_decision='approved_manager'
-                )
+                    employee__employee_profile__department=managed_department
+                ).filter(
+                    Q(status='approved_manager', manager=user) |
+                    Q(status='approved_manager', employee__employee_profile__manager=user) |
+                    Q(status='approved_rh', manager=user)  # Finalisées par RH mais validées par ce manager
+                ).exclude(employee=user)
+                
+                # Rejetées: rejected_manager (rejet direct) OU rejected_rh (rejeté par RH après validation manager)
                 rejected_by_me_qs = LeaveRequest.objects.filter(
-                    manager=user,
-                    manager_decision='rejected_manager'
-                )
+                    employee__employee_profile__department=managed_department
+                ).filter(
+                    Q(status='rejected_manager', manager=user) |
+                    Q(status='rejected_manager', employee__employee_profile__manager=user) |
+                    Q(status='rejected_rh', manager=user)  # Rejetées par RH mais validées initialement par ce manager
+                ).exclude(employee=user)
             else:
                 pending_qs = LeaveRequest.objects.none()
                 approved_by_me_qs = LeaveRequest.objects.none()
@@ -653,31 +731,3 @@ def leave_statistics_api(request):
 # =====================================
 # VUE UNIFIÉE DES CONGÉS (3 en 1)
 # =====================================
-class LeaveUnifiedView(LoginRequiredMixin, TemplateView):
-    """
-    Vue unifiée pour la gestion des congés employé
-    Regroupe en un seul endroit:
-    - Liste des demandes récentes (5 dernières)
-    - Soldes de congés par type
-    - Lien vers le calendrier complet
-    
-    Inspiré de Clockify/BambooHR: une seule page, plusieurs onglets
-    """
-    template_name = 'leave/leave_unified.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Demandes récentes (5 dernières)
-        context['recent_leave_requests'] = LeaveRequest.objects.filter(
-            employee=self.request.user
-        ).select_related('leave_type').order_by('-created_at')[:5]
-        
-        # Soldes de congés
-        current_year = timezone.now().year
-        context['leave_balances'] = LeaveBalance.objects.filter(
-            employee=self.request.user,
-            year=current_year
-        ).select_related('leave_type')
-        
-        return context

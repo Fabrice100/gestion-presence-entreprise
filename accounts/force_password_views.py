@@ -133,11 +133,11 @@ class ForcePasswordChangeView(View):
             
             # Redirection selon rôle métier (3 rôles)
             if profile.role == 'rh':
-                return redirect('rh_dashboard')
+                return redirect('dashboard:rh_dashboard')
             elif profile.role == 'manager':
-                return redirect('manager_dashboard')
+                return redirect('dashboard:manager_dashboard')
             else:  # employee
-                return redirect('employee_dashboard')
+                return redirect('dashboard:employee_dashboard')
         
         # Formulaire invalide : réafficher avec erreurs
         context = {

@@ -136,11 +136,15 @@ def validate_reason_text(value):
     Valide un motif de congé ou note.
     
     Args:
-        value: Motif à valider
+        value: Motif à valider (peut être None ou vide pour les champs optionnels)
         
     Raises:
         ValidationError: Si le motif est invalide
     """
+    # Permettre les valeurs vides/null (pour les champs optionnels)
+    if not value or not value.strip():
+        return
+    
     is_valid, error_message = secure_validator.validate_reason(value)
     
     if not is_valid:

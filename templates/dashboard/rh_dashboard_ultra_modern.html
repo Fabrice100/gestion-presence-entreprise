@@ -1,0 +1,198 @@
+{% extends 'base_ultra_modern.html' %}
+{% load static %}
+
+{% block title %}Dashboard RH - PresencePro{% endblock %}
+{% block page_title %}Dashboard RH{% endblock %}
+
+{% block content %}
+<!-- Dashboard RH Grid Layout -->
+<div class="space-y-6">
+    
+    <!-- Stats Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Total Employés -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ global_stats.total_employees }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Employés actifs
+                </div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-500">
+                    {{ total_departments }} département{{ total_departments|pluralize }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Présents aujourd'hui -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                    {% widthratio global_stats.present_today global_stats.total_employees 100 %}%
+                </span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ global_stats.present_today }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Présents aujourd'hui
+                </div>
+                <div class="mt-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500" 
+                         style="width: {% widthratio global_stats.present_today global_stats.total_employees 100 %}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Validations RH -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+                {% if global_stats.pending_rh_requests > 0 %}
+                <span class="flex items-center space-x-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full animate-pulse">
+                    <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    <span>À traiter</span>
+                </span>
+                {% endif %}
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                    {{ global_stats.pending_rh_requests }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Validations RH
+                </div>
+                {# Lien "Traiter maintenant" retiré #}
+            </div>
+        </div>
+        
+        {# Carte "Anomalies globales" supprimée (fonctionnalité anomalies désactivée) #}
+        
+    </div>
+    
+    <!-- Statistiques par département -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Présence par département</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Vue d'ensemble temps réel</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            {% if department_stats %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for dept in department_stats %}
+                <div class="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl hover:shadow-md transition-all">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold text-gray-900 dark:text-white">{{ dept.department.name }}</h4>
+                        <span class="text-xs font-semibold {% if dept.attendance_rate >= 80 %}text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20{% elif dept.attendance_rate >= 50 %}text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20{% else %}text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20{% endif %} px-2 py-1 rounded-full">
+                            {{ dept.attendance_rate }}%
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-baseline space-x-2 mb-3">
+                        <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ dept.present_today }}</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">/ {{ dept.total_employees }} employés</span>
+                    </div>
+                    
+                    <div class="bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+                        <div class="{% if dept.attendance_rate >= 80 %}bg-gradient-to-r from-green-500 to-green-600{% elif dept.attendance_rate >= 50 %}bg-gradient-to-r from-orange-500 to-orange-600{% else %}bg-gradient-to-r from-red-500 to-red-600{% endif %} h-2 rounded-full transition-all duration-500" 
+                             style="width: {{ dept.attendance_rate }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-600 dark:text-gray-400">
+                Aucun département configuré
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Two Column Layout (une seule colonne sans anomalies) -->
+    <div class="grid grid-cols-1 gap-6">
+        
+        <!-- Validations RH en attente -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Validations RH</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ pending_rh_requests|length }} demande{{ pending_rh_requests|length|pluralize }} en attente</p>
+                    </div>
+                    <a href="{% url 'leave:rh_leave_management' %}" 
+                       class="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700">
+                        Tout voir →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                {% if pending_rh_requests %}
+                <div class="space-y-3">
+                    {% for request in pending_rh_requests|slice:":5" %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                {{ request.employee.get_full_name|first|upper }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                    {{ request.employee.get_full_name }}
+                                </div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">
+                                    {{ request.leave_type.name }} · {{ request.get_duration }}j
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{% url 'leave:rh_leave_management' %}" 
+                           class="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Aucune validation en attente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {# Bloc "Anomalies à traiter" supprimé (fonctionnalité anomalies désactivée) #}
+        
+    </div>
+    
+</div>
+{% endblock %}

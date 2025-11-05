@@ -216,9 +216,11 @@ class LeaveRequest(models.Model):
     )
     
     reason = models.TextField(
+        blank=True,
+        null=True,
         validators=[validate_reason_text],
         verbose_name="Motif",
-        help_text="Motif de la demande de congé"
+        help_text="Motif de la demande de congé (optionnel pour les congés payés, obligatoire pour les autres types)"
     )
     
     justification = models.TextField(

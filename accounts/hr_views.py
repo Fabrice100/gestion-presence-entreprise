@@ -143,7 +143,7 @@ class ManagerCreateView(HRRequiredMixin, CreateView):
         }
         
         # Créer le manager avec génération automatique des credentials
-        user, employee_id, temporary_password = UserService.create_employee_with_credentials(
+        user, employee_id, temporary_password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
@@ -165,7 +165,10 @@ class ManagerCreateView(HRRequiredMixin, CreateView):
                     f'(Email non envoyé - communiquez ces informations manuellement)'
                 )
         else:
-            messages.error(self.request, 'Erreur lors de la création du manager.')
+            msg = "Erreur lors de la création du manager"
+            if error_message:
+                msg += f" : {error_message}"
+            messages.error(self.request, msg)
         
         return redirect(self.get_success_url())
     
@@ -208,7 +211,7 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
                 return self.form_invalid(form)
         
         # Créer l'employé avec génération automatique des credentials
-        user, employee_id, temporary_password = UserService.create_employee_with_credentials(
+        user, employee_id, temporary_password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
@@ -230,7 +233,10 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
                     f'(Email non envoyé - communiquez ces informations manuellement)'
                 )
         else:
-            messages.error(self.request, 'Erreur lors de la création de l\'employé.')
+            msg = "Erreur lors de la création de l'employé"
+            if error_message:
+                msg += f" : {error_message}"
+            messages.error(self.request, msg)
         
         return redirect(self.get_success_url())
     

@@ -20,24 +20,9 @@ from django.contrib import messages
 from common.mixins import EnhancedLoginRequiredMixin, ManagerRequiredMixin
 
 
-class ReportListView(ManagerRequiredMixin, TemplateView):
-    """Vue pour lister les rapports disponibles."""
-    template_name = 'reports/report_list.html'
-
-
-class AttendanceReportView(ManagerRequiredMixin, TemplateView):
-    """Vue pour les rapports de présence."""
-    template_name = 'reports/attendance_report.html'
-
-
-class LeaveReportView(ManagerRequiredMixin, TemplateView):
-    """Vue pour les rapports de congés."""
-    template_name = 'reports/leave_report.html'
-
-
-class SummaryReportView(ManagerRequiredMixin, TemplateView):
-    """Vue pour les rapports récapitulatifs."""
-    template_name = 'reports/summary_report.html'
+# Note: Les vues de rapports sont dans report_views.py
+# ReportListView, AttendanceReportView, LeaveReportView, SummaryReportView
+# ont été déplacées ou supprimées car non utilisées
 
 
 class SystemSettingsView(ManagerRequiredMixin, TemplateView):

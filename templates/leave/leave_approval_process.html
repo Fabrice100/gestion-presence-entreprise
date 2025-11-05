@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-6">
         
         <!-- Formulaire de traitement -->
         <div class="lg:col-span-2">
@@ -73,48 +73,8 @@
                     </div>
                     {% endif %}
 
-                    <!-- Décision -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            Décision <span class="text-red-500">*</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- Approuver -->
-                            <label class="decision-card cursor-pointer">
-                                <input type="radio" name="decision" value="approve" class="hidden decision-radio" required>
-                                <div class="decision-content p-6 border-2 rounded-xl transition-all hover:shadow-lg">
-                                    <div class="flex flex-col items-center text-center">
-                                        <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-3">
-                                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                        </div>
-                                        <h4 class="font-semibold text-lg text-gray-900 dark:text-white">Approuver</h4>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Valider cette demande</p>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <!-- Rejeter -->
-                            <label class="decision-card cursor-pointer">
-                                <input type="radio" name="decision" value="reject" class="hidden decision-radio" required>
-                                <div class="decision-content p-6 border-2 rounded-xl transition-all hover:shadow-lg">
-                                    <div class="flex flex-col items-center text-center">
-                                        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-3">
-                                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                        </div>
-                                        <h4 class="font-semibold text-lg text-gray-900 dark:text-white">Rejeter</h4>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Refuser cette demande</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        {% if form.decision.errors %}
-                        <p class="text-sm text-red-600 dark:text-red-400 mt-2">{{ form.decision.errors.0 }}</p>
-                        {% endif %}
-                    </div>
+                    <!-- Décision (compacte) -->
+                    <input type="hidden" name="action" id="actionField">
 
                     <!-- Commentaire -->
                     <div>
@@ -122,7 +82,7 @@
                             Commentaire
                             <span class="text-gray-500 font-normal">(optionnel)</span>
                         </label>
-                        <textarea name="comment" 
+                        <textarea name="comment" id="id_comment"
                                   id="id_comment"
                                   rows="4"
                                   placeholder="Ajoutez un commentaire pour expliquer votre décision..."
@@ -136,151 +96,38 @@
                     </div>
 
                     <!-- Boutons d'action -->
-                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <a href="{% url 'leave:leave_approval_detail' object.pk %}" 
                            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
                             Annuler
                         </a>
-                        <button type="submit" 
-                                class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium inline-flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Valider la Décision
-                        </button>
+                        <button type="submit" id="rejectBtn" onclick="document.getElementById('actionField').value='reject'" 
+                                class="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium">Rejeter</button>
+                        <button type="submit" onclick="document.getElementById('actionField').value='approve'" 
+                                class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">Valider</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Sidebar: Aide -->
-        <div class="space-y-6">
-            
-            <!-- Critères de décision -->
-            <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl shadow-md border border-amber-200 dark:border-amber-700 p-6">
-                <h3 class="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-4 flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                    Critères de Décision
-                </h3>
-                <ul class="space-y-2 text-sm text-amber-800 dark:text-amber-300">
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Solde de congés suffisant</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Pas de chevauchement d'équipe</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Charge de travail gérable</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Période appropriée</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Justificatifs si requis</span>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Workflow -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                    <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                    Workflow de Validation
-                </h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">1</div>
-                        <span class="text-gray-600 dark:text-gray-400">Demande créée par l'employé</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">2</div>
-                        <span class="text-gray-600 dark:text-gray-400">Validation par le Manager</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">3</div>
-                        <span class="text-gray-600 dark:text-gray-400">Validation finale par RH/DG</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-xs font-bold text-green-600">✓</div>
-                        <span class="text-gray-600 dark:text-gray-400">Notification à l'employé</span>
-                    </div>
+        <!-- (Sidebar supprimée pour une interface plus sobre) -->
                 </div>
             </div>
 
-            <!-- Avertissement -->
-            <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded">
-                <div class="flex">
-                    <svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    <div class="text-sm text-red-700 dark:text-red-300">
-                        <p class="font-semibold">⚠️ Attention</p>
-                        <p class="mt-1">Cette action est définitive. L'employé sera notifié automatiquement de votre décision.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.decision-card .decision-content {
-    border-color: #d1d5db;
-}
-
-.dark .decision-card .decision-content {
-    border-color: #4b5563;
-}
-
-.decision-card input:checked + .decision-content {
-    border-color: #3b82f6;
-    background-color: #eff6ff;
-}
-
-.dark .decision-card input:checked + .decision-content {
-    border-color: #3b82f6;
-    background-color: rgba(59, 130, 246, 0.1);
-}
-
-.decision-card:hover .decision-content {
-    border-color: #9ca3af;
-}
-
-.dark .decision-card:hover .decision-content {
-    border-color: #6b7280;
-}
-</style>
-
+<style></style>
 <script>
-// Effet visuel sur la sélection de décision
-document.querySelectorAll('.decision-radio').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.querySelectorAll('.decision-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        if (this.checked) {
-            this.closest('.decision-card').classList.add('selected');
-        }
+// Exiger un commentaire côté client en cas de rejet pour éviter le rechargement silencieux
+document.addEventListener('DOMContentLoaded', function() {
+  const rejectBtn = document.getElementById('rejectBtn');
+  if (rejectBtn) {
+    rejectBtn.addEventListener('click', function(e) {
+      const comment = document.getElementById('id_comment');
+      if (comment && !comment.value.trim()) {
+        e.preventDefault();
+        alert('Merci d\'ajouter un commentaire pour justifier le rejet.');
+      }
     });
+  }
 });
 </script>
 {% endblock %}

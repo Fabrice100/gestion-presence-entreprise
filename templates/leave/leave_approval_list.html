@@ -82,17 +82,26 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div class="flex flex-wrap gap-3">
             <button onclick="filterStatus('all')" class="filter-btn active px-4 py-2 rounded-lg font-medium transition-colors" data-status="all">
-                Tous
+                {% if is_manager %}Toutes{% else %}Toutes{% endif %}
             </button>
             <button onclick="filterStatus('pending')" class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors" data-status="pending">
-                🟡 En Attente
+                En Attente
             </button>
+            {% if is_manager %}
             <button onclick="filterStatus('approved')" class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors" data-status="approved">
-                🟢 Approuvées
+                Validées
             </button>
             <button onclick="filterStatus('rejected')" class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors" data-status="rejected">
-                🔴 Rejetées
+                Rejetées
             </button>
+            {% else %}
+            <button onclick="filterStatus('approved')" class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors" data-status="approved">
+                Approuvées
+            </button>
+            <button onclick="filterStatus('rejected')" class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors" data-status="rejected">
+                Rejetées
+            </button>
+            {% endif %}
         </div>
     </div>
 
@@ -101,7 +110,7 @@
         {% if object_list %}
             {% for request in object_list %}
             <div class="leave-request-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow" 
-                 data-status="{{ request.status }}">
+                 data-status="{% if request.status == 'approved_manager' %}pending{% elif request.status == 'approved_rh' %}approved{% elif request.status == 'rejected_rh' or request.status == 'rejected_manager' %}rejected{% else %}{{ request.status }}{% endif %}">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     
                     <!-- Informations principales -->
@@ -126,7 +135,15 @@
                                         {% elif request.status == 'approved_rh' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
                                         {% elif 'rejected' in request.status %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400
                                         {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400{% endif %}">
-                                        {{ request.get_status_display }}
+                                        {% if request.status == 'approved_manager' %}
+                                            {% if request.manager_decision %}
+                                                Approuvé par Manager (en attente RH)
+                                            {% else %}
+                                                En attente RH
+                                            {% endif %}
+                                        {% else %}
+                                            {{ request.get_status_display }}
+                                        {% endif %}
                                     </span>
                                 </div>
                                 
@@ -137,7 +154,7 @@
                                     </div>
                                     <div>
                                         <span class="text-gray-600 dark:text-gray-400">Durée:</span>
-                                        <span class="font-medium text-gray-900 dark:text-white ml-2">{{ request.days_requested }} jour{{ request.days_requested|pluralize }}</span>
+                                        <span class="font-medium text-gray-900 dark:text-white ml-2">{{ request.duration_days|floatformat:0 }} jour{{ request.duration_days|floatformat:0|pluralize }}</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-600 dark:text-gray-400">Du:</span>
@@ -160,21 +177,26 @@
                     </div>
                     
                     <!-- Actions -->
-                    <div class="flex-shrink-0">
+                    <div class="flex-shrink-0 flex items-center gap-2">
                         {% if request.status == 'pending' %}
-                        <a href="{% url 'leave:leave_approval_process' request.pk %}" 
-                           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center font-medium shadow-md hover:shadow-lg">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Demande à traiter: bouton principal -->
+                        <a href="{% url 'leave:leave_approval_detail' request.pk %}"
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             Traiter la demande
                         </a>
                         {% else %}
-                        <span class="px-4 py-2 {% if request.status == 'approved_manager' or request.status == 'approved_rh' %}bg-green-100 text-green-700{% elif request.status == 'rejected_manager' or request.status == 'rejected_rh' %}bg-red-100 text-red-700{% endif %} rounded-lg font-medium">
-                            {% if request.status == 'approved_manager' or request.status == 'approved_rh' %}✅ Approuvée
-                            {% elif request.status == 'rejected_manager' or request.status == 'rejected_rh' %}❌ Rejetée
-                            {% endif %}
-                        </span>
+                        <!-- Demande déjà traitée: bouton consultation uniquement -->
+                        <a href="{% url 'leave:leave_approval_detail' request.pk %}"
+                           class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center justify-center"
+                           title="Voir les détails (déjà traitée)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </a>
                         {% endif %}
                     </div>
                 </div>
@@ -251,5 +273,10 @@ function filterStatus(status) {
         }
     });
 }
+
+// Initialiser le filtre au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    filterStatus('all');
+});
 </script>
 {% endblock %}

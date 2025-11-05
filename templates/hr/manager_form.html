@@ -48,14 +48,11 @@
                 </div>
 
                 <!-- Email -->
-                <div class="md:col-span-2">
+                <div>
                     <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
                         Email professionnel <span class="text-red-500">*</span>
                     </label>
                     {{ form.email }}
-                    {% if form.email.help_text %}
-                    <p class="mt-1 text-sm text-gray-500">{{ form.email.help_text }}</p>
-                    {% endif %}
                     {% if form.email.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
                     {% endif %}
@@ -79,7 +76,7 @@
                     </label>
                     {{ form.current_work_schedule }}
                     {% if form.current_work_schedule.help_text %}
-                    <p class="mt-1 text-sm text-gray-500">{{ form.current_work_schedule.help_text }}</p>
+                    {# Aide supprimée pour un rendu plus épuré #}
                     {% endif %}
                     {% if form.current_work_schedule.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ form.current_work_schedule.errors.0 }}</p>

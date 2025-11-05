@@ -21,32 +21,32 @@ class WorkScheduleForm(forms.ModelForm):
                   'pause_start', 'pause_end', 'is_default']
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'placeholder': 'Ex: Bureau Standard, Mi-temps, Équipe Nuit'
             }),
             'description': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'rows': 3,
                 'placeholder': 'Description du profil horaire et à qui il s\'applique'
             }),
             'start_time': forms.TimeInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'time'
             }),
             'end_time': forms.TimeInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'time'
             }),
             'pause_start': forms.TimeInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'time'
             }),
             'pause_end': forms.TimeInput(attrs={
-                'class': 'form-control',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
                 'type': 'time'
             }),
             'is_default': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
             })
         }
         labels = {
@@ -121,7 +121,7 @@ class ChangeEmployeeScheduleForm(forms.Form):
         empty_label="Sélectionnez un profil horaire",
         label="Nouveau profil horaire",
         widget=forms.Select(attrs={
-            'class': 'form-control'
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         }),
         help_text="Le changement sera effectif immédiatement"
     )
@@ -130,7 +130,7 @@ class ChangeEmployeeScheduleForm(forms.Form):
         required=False,
         label="Motif du changement (optionnel)",
         widget=forms.Textarea(attrs={
-            'class': 'form-control',
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
             'rows': 3,
             'placeholder': 'Ex: Changement d\'équipe, passage à mi-temps, etc.'
         })

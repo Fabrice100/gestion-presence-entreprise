@@ -19,7 +19,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, DetailView
 from django.utils import timezone
 from django.db.models import Q
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from decimal import Decimal
 from django_ratelimit.decorators import ratelimit
 from django.conf import settings
 from common.error_handler import handle_errors, ErrorContext, ErrorCode, ErrorSeverity
@@ -156,31 +157,98 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        """Filtre les présences avec optimisations de performance."""
+        """Filtre et agrège les présences par date."""
         # Requête de base optimisée
         queryset = Attendance.objects.filter(
             employee=self.request.user
-        ).select_related('employee').order_by('-date', '-time')
+        ).select_related('employee').order_by('-date', 'time')
         
         # Filtres de date
         today = timezone.now().date()
-        start_date = self.request.GET.get('date_from', today - timedelta(days=30))
-        end_date = self.request.GET.get('date_to', today)
+        start_date = self.request.GET.get('date_from')
+        end_date = self.request.GET.get('date_to')
         
-        # Conversion des dates si nécessaire
-        if isinstance(start_date, str):
-            start_date = date.fromisoformat(start_date)
-        if isinstance(end_date, str):
-            end_date = date.fromisoformat(end_date)
+        if start_date:
+            if isinstance(start_date, str):
+                start_date = date.fromisoformat(start_date)
+            queryset = queryset.filter(date__gte=start_date)
+        else:
+            start_date = today - timedelta(days=30)
+            queryset = queryset.filter(date__gte=start_date)
         
-        queryset = queryset.filter(date__range=[start_date, end_date])
+        if end_date:
+            if isinstance(end_date, str):
+                end_date = date.fromisoformat(end_date)
+            queryset = queryset.filter(date__lte=end_date)
+        else:
+            end_date = today
+            queryset = queryset.filter(date__lte=end_date)
         
-        # Filtres supplémentaires
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
+        # Agréger les pointages par date
+        from collections import defaultdict
+        aggregated = defaultdict(lambda: {
+            'date': None,
+            'check_in': None,
+            'check_out': None,
+            'total_hours': None,
+            'worked_hours': None
+        })
         
-        return queryset
+        for att in queryset:
+            att_date = att.date
+            if not aggregated[att_date]['date']:
+                aggregated[att_date]['date'] = att_date
+            
+            if att.punch_type == 'in':
+                aggregated[att_date]['check_in'] = att.time
+            elif att.punch_type == 'out':
+                aggregated[att_date]['check_out'] = att.time
+                # Utiliser worked_hours s'il existe, sinon calculer à partir de check_in/check_out
+                if att.worked_hours is not None:
+                    aggregated[att_date]['worked_hours'] = att.worked_hours
+                    total_decimal = float(att.worked_hours)
+                    aggregated[att_date]['total_hours'] = f"{total_decimal:.2f}h"
+        
+        # Calculer la durée pour les jours avec entrée ET sortie mais sans worked_hours
+        from attendance.hours_calculation_service import HoursCalculationService
+        
+        for att_date in aggregated.keys():
+            data = aggregated[att_date]
+            if data['check_in'] and data['check_out'] and not data['total_hours']:
+                # Utiliser le service de calcul qui prend en compte le profil horaire
+                try:
+                    employee_profile = self.request.user.employee_profile
+                    worked_hours = HoursCalculationService.calculate_worked_hours(
+                        data['check_in'],
+                        data['check_out'],
+                        employee_profile=employee_profile,
+                        attendance_date=att_date
+                    )
+                except Exception:
+                    # Fallback: calcul simple sans profil horaire
+                    worked_hours = HoursCalculationService.calculate_worked_hours(
+                        data['check_in'],
+                        data['check_out']
+                    )
+                
+                # Formater avec 2 décimales
+                total_decimal = float(worked_hours)
+                aggregated[att_date]['total_hours'] = f"{total_decimal:.2f}h"
+                aggregated[att_date]['worked_hours'] = worked_hours
+        
+        # Convertir en liste et trier par date (plus récent en premier)
+        result = []
+        for att_date in sorted(aggregated.keys(), reverse=True):
+            data = aggregated[att_date]
+            # Créer un objet simple avec les attributs nécessaires
+            class AttendanceDay:
+                def __init__(self, **kwargs):
+                    for key, value in kwargs.items():
+                        setattr(self, key, value)
+            
+            result.append(AttendanceDay(**data))
+        
+        return result
     
     def get_context_data(self, **kwargs):
         """Ajoute des données de contexte optimisées."""
@@ -188,7 +256,7 @@ class MyAttendanceView(EmployeeRequiredMixin, ListView):
         
         # Statistiques de base
         current_year = timezone.now().year
-        attendances_count = self.get_queryset().count()
+        attendances_count = len(self.get_queryset())
         
         context.update({
             'attendance_count': attendances_count,
@@ -297,11 +365,5 @@ class TeamAttendanceView(EnhancedLoginRequiredMixin, ListView):
         
         return context
 
-
-class AnomaliesManagementView(EnhancedLoginRequiredMixin, TemplateView):
-    """Fonctionnalité anomalies désactivée: redirection vers dashboard RH."""
-    def dispatch(self, request, *args, **kwargs):
-        messages.info(request, "La gestion des anomalies est désactivée.")
-        return redirect('reports:reports_dashboard')
 
 

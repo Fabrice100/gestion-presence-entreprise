@@ -1,5 +1,6 @@
 {% extends 'base_ultra_modern.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Confirmer la suppression{% endblock %}
 
@@ -33,11 +34,11 @@
             </div>
             <div>
                 <p class="text-sm text-gray-500">Pause</p>
-                <p class="text-gray-900">{{ object.pause_start|time:"H:i" }} - {{ object.pause_end|time:"H:i" }} <span class="ml-2 text-sm text-gray-500">({{ object.get_pause_duration_hours }}h)</span></p>
+                <p class="text-gray-900">{{ object.pause_start|time:"H:i" }} - {{ object.pause_end|time:"H:i" }} <span class="ml-2 text-sm text-gray-500">({{ object.get_pause_duration_hours|format_hours }})</span></p>
             </div>
             <div>
                 <p class="text-sm text-gray-500">Durée contractuelle</p>
-                <p class="text-gray-900"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ object.get_contractual_duration_hours }}h/jour</span></p>
+                <p class="text-gray-900"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ object.get_contractual_duration_hours|format_hours }}/jour</span></p>
             </div>
         </div>
 

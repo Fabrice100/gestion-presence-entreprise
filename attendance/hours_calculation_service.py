@@ -372,8 +372,25 @@ class HoursCalculationService:
         # 3. CALCULER LA DURÉE CORRIGÉE
         duration = cls.calculate_duration_hours(corrected_in, corrected_out)
         
-        # 4. DÉDUIRE LA PAUSE CONTRACTUELLE
-        pause_duration = schedule.get_pause_duration_hours()
+        # 4. DÉDUIRE LA PAUSE CONTRACTUELLE (seulement si elle chevauche la période travaillée)
+        pause_duration = Decimal('0.00')
+        
+        # Vérifier si la pause chevauche avec la période travaillée
+        # Pause complètement avant : pas de déduction
+        if schedule.pause_end <= corrected_in:
+            pause_duration = Decimal('0.00')
+        # Pause complètement après : pas de déduction
+        elif schedule.pause_start >= corrected_out:
+            pause_duration = Decimal('0.00')
+        else:
+            # Pause chevauche avec la période travaillée
+            # Calculer la partie de la pause qui est dans la période travaillée
+            pause_start_in_period = max(schedule.pause_start, corrected_in)
+            pause_end_in_period = min(schedule.pause_end, corrected_out)
+            
+            # Calculer la durée de pause effective
+            pause_duration = cls.calculate_duration_hours(pause_start_in_period, pause_end_in_period)
+        
         worked = duration - pause_duration
         
         # 5. ÉVITER LES VALEURS NÉGATIVES

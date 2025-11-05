@@ -1,5 +1,6 @@
 {% extends 'base_ultra_modern.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Rapport Heures travaillées - PresencePro{% endblock %}
 {% block page_title %}Rapport Heures travaillées{% endblock %}
@@ -88,7 +89,7 @@
                         <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">{{ stat.employee.employee_profile.employee_id }}</td>
                         <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">{{ stat.employee.get_full_name|default:stat.employee.username }}</td>
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ stat.employee.employee_profile.department.name|default:'-' }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 text-right">{{ stat.total_hours|floatformat:2 }} h</td>
+                        <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 text-right">{{ stat.total_hours|format_hours }}</td>
                         <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 text-right">{{ stat.present_days }}</td>
                         <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 text-right">{{ stat.attendance_rate|floatformat:1 }}%</td>
                     </tr>

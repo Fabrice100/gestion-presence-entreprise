@@ -22,6 +22,7 @@ from django.views.generic import TemplateView
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import date, timedelta, datetime
+from decimal import Decimal
 
 from accounts.models import EmployeeProfile, Department
 from attendance.models import Attendance
@@ -109,20 +110,27 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
         
         # Calcul des statistiques
         total_work_days = month_attendance.filter(punch_type='in').count()
-        total_hours = 0
-        today_hours = 0
+        total_hours = Decimal('0.00')
+        today_hours = Decimal('0.00')
         
-        # Calcul des heures du mois
+        # Calcul des heures du mois (utiliser worked_hours qui inclut pause et plafonnement)
         for attendance in month_attendance.filter(punch_type='out'):
-            duration = attendance.get_duration_with_previous()
-            if duration:
-                total_hours += duration
+            if attendance.worked_hours is not None:
+                total_hours += Decimal(str(attendance.worked_hours))
         
         # Calcul des heures d'aujourd'hui
         for attendance in today_attendance.filter(punch_type='out'):
-            duration = attendance.get_duration_with_previous()
-            if duration:
-                today_hours += duration
+            if attendance.worked_hours is not None:
+                today_hours += Decimal(str(attendance.worked_hours))
+        
+        # Calcul des pourcentages pour les barres de progression
+        # Mois : basé sur 160h (20 jours × 8h)
+        month_hours_float = float(total_hours.quantize(Decimal('0.1')))
+        month_progress = min(100, max(0, int((month_hours_float / 160) * 100))) if month_hours_float > 0 else 0
+        
+        # Aujourd'hui : basé sur 8h/jour
+        today_hours_float = float(today_hours.quantize(Decimal('0.1')))
+        today_progress = min(100, max(0, int((today_hours_float / 8) * 100))) if today_hours_float > 0 else 0
         
         # Anomalies désactivées → pas de compteur
         
@@ -154,13 +162,12 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
                 punch_type='out'
             )
             
-            day_total = 0
+            day_total = Decimal('0.00')
             for att in day_attendance:
-                duration = att.get_duration_with_previous()
-                if duration:
-                    day_total += duration
+                if att.worked_hours is not None:
+                    day_total += Decimal(str(att.worked_hours))
             
-            week_hours.append(round(day_total, 1))
+            week_hours.append(float(day_total.quantize(Decimal('0.1'))))
         
         context.update({
             'today_attendance': today_attendance,
@@ -168,8 +175,10 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             'recent_leave_requests': recent_leave_requests,
             'leave_balances': leave_balances,
             'total_work_days': total_work_days,
-            'month_hours': round(total_hours, 1),
-            'today_hours': round(today_hours, 1),
+            'month_hours': float(total_hours.quantize(Decimal('0.1'))),
+            'today_hours': float(today_hours.quantize(Decimal('0.1'))),
+            'month_progress': month_progress,  # Pourcentage pour la barre de progression (0-100)
+            'today_progress': today_progress,  # Pourcentage pour la barre de progression (0-100)
             # 'pending_anomalies': 0,
             'leave_balance': total_leave_balance,
             'current_status': current_status,
@@ -212,11 +221,45 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         # Obtenir les utilisateurs des employés gérés
         managed_users = [profile.user for profile in managed_profiles]
         
-        # Présences de l'équipe aujourd'hui
-        team_attendance_today = Attendance.objects.filter(
-            employee__in=managed_users,
-            date=today
-        ).select_related('employee')
+        # Initialiser team_status_today (toujours une liste, même vide)
+        team_status_today = []
+        present_employees = set()
+        
+        if managed_users:
+            # Présences de l'équipe aujourd'hui
+            team_attendance_today = Attendance.objects.filter(
+                employee__in=managed_users,
+                date=today
+            ).select_related('employee').order_by('employee__last_name', 'employee__first_name')
+            
+            # Obtenir les employés qui ont pointé entrée aujourd'hui
+            for att in team_attendance_today.filter(punch_type='in'):
+                present_employees.add(att.employee)
+            
+            # Créer une liste des employés avec leur statut de présence
+            for employee_user in managed_users:
+                is_present = employee_user in present_employees
+                # Récupérer l'heure d'entrée si présente
+                entry_time = None
+                if is_present:
+                    entry_att = team_attendance_today.filter(
+                        employee=employee_user,
+                        punch_type='in'
+                    ).first()
+                    if entry_att:
+                        entry_time = entry_att.time
+                
+                team_status_today.append({
+                    'employee': employee_user,
+                    'is_present': is_present,
+                    'entry_time': entry_time,
+                })
+            
+            # Trier : présents en premier, puis absents
+            team_status_today.sort(key=lambda x: (not x['is_present'], x['employee'].last_name))
+        else:
+            # Pas d'employés gérés : queryset vide pour team_attendance_today
+            team_attendance_today = Attendance.objects.none()
         
         # Demandes de congés en attente
         pending_leave_requests = LeaveRequest.objects.filter(
@@ -229,7 +272,7 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         # Statistiques de l'équipe
         team_stats = {
             'total_employees': managed_profiles.count(),
-            'present_today': team_attendance_today.filter(punch_type='in').count(),
+            'present_today': len(present_employees),
             'pending_requests': pending_leave_requests.count(),
             # 'pending_anomalies': 0,
         }
@@ -247,6 +290,7 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         context.update({
             'managed_employees': managed_profiles,
             'team_attendance_today': team_attendance_today,
+            'team_status_today': team_status_today,  # Liste des employés avec statut présence
             'pending_leave_requests': pending_leave_requests,
             # 'team_anomalies': [],
             'team_stats': team_stats,
@@ -257,11 +301,11 @@ class ManagerDashboardView(ManagerRequiredMixin, TemplateView):
         return context
 
 
-class RhDgDashboardView(RHRequiredMixin, TemplateView):
+class RhDashboardView(RHRequiredMixin, TemplateView):
     """
-    Tableau de bord pour les RH et DG.
+    Tableau de bord pour les RH.
     """
-    template_name = 'dashboard/rh_dg_dashboard_ultra_modern.html'
+    template_name = 'dashboard/rh_dashboard_ultra_modern.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

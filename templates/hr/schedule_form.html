@@ -7,11 +7,7 @@
 <div class="p-6 max-w-4xl mx-auto">
     <!-- En-tête -->
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 flex items-center">
-            <i class="bi bi-clock text-primary-600 mr-2"></i>
-            {{ page_title }}
-        </h1>
-        <p class="text-gray-600">Définissez les horaires contractuels pour ce profil</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
     </div>
 
     <!-- Formulaire -->
@@ -39,7 +35,7 @@
 
             <!-- Horaires de travail -->
             <div>
-                <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center"><i class="bi bi-briefcase mr-2"></i> Horaires de travail</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Horaires de travail</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.start_time.label }} <span class="text-red-600">*</span></label>
@@ -58,7 +54,7 @@
 
             <!-- Pause -->
             <div>
-                <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center"><i class="bi bi-cup-hot mr-2"></i> Pause</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Pause</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="{{ form.pause_start.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.pause_start.label }} <span class="text-red-600">*</span></label>
@@ -82,25 +78,19 @@
             <!-- Boutons -->
             <div class="flex items-center justify-between">
                 <a href="{% url 'hr:hr_schedule_list' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
-                    <i class="bi bi-arrow-left mr-2"></i> Annuler
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Annuler
                 </a>
                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                    <i class="bi bi-save mr-2"></i>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
                     {{ submit_text }}
                 </button>
             </div>
         </form>
-    </div>
-
-    <!-- Aide -->
-    <div class="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
-        <h3 class="text-blue-900 font-semibold mb-1 flex items-center"><i class="bi bi-lightbulb mr-2"></i> Astuce</h3>
-        <ul class="text-sm text-blue-800 list-disc ml-6 space-y-1">
-            <li>Les heures de début et fin définissent la plage horaire contractuelle (HDC et HFC)</li>
-            <li>Si un employé pointe avant l'HDC, l'heure sera ajustée à l'HDC pour le calcul</li>
-            <li>Si un employé pointe après l'HFC, l'heure sera ajustée à l'HFC (pas d'heures sup)</li>
-            <li>La pause est automatiquement déduite du temps de travail</li>
-        </ul>
     </div>
 </div>
 {% endblock %}

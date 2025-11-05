@@ -67,8 +67,8 @@ class ForcePasswordChangeMiddleware:
                     if any(current_path.startswith(allowed) for allowed in self.allowed_paths):
                         return self.get_response(request)
                     
-                    # 4. Rediriger vers la page de changement de mot de passe
-                    force_change_url = reverse('force_password_change')
+                    # 4. Rediriger vers la page de changement de mot de passe (namespaced)
+                    force_change_url = reverse('accounts:force_password_change')
                     
                     # Éviter boucle infinie si déjà sur la page
                     if current_path != force_change_url:

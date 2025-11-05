@@ -155,7 +155,8 @@ class UserService:
             profile_data (dict): Données du profil (department, manager, role, phone)
             
         Returns:
-            tuple: (user, employee_id, password) ou (None, None, None) en cas d'erreur
+            tuple: (user, employee_id, password, error_message)
+            - user=None si échec et error_message contient la cause
         """
         from django.db import transaction
         
@@ -191,9 +192,12 @@ class UserService:
                 profile.can_punch = True if profile.role in ['employee', 'manager'] else False
                 profile.save()
                 
-                return user, employee_id, temporary_password
+                return user, employee_id, temporary_password, None
             
         except Exception as e:
-            print(f'Erreur lors de la création de l\'employé: {str(e)}')
-            return None, None, None
+            # Journaliser et remonter un message exploitable à l'interface
+            import logging
+            logger = logging.getLogger('django')
+            logger.error(f"Erreur creation employe: {e}")
+            return None, None, None, str(e)
 

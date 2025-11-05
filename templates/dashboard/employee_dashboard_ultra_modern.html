@@ -1,5 +1,6 @@
 {% extends 'base_ultra_modern.html' %}
 {% load static %}
+{% load format_filters %}
 
 {% block title %}Dashboard - PresencePro{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -19,13 +20,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <span class="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                    +12.5%
-                </span>
             </div>
             <div>
                 <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {{ month_hours|default:"0"|floatformat:1 }}h
+                    {{ month_hours|default:"0"|format_hours }}
                 </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     Heures ce mois
@@ -36,8 +34,8 @@
             </div>
             <!-- Mini progress bar -->
             <div class="mt-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500" 
-                     style="width: {% widthratio month_hours|default:"0"|floatformat:0 160 100 %}%"></div>
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 month-progress-bar" 
+                     data-progress="{{ month_progress|default:0 }}"></div>
             </div>
         </div>
         
@@ -57,7 +55,7 @@
             </div>
             <div>
                 <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {{ today_hours|default:"0"|floatformat:1 }}h
+                    {{ today_hours|default:"0"|format_hours }}
                 </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     Heures aujourd'hui
@@ -68,8 +66,8 @@
             </div>
             <!-- Mini progress bar -->
             <div class="mt-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500" 
-                     style="width: {% widthratio today_hours|default:"0"|floatformat:0 8 100 %}%"></div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500 today-progress-bar" 
+                     data-progress="{{ today_progress|default:0 }}"></div>
             </div>
         </div>
         
@@ -219,6 +217,23 @@
             clockElement.textContent = `${hours}:${minutes}:${seconds}`;
         }
     }
+    
+    // Initialiser les barres de progression
+    document.addEventListener('DOMContentLoaded', function() {
+        // Barre de progression du mois
+        const monthBar = document.querySelector('.month-progress-bar');
+        if (monthBar) {
+            const progress = monthBar.getAttribute('data-progress') || '0';
+            monthBar.style.width = progress + '%';
+        }
+        
+        // Barre de progression du jour
+        const todayBar = document.querySelector('.today-progress-bar');
+        if (todayBar) {
+            const progress = todayBar.getAttribute('data-progress') || '0';
+            todayBar.style.width = progress + '%';
+        }
+    });
     
     updateClock();
     setInterval(updateClock, 1000);

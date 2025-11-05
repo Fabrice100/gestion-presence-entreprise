@@ -1,0 +1,21 @@
+# Requirements pour le développement et les tests
+# Inclut les dépendances de production + outils de développement
+
+# Inclusion des dépendances de production
+-r requirements.txt
+
+# ============================================
+# Outils de développement et tests
+# ============================================
+
+# Tests et coverage
+pytest==7.4.3
+pytest-django==4.7.0
+coverage==7.3.2
+
+# Debug et développement
+django-debug-toolbar==4.2.0
+
+# Note: Les autres packages (Django, psycopg2, etc.) sont dans requirements.txt
+
+

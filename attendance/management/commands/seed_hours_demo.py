@@ -80,3 +80,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Pointages de démo générés pour {created_count} sorties sur {days} jour(s)."))
 
 
+
+
+

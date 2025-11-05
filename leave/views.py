@@ -26,20 +26,7 @@ from accounts.models import Department
 # Import du mixin centralisé (principe DRY)
 from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
 
-
-class LeaveRequestCreateView(EmployeeRequiredMixin, TemplateView):
-    """Vue pour créer une demande de congé."""
-    template_name = 'leave/leave_request_create_ultra_modern.html'
-
-
-class LeaveBalanceListView(EmployeeRequiredMixin, ListView):
-    """Vue pour lister les soldes de congés."""
-    model = LeaveBalance
-    template_name = 'leave/leave_balance_list.html'
-    context_object_name = 'leave_balances'
-    
-    def get_queryset(self):
-        return LeaveBalance.objects.filter(employee=self.request.user)
+# Note: LeaveRequestCreateView et LeaveBalanceListView sont dans workflow_views.py
 
 
 class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
@@ -328,33 +315,32 @@ class LeaveRequestEditView(EmployeeRequiredMixin, UpdateView):
         return reverse('leave:leave_request_detail', kwargs={'pk': self.object.pk})
 
 
-class LeaveRequestCancelView(EmployeeRequiredMixin, UpdateView):
+class LeaveRequestCancelView(EmployeeRequiredMixin, DetailView):
     model = LeaveRequest
-    template_name = 'leave/leave_request_cancel.html'
     context_object_name = 'leave_request'
-    fields = []
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        from .leave_balance_service import leave_balance_service
-        context['remaining_days'] = leave_balance_service.get_remaining_balance(self.request.user)
-        return context
-    
+
+    # Annuler immédiatement (GET) et rediriger sans template intermédiaire
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.status = 'cancelled'
+        # Historiser la raison si fournie via query string
+        reason = request.GET.get('reason') or ''
+        if reason:
+            self.object.manager_comment = f"Annulé par l'employé: {reason}"
+        self.object.save()
+        messages.success(request, 'Demande de congé annulée avec succès.')
+        return redirect('leave:leave_request_list')
+
+    # Support POST optionnel (même logique)
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        cancellation_reason = request.POST.get('cancellation_reason', '')
-        
-        if cancellation_reason:
-            self.object.status = 'cancelled'
-            self.object.manager_comment = f"Annulé par l'employé: {cancellation_reason}"
-            self.object.save()
-            messages.success(request, 'Demande de congé annulée avec succès.')
-            return redirect('leave:leave_request_list')
-        
-        return self.form_invalid()
-    
-    def get_success_url(self):
-        return reverse('leave:leave_request_list')
+        reason = request.POST.get('cancellation_reason') or ''
+        self.object.status = 'cancelled'
+        if reason:
+            self.object.manager_comment = f"Annulé par l'employé: {reason}"
+        self.object.save()
+        messages.success(request, 'Demande de congé annulée avec succès.')
+        return redirect('leave:leave_request_list')
 
 
 

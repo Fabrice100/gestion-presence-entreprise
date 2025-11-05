@@ -8,7 +8,7 @@
       "code": "CP",
       "unit": "days",
       "allocation_type": "annual",
-      "allocation_amount": "24.00",
+      "allocation_amount": "30.00",
       "max_consecutive_days": 24,
       "requires_justification": false,
       "requires_medical_certificate": false,
@@ -69,7 +69,7 @@
     "model": "leave.leavetype",
     "pk": 4,
     "fields": {
-      "name": "Congé sans solde",
+      "name": "Autre",
       "description": "Absence non rémunérée sur demande et accord de l'employeur",
       "code": "CSS",
       "unit": "days",
