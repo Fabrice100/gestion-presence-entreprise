@@ -37,20 +37,28 @@ from common.mixins import EnhancedLoginRequiredMixin, EmployeeRequiredMixin
 class PunchView(EmployeeRequiredMixin, TemplateView):
     """Vue principale pour le pointage."""
     template_name = 'attendance/punch_ultra_modern.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        profile = getattr(request.user, 'employee_profile', None)
+
+        if profile is None:
+            messages.error(request, "Vous n'avez pas de profil employé. Contactez l'administrateur.")
+            return redirect('dashboard:dashboard')
+
+        if profile.role == 'rh':
+            messages.info(request, "Les comptes RH ne pointent pas dans l'application.")
+            return redirect('dashboard:rh_dashboard')
+
+        if not profile.can_punch:
+            messages.error(request, "Vous n'êtes pas autorisé à pointer.")
+            return redirect('dashboard:dashboard')
+
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         today = date.today()
-        
-        # Vérifier si l'utilisateur peut pointer
-        try:
-            if not user.employee_profile.can_punch:
-                messages.error(self.request, 'Vous n\'êtes pas autorisé à pointer.')
-                return redirect('dashboard:dashboard')
-        except:
-            messages.error(self.request, 'Vous n\'avez pas de profil employé. Contactez l\'administrateur.')
-            return redirect('dashboard:dashboard')
         
         # Pointages du jour
         today_attendance = Attendance.objects.filter(

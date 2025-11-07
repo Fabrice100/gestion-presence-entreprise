@@ -77,9 +77,13 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('leave:leave_request_list')
     
     @method_decorator(ratelimit(key='user', rate=settings.RATELIMIT_LEAVE_RATE, method='POST', block=True))
-    def dispatch(self, *args, **kwargs):
-        """Dispatch avec protection rate limiting."""
-        return super().dispatch(*args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        """Dispatch avec protection rate limiting et restrictions de rôle."""
+        profile = getattr(request.user, 'employee_profile', None)
+        if profile and profile.role == 'rh':
+            messages.info(request, "Les comptes RH ne créent pas de demandes de congé.")
+            return redirect('dashboard:rh_dashboard')
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         """Ajoute le solde de congés au contexte."""
