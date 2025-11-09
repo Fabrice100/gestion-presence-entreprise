@@ -10,24 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Note: La colonne priority a déjà été supprimée par la migration 0006 (RunSQL)
-        # Cette migration utilise SeparateDatabaseAndState pour mettre à jour l'état Django
-        # sans tenter de supprimer la colonne qui n'existe plus
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                # Ne rien faire en base (colonne déjà supprimée par migration 0006)
-                # Utiliser RunSQL avec une requête qui ne fait rien mais qui est valide
-                migrations.RunSQL(
-                    sql="SELECT 1;",  # Requête SQL valide qui ne fait rien
-                    reverse_sql="SELECT 1;",
-                ),
-            ],
-            state_operations=[
-                # Mettre à jour l'état Django pour refléter que le champ est supprimé
-                migrations.RemoveField(
-                    model_name='leaverequest',
-                    name='priority',
-                ),
-            ],
+        migrations.RemoveField(
+            model_name='leaverequest',
+            name='priority',
         ),
     ]

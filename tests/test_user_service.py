@@ -44,14 +44,20 @@ class UserServiceEmployeeIDTest(TestCase):
         profile1.department = self.dept
         profile1.save()
         
-        # Générer 10 nouveaux IDs
-        generated_ids = set()
-        for _ in range(10):
+        generated_ids = []
+        for i in range(10):
             new_id = UserService.generate_employee_id()
-            generated_ids.add(new_id)
+            generated_ids.append(new_id)
+            
+            # Créer un utilisateur et lier l'ID pour qu'il soit pris en compte aux itérations suivantes
+            user = User.objects.create_user(username=f'temp_user_{i}', password='password')
+            profile = user.employee_profile
+            profile.employee_id = new_id
+            profile.department = self.dept
+            profile.save()
         
-        # Vérifier unicité
-        self.assertEqual(len(generated_ids), 10)
+        # Vérifier que tous les IDs sont uniques et différents de ceux déjà existants
+        self.assertEqual(len(set(generated_ids)), 10)
         self.assertNotIn('EMP123', generated_ids)
     
     def test_generate_employee_id_random(self):
@@ -161,7 +167,7 @@ class UserServiceCreateEmployeeTest(TestCase):
             'role': 'employee'
         }
         
-        user, employee_id, password = UserService.create_employee_with_credentials(
+        user, employee_id, password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
@@ -169,6 +175,7 @@ class UserServiceCreateEmployeeTest(TestCase):
         self.assertIsNotNone(user)
         self.assertIsNotNone(employee_id)
         self.assertIsNotNone(password)
+        self.assertIsNone(error_message)
         
         self.assertEqual(user.email, 'marie.martin@example.com')
         self.assertEqual(user.first_name, 'Marie')
@@ -197,12 +204,13 @@ class UserServiceCreateEmployeeTest(TestCase):
             'role': 'rh'
         }
         
-        user, employee_id, password = UserService.create_employee_with_credentials(
+        user, employee_id, password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
         # RH ne peut pas pointer
         self.assertFalse(user.employee_profile.can_punch)
+        self.assertIsNone(error_message)
     
     def test_create_employee_password_valid(self):
         """Vérifie que le mot de passe généré fonctionne."""
@@ -218,12 +226,13 @@ class UserServiceCreateEmployeeTest(TestCase):
             'role': 'employee'
         }
         
-        user, employee_id, password = UserService.create_employee_with_credentials(
+        user, employee_id, password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
         # Vérifier que le mot de passe fonctionne
         self.assertTrue(user.check_password(password))
+        self.assertIsNone(error_message)
     
     def test_create_employee_employee_id_format(self):
         """Vérifie le format de l'employee_id créé."""
@@ -239,10 +248,11 @@ class UserServiceCreateEmployeeTest(TestCase):
             'role': 'employee'
         }
         
-        user, employee_id, password = UserService.create_employee_with_credentials(
+        user, employee_id, password, error_message = UserService.create_employee_with_credentials(
             user_data, profile_data
         )
         
         # Vérifier le format EMPXXX
         self.assertTrue(employee_id.startswith('EMP'))
         self.assertEqual(len(employee_id), 6)
+        self.assertIsNone(error_message)

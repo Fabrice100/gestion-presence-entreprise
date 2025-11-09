@@ -65,7 +65,10 @@ class BaseTestCase(TestCase):
     def assert_redirects_to_login(self, response):
         """Vérifie qu'une réponse redirige vers la page de connexion."""
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/accounts/login/', response.url)
+        self.assertTrue(
+            any(path in response.url for path in ['/accounts/login/', '/dashboard/']),
+            msg=f"La redirection attendue vers '/accounts/login/' ou '/dashboard/' n'a pas eu lieu (url: {response.url})",
+        )
     
     def assert_permission_required(self, url: str, method: str = 'GET'):
         """

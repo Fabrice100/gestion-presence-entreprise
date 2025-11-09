@@ -24,6 +24,23 @@ from accounts.models import EmployeeProfile, Department
 User = get_user_model()
 
 
+def configure_profile(user, **kwargs):
+    defaults = {
+        'employee_id': kwargs.get('employee_id', 'EMP000'),
+        'department': kwargs.get('department'),
+        'role': kwargs.get('role', 'employee'),
+        'force_password_change': kwargs.get('force_password_change', False),
+        'can_punch': kwargs.get('can_punch', True),
+        'manager': kwargs.get('manager'),
+        'current_work_schedule': kwargs.get('current_work_schedule'),
+    }
+    profile, _ = EmployeeProfile.objects.update_or_create(
+        user=user,
+        defaults=defaults,
+    )
+    return profile
+
+
 class LeaveTypeDeductsBalanceTest(TestCase):
     """Tests pour le champ deducts_balance sur LeaveType."""
     
@@ -33,24 +50,30 @@ class LeaveTypeDeductsBalanceTest(TestCase):
         self.cp = LeaveType.objects.create(
             name="Congé Annuel",
             code="CP",
-            default_days=22,
-            requires_document=False,
+            allocation_type='annual',
+            allocation_amount=Decimal('22'),
+            requires_justification=False,
+            requires_medical_certificate=False,
             deducts_balance=True  # Doit déduire
         )
         
         self.maladie = LeaveType.objects.create(
             name="Congé Maladie",
             code="MAL",
-            default_days=0,
-            requires_document=True,
+            allocation_type='on_demand',
+            allocation_amount=Decimal('0'),
+            requires_justification=True,
+            requires_medical_certificate=True,
             deducts_balance=False  # Ne doit PAS déduire
         )
         
         self.exceptionnel = LeaveType.objects.create(
             name="Congé Exceptionnel",
             code="EVT",
-            default_days=0,
-            requires_document=False,
+            allocation_type='on_demand',
+            allocation_amount=Decimal('0'),
+            requires_justification=False,
+            requires_medical_certificate=False,
             deducts_balance=False  # Ne doit PAS déduire
         )
     
@@ -91,10 +114,9 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             email='engineer@example.com',
             password='Pass123'
         )
-        self.employee_profile = EmployeeProfile.objects.create(
-            user=self.employee_user,
+        self.employee_profile = configure_profile(
+            self.employee_user,
             employee_id='ENG001',
-            phone='1234567890',
             department=self.department,
             role='employee'
         )
@@ -103,14 +125,16 @@ class LeaveBalanceDeductionLogicTest(TestCase):
         self.cp = LeaveType.objects.create(
             name="Congé Annuel",
             code="CP",
-            default_days=22,
+            allocation_type='annual',
+            allocation_amount=Decimal('22'),
             deducts_balance=True
         )
         
         self.maladie = LeaveType.objects.create(
             name="Congé Maladie",
             code="MAL",
-            default_days=0,
+            allocation_type='on_demand',
+            allocation_amount=Decimal('0'),
             deducts_balance=False
         )
         
@@ -119,9 +143,9 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             employee=self.employee_user,
             leave_type=self.cp,
             year=timezone.now().year,
-            total_days=22,
-            used_days=0,
-            remaining_days=22
+            allocated_balance=Decimal('22'),
+            taken_balance=Decimal('0'),
+            carried_over_balance=Decimal('0'),
         )
     
     def test_cp_deducts_from_balance(self):
@@ -132,27 +156,27 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             leave_type=self.cp,
             start_date=date.today() + timedelta(days=10),
             end_date=date.today() + timedelta(days=14),
-            total_days=5,
+            duration_days=Decimal('0'),
             reason="Vacances",
             status='approved_rh'
         )
+        leave_request.refresh_from_db()
         
         # Simuler la déduction (normalement fait par le signal/workflow)
         if leave_request.leave_type.deducts_balance:
-            self.balance.used_days += Decimal(leave_request.total_days)
-            self.balance.remaining_days -= Decimal(leave_request.total_days)
+            self.balance.taken_balance += Decimal(str(leave_request.duration_days))
             self.balance.save()
         
         # Vérifier la déduction
         self.balance.refresh_from_db()
-        self.assertEqual(self.balance.used_days, 5)
-        self.assertEqual(self.balance.remaining_days, 17)
+        self.assertEqual(self.balance.taken_balance, Decimal('5'))
+        self.assertEqual(self.balance.remaining_balance, Decimal('17'))
     
     def test_maladie_does_not_deduct_from_balance(self):
         """Test: Congé Maladie ne déduit PAS du solde."""
         # Solde initial
-        initial_used = self.balance.used_days
-        initial_remaining = self.balance.remaining_days
+        initial_taken = self.balance.taken_balance
+        initial_remaining = self.balance.remaining_balance
         
         # Créer une demande de congé maladie
         leave_request = LeaveRequest.objects.create(
@@ -160,21 +184,21 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             leave_type=self.maladie,
             start_date=date.today() + timedelta(days=20),
             end_date=date.today() + timedelta(days=22),
-            total_days=3,
+            duration_days=Decimal('0'),
             reason="Maladie",
             status='approved_rh'
         )
+        leave_request.refresh_from_db()
         
         # Simuler la logique (ne doit PAS déduire)
         if leave_request.leave_type.deducts_balance:
-            self.balance.used_days += Decimal(leave_request.total_days)
-            self.balance.remaining_days -= Decimal(leave_request.total_days)
+            self.balance.taken_balance += Decimal(str(leave_request.duration_days))
             self.balance.save()
         
         # Vérifier que le solde n'a PAS changé
         self.balance.refresh_from_db()
-        self.assertEqual(self.balance.used_days, initial_used)
-        self.assertEqual(self.balance.remaining_days, initial_remaining)
+        self.assertEqual(self.balance.taken_balance, initial_taken)
+        self.assertEqual(self.balance.remaining_balance, initial_remaining)
     
     def test_multiple_cp_requests_cumulative_deduction(self):
         """Test: Plusieurs demandes de CP déduisent cumulativement."""
@@ -184,14 +208,14 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             leave_type=self.cp,
             start_date=date.today() + timedelta(days=10),
             end_date=date.today() + timedelta(days=12),
-            total_days=3,
+            duration_days=Decimal('0'),
             reason="Vacances 1",
             status='approved_rh'
         )
+        leave1.refresh_from_db()
         
         if leave1.leave_type.deducts_balance:
-            self.balance.used_days += Decimal(leave1.total_days)
-            self.balance.remaining_days -= Decimal(leave1.total_days)
+            self.balance.taken_balance += Decimal(str(leave1.duration_days))
             self.balance.save()
         
         # Deuxième demande: 5 jours
@@ -200,40 +224,30 @@ class LeaveBalanceDeductionLogicTest(TestCase):
             leave_type=self.cp,
             start_date=date.today() + timedelta(days=30),
             end_date=date.today() + timedelta(days=34),
-            total_days=5,
+            duration_days=Decimal('0'),
             reason="Vacances 2",
             status='approved_rh'
         )
+        leave2.refresh_from_db()
         
         if leave2.leave_type.deducts_balance:
-            self.balance.used_days += Decimal(leave2.total_days)
-            self.balance.remaining_days -= Decimal(leave2.total_days)
+            self.balance.taken_balance += Decimal(str(leave2.duration_days))
             self.balance.save()
         
         # Vérifier le total: 3 + 5 = 8 jours utilisés
         self.balance.refresh_from_db()
-        self.assertEqual(self.balance.used_days, 8)
-        self.assertEqual(self.balance.remaining_days, 14)
+        self.assertEqual(self.balance.taken_balance, Decimal('8'))
+        self.assertEqual(self.balance.remaining_balance, Decimal('14'))
     
     def test_insufficient_balance_validation(self):
         """Test: Validation si solde insuffisant pour CP."""
-        # Réduire le solde
-        self.balance.remaining_days = 2
+        # Réduire le solde disponible à 2 jours
+        self.balance.taken_balance = Decimal('20')
         self.balance.save()
         
         # Tenter de créer une demande de 5 jours (supérieur au solde)
-        leave_request = LeaveRequest(
-            employee=self.employee_user,
-            leave_type=self.cp,
-            start_date=date.today() + timedelta(days=10),
-            end_date=date.today() + timedelta(days=14),
-            total_days=5,
-            reason="Vacances",
-            status='pending'
-        )
-        
-        # Vérifier si solde suffisant
-        has_sufficient_balance = self.balance.remaining_days >= leave_request.total_days
+        requested_duration = Decimal('5')
+        has_sufficient_balance = self.balance.remaining_balance >= requested_duration
         
         # Doit être insuffisant
         self.assertFalse(has_sufficient_balance)
@@ -256,10 +270,9 @@ class LeaveWorkflowDeductionTest(TestCase):
             email='marketer@example.com',
             password='Pass123'
         )
-        self.employee_profile = EmployeeProfile.objects.create(
-            user=self.employee,
+        self.employee_profile = configure_profile(
+            self.employee,
             employee_id='MKT001',
-            phone='1234567890',
             department=self.department,
             role='employee'
         )
@@ -270,10 +283,9 @@ class LeaveWorkflowDeductionTest(TestCase):
             email='manager@example.com',
             password='Pass123'
         )
-        self.manager_profile = EmployeeProfile.objects.create(
-            user=self.manager,
+        self.manager_profile = configure_profile(
+            self.manager,
             employee_id='MGR001',
-            phone='0987654321',
             department=self.department,
             role='manager'
         )
@@ -284,10 +296,9 @@ class LeaveWorkflowDeductionTest(TestCase):
             email='rh@example.com',
             password='Pass123'
         )
-        self.rh_profile = EmployeeProfile.objects.create(
-            user=self.rh,
+        self.rh_profile = configure_profile(
+            self.rh,
             employee_id='RH001',
-            phone='1111111111',
             department=self.department,
             role='rh'
         )
@@ -296,14 +307,16 @@ class LeaveWorkflowDeductionTest(TestCase):
         self.cp = LeaveType.objects.create(
             name="Congé Annuel",
             code="CP",
-            default_days=22,
+            allocation_type='annual',
+            allocation_amount=Decimal('22'),
             deducts_balance=True
         )
         
         self.exceptionnel = LeaveType.objects.create(
             name="Congé Exceptionnel",
             code="EVT",
-            default_days=0,
+            allocation_type='on_demand',
+            allocation_amount=Decimal('0'),
             deducts_balance=False
         )
         
@@ -312,9 +325,9 @@ class LeaveWorkflowDeductionTest(TestCase):
             employee=self.employee,
             leave_type=self.cp,
             year=timezone.now().year,
-            total_days=22,
-            used_days=0,
-            remaining_days=22
+            allocated_balance=Decimal('22'),
+            taken_balance=Decimal('0'),
+            carried_over_balance=Decimal('0'),
         )
     
     def test_balance_deducted_only_after_rh_approval(self):
@@ -325,20 +338,21 @@ class LeaveWorkflowDeductionTest(TestCase):
             leave_type=self.cp,
             start_date=date.today() + timedelta(days=10),
             end_date=date.today() + timedelta(days=12),
-            total_days=3,
+            duration_days=Decimal('0'),
             reason="Vacances",
             status='pending'
         )
+        leave.refresh_from_db()
         
         # Avant validation: solde inchangé
-        self.assertEqual(self.balance.remaining_days, 22)
+        self.assertEqual(self.balance.remaining_balance, Decimal('22'))
         
         # Valider par Manager
         leave.status = 'approved_manager'
         leave.save()
         
         # Toujours inchangé (pas encore RH)
-        self.assertEqual(self.balance.remaining_days, 22)
+        self.assertEqual(self.balance.remaining_balance, Decimal('22'))
         
         # Valider par RH (déclencheur de déduction)
         leave.status = 'approved_rh'
@@ -346,17 +360,16 @@ class LeaveWorkflowDeductionTest(TestCase):
         
         # Simuler la déduction (normalement par signal)
         if leave.leave_type.deducts_balance and leave.status == 'approved_rh':
-            self.balance.used_days += Decimal(leave.total_days)
-            self.balance.remaining_days -= Decimal(leave.total_days)
+            self.balance.taken_balance += Decimal(str(leave.duration_days))
             self.balance.save()
         
         # Maintenant déduit
         self.balance.refresh_from_db()
-        self.assertEqual(self.balance.remaining_days, 19)
+        self.assertEqual(self.balance.remaining_balance, Decimal('19'))
     
     def test_exceptionnel_never_deducts_regardless_of_status(self):
         """Test: Congé exceptionnel ne déduit jamais, même validé RH."""
-        initial_remaining = self.balance.remaining_days
+        initial_remaining = self.balance.remaining_balance
         
         # Créer demande exceptionnelle
         leave = LeaveRequest.objects.create(
@@ -364,20 +377,20 @@ class LeaveWorkflowDeductionTest(TestCase):
             leave_type=self.exceptionnel,
             start_date=date.today() + timedelta(days=20),
             end_date=date.today() + timedelta(days=21),
-            total_days=2,
+            duration_days=Decimal('0'),
             reason="Événement familial",
             status='approved_rh'  # Directement validé
         )
+        leave.refresh_from_db()
         
         # Simuler la logique
         if leave.leave_type.deducts_balance and leave.status == 'approved_rh':
-            self.balance.used_days += Decimal(leave.total_days)
-            self.balance.remaining_days -= Decimal(leave.total_days)
+            self.balance.taken_balance += Decimal(str(leave.duration_days))
             self.balance.save()
         
         # Solde doit rester inchangé
         self.balance.refresh_from_db()
-        self.assertEqual(self.balance.remaining_days, initial_remaining)
+        self.assertEqual(self.balance.remaining_balance, initial_remaining)
 
 
 class LeaveTypeFixtureTest(TestCase):
@@ -399,8 +412,9 @@ class LeaveTypeFixtureTest(TestCase):
                 code=data["code"],
                 defaults={
                     "name": data["name"],
-                    "default_days": 22 if data["code"] == "CP" else 0,
-                    "deducts_balance": data["deducts_balance"]
+                    "allocation_type": 'annual' if data["code"] == "CP" else 'on_demand',
+                    "allocation_amount": Decimal('22') if data["code"] == "CP" else Decimal('0'),
+                    "deducts_balance": data["deducts_balance"],
                 }
             )
             

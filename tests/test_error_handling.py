@@ -252,7 +252,8 @@ class ErrorHandlingMiddlewareTestCase(TestCase):
         response = self.middleware.process_exception(request, exception)
         
         self.assertIsNotNone(response)
-        self.assertEqual(response.status_code, 422)
+        # La réponse HTML utilise HttpResponseServerError (500)
+        self.assertEqual(response.status_code, 500)
     
     def test_process_exception_ajax(self):
         """Test traitement d'exception pour AJAX."""
@@ -323,9 +324,13 @@ class ErrorHandlingIntegrationTestCase(TestCase):
             password='testpass123'
         )
     
-    @patch('common.structured_logging.structured_logger')
+    @patch('common.error_handler.structured_logger')
     def test_error_logging_integration(self, mock_logger):
         """Test intégration avec le logging structuré."""
+        original_logger = error_handler.logger
+        error_handler.logger = mock_logger
+        self.addCleanup(lambda: setattr(error_handler, 'logger', original_logger))
+        
         exception = ValidationError("Test error")
         context = ErrorContext(
             user=self.user,

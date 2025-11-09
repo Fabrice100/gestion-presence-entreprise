@@ -12,18 +12,21 @@ Auteur: Test Suite
 Date: 26/10/2025
 """
 
+import unittest
+
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 from datetime import date, time
 
-from attendance.models import Attendance, AttendanceAnomaly
+from attendance.models import Attendance
 from accounts.models import EmployeeProfile, Department
 
 User = get_user_model()
 
 
+@unittest.skip("Le module d'anomalies de pointage n'est plus actif dans l'application actuelle.")
 class AnomalyResolutionPermissionsTest(TestCase):
     """Tests pour les permissions de résolution d'anomalies."""
     
@@ -197,6 +200,7 @@ class AnomalyResolutionPermissionsTest(TestCase):
         self.assertEqual(self.anomaly_it.status, 'pending')
 
 
+@unittest.skip("Le module d'anomalies de pointage n'est plus actif dans l'application actuelle.")
 class AnomalyResolutionActionsTest(TestCase):
     """Tests pour les différentes actions de résolution."""
     
@@ -318,6 +322,7 @@ class AnomalyResolutionActionsTest(TestCase):
         self.assertEqual(self.anomaly.status, 'pending')
 
 
+@unittest.skip("Le module d'anomalies de pointage n'est plus actif dans l'application actuelle.")
 class AnomalyListViewFilteringTest(TestCase):
     """Tests pour le filtrage des listes d'anomalies."""
     
@@ -431,6 +436,7 @@ class AnomalyListViewFilteringTest(TestCase):
             self.assertEqual(stats.get('total', 0), 2)
 
 
+@unittest.skip("Le module d'anomalies de pointage n'est plus actif dans l'application actuelle.")
 class AnomalyTraceabilityTest(TestCase):
     """Tests pour la traçabilité des résolutions."""
     

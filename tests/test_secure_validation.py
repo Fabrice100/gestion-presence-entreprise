@@ -177,14 +177,14 @@ class DjangoValidatorsTestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             validate_gps_coordinate(None)
         
-        self.assertEqual(context.exception.code, 'invalid_gps_type')
+        self.assertEqual(context.exception.code, 'gps_required')
     
     def test_validate_gps_coordinate_invalid_format(self):
         """Test validateur GPS coordonnée format invalide."""
         with self.assertRaises(ValidationError) as context:
             validate_gps_coordinate("invalid")
         
-        self.assertEqual(context.exception.code, 'invalid_gps_format')
+        self.assertEqual(context.exception.code, 'invalid_gps_numeric')
     
     def test_validate_gps_coordinate_out_of_range(self):
         """Test validateur GPS coordonnée hors limites."""
