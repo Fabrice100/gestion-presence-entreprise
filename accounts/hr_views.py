@@ -348,19 +348,11 @@ class UserDeleteView(HRRequiredMixin, DeleteView):
     success_url = reverse_lazy('hr:user_list')
     
     def get(self, request, *args, **kwargs):
-        profile = self.get_object()
-        annotate_profiles_with_dependencies([profile])
-
-        if getattr(profile, 'has_related_data', False):
-            related = ', '.join(profile.related_sources)
-            messages.error(
-                request,
-                f'Impossible de supprimer "{profile.get_full_name()}" car des données existent déjà ({related}). '
-                'Désactivez l’utilisateur à la place.'
-            )
-            return redirect('hr:user_list')
-
-        return super().get(request, *args, **kwargs)
+        messages.info(
+            request,
+            "Utilisez le bouton Supprimer de la liste des utilisateurs pour confirmer l'action."
+        )
+        return redirect('hr:user_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

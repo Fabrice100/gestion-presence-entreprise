@@ -12,12 +12,12 @@
     <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold text-gray-900">Utilisateurs</h2>
         <div class="flex gap-3">
-            <a href="{% url 'hr:manager_create' %}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4m0 0v4m0-4h4m-4 0H8m4 4a4 4 0 100-8 4 4 0 000 8zM6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path></svg>
+            <a href="{% url 'hr:manager_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                <span class="text-lg font-semibold leading-none">+</span>
                 Nouveau Manager
             </a>
-            <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4m0 0v4m0-4h4m-4 0H8m4 4a4 4 0 100-8 4 4 0 000 8zM6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path></svg>
+            <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="text-lg font-semibold leading-none">+</span>
                 Nouvel Employé
             </a>
         </div>
@@ -93,10 +93,13 @@
                                 {% endif %}
                             </form>
                             {% if profile.can_be_deleted %}
-                            <a href="{% url 'hr:user_delete' profile.pk %}" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Supprimer l'utilisateur">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-3h4a1 1 0 011 1v1H9V5a1 1 0 011-1zM4 7h16"/></svg>
-                                <span class="sr-only">Supprimer</span>
-                            </a>
+                            <form method="post" action="{% url 'hr:user_delete' profile.pk %}" class="inline" onsubmit="return confirm('Confirmer la suppression de {{ profile.user.get_full_name|default:profile.user.username }} ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Supprimer l'utilisateur">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-3h4a1 1 0 011 1v1H9V5a1 1 0 011-1zM4 7h16"/></svg>
+                                    <span class="sr-only">Supprimer</span>
+                                </button>
+                            </form>
                             {% endif %}
                         </div>
                     </td>
