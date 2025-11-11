@@ -29,6 +29,7 @@ urlpatterns = [
     path('users/managers/create/', hr_views.ManagerCreateView.as_view(), name='manager_create'),
     path('users/employees/create/', hr_views.EmployeeCreateView.as_view(), name='employee_create'),
     path('users/<int:pk>/edit/', hr_views.UserUpdateView.as_view(), name='user_edit'),
+    path('users/<int:pk>/toggle-active/', hr_views.UserToggleActiveView.as_view(), name='user_toggle_active'),
     path('users/<int:pk>/delete/', hr_views.UserDeleteView.as_view(), name='user_delete'),
     
     # Gestion des profils horaires

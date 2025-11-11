@@ -19,3 +19,5 @@ django-debug-toolbar==4.2.0
 # Note: Les autres packages (Django, psycopg2, etc.) sont dans requirements.txt
 
 
+
+

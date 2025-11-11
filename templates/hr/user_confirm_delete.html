@@ -1,58 +1,76 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Supprimer l'Utilisateur{% endblock %}
-{% block page_title %}Supprimer l'Utilisateur{% endblock %}
+{% block title %}Supprimer l'utilisateur{% endblock %}
+{% block page_title %}Supprimer l'utilisateur{% endblock %}
+{% block page_subtitle %}Action irréversible{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        
-        <!-- En-tête -->
         <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
-            <h2 class="text-xl font-bold text-white flex items-center">
-                <i class="bi bi-exclamation-triangle-fill mr-3"></i>
-                Confirmation de Suppression
+            <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a1 1 0 00.86 1.5h18.64a1 1 0 00.86-1.5L13.71 3.86a1 1 0 00-1.72 0z"/></svg>
+                Confirmation de suppression
             </h2>
         </div>
-        
-        <!-- Contenu -->
+
         <div class="p-6">
             <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <p class="text-red-800 font-medium">
-                    ⚠️ Attention : Cette action est irréversible !
-                </p>
+                <p class="text-red-800 font-medium">⚠️ Attention : cette action est définitive.</p>
+                <p class="text-sm text-red-700">Le compte sera supprimé définitivement et ne pourra pas être restauré.</p>
             </div>
-            
+
             <p class="text-gray-700 mb-4">
-                Vous êtes sur le point de supprimer l'utilisateur :
+                Vous êtes sur le point de supprimer l’utilisateur suivant :
             </p>
-            
+
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                        {{ object.get_full_name.0 }}
+                        {{ object.get_full_name|default:object.user.username|first }}
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900">{{ object.get_full_name }}</h3>
-                        <p class="text-sm text-gray-500">{{ object.email }}</p>
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            {{ object.get_full_name|default:object.user.username }}
+                        </h3>
                         <p class="text-sm text-gray-500">
-                            <span class="font-medium">{{ object.employee_profile.employee_id }}</span>
+                            {{ object.user.email|default:"Email non renseigné" }}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            <span class="font-medium">ID employé :</span> {{ object.employee_id }}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            <span class="font-medium">Rôle :</span> {{ object.get_role_display }}
                         </p>
                     </div>
                 </div>
             </div>
-            
-            <!-- Boutons -->
+
+            {% if related_sources %}
+            <div class="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+                <p class="text-amber-800 font-medium">
+                    Impossible de supprimer : des données liées existent ({{ related_sources|join:", " }}).
+                </p>
+                <p class="text-sm text-amber-700">
+                    Utilisez plutôt la désactivation depuis la liste des utilisateurs.
+                </p>
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500 mb-6">
+                Aucune donnée liée n’a été détectée. Le compte peut être supprimé en toute sécurité.
+            </p>
+            {% endif %}
+
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-                <a href="{% url calorie:user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                    <i class="bi bi-arrow-left mr-2"></i>
+                <a href="{% url 'hr:user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     Annuler
                 </a>
                 <form method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                        <i class="bi bi-trash mr-2"></i>
+                    <button type="submit" class="inline-flex items-center px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" {% if related_sources %}disabled{% endif %}>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-3h4a1 1 0 011 1v1H9V5a1 1 0 011-1zM4 7h16"/></svg>
                         Supprimer
                     </button>
                 </form>
@@ -61,9 +79,3 @@
     </div>
 </div>
 {% endblock %}
-
-
-
-
-
-
