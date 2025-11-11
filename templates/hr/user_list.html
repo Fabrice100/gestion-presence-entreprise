@@ -10,70 +10,105 @@
     
     <!-- En-tête avec boutons Créer -->
     <div class="flex justify-between items-center">
-        <h2'au siecle="text-2xl font-bold text-gray-900">Utilisateurs</h2>
+        <h2 class="text-2xl font-bold text-gray-900">Utilisateurs</h2>
         <div class="flex gap-3">
             <a href="{% url 'hr:manager_create' %}" class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
-                <i class="bi bi-person-badge mr-2"></i>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4m0 0v4m0-4h4m-4 0H8m4 4a4 4 0 100-8 4 4 0 000 8zM6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path></svg>
                 Nouveau Manager
             </a>
-            <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center px-4 py- medical bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="bi bi-person-plus mr-2"></i>
-                Nouveau Employé
+            <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4m0 0v4m0-4h4m-4 0H8m4 4a4 4 0 100-8 4 4 0 000 8zM6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path></svg>
+                Nouvel Employé
             </a>
         </div>
     </div>
     
     <!-- Liste -->
     <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <table class="w-full">
+        <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rôle</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Département</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Département</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                {% for profile in object_list %}
+                {% for profile in profiles %}
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-sm font-medium text-gray-900">{{ profile.employee_id }}</span>
+                        <div class="text-sm font-semibold text-gray-900">{{ profile.employee_id }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">{{ profile.user.get_full_name }}</div>
+                        <div class="text-sm font-medium text-gray-900">{{ profile.user.get_full_name|default:profile.user.username }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-500">{{ profile.user.email }}</div>
+                        <div class="text-sm text-gray-500">{{ profile.user.email|default:"—" }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         {% if profile.role == 'manager' %}
-                        <span class="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">Manager</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Manager</span>
                         {% elif profile.role == 'employee' %}
-                        <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Employé</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Employé</span>
+                        {% elif profile.role == 'rh' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">RH</span>
                         {% else %}
-                        <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">RH/DG</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ profile.get_role_display }}</span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-500">{{ profile.department.name|default:"—" }}</div>
+                        <div class="text-sm text-gray-500">{{ profile.department.name|default:"Non assigné" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if profile.is_active %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Actif</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactif</span>
+                        {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'hr:user_edit' profile.user.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'hr:user_delete' profile.user.pk %}" class="text-red-600 hover:text-red-900">
-                            <i class="bi bi-trash"></i>
-                        </a>
+                        <div class="inline-flex items-center gap-0.5">
+                            <a href="{% url 'hr:user_edit' profile.pk %}" class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors" title="Modifier l'utilisateur">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L7.5 21H3v-4.5L16.732 3.732z"/></svg>
+                                <span class="sr-only">Modifier</span>
+                            </a>
+                            <form method="post" action="{% url 'hr:user_toggle_active' profile.pk %}" class="inline">
+                                {% csrf_token %}
+                                {% if profile.is_active %}
+                                <input type="hidden" name="action" value="deactivate">
+                                <button type="submit" class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors" title="Désactiver l'utilisateur">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a8 8 0 11-12.728 0"/></svg>
+                                    <span class="sr-only">Désactiver</span>
+                                </button>
+                                {% else %}
+                                <input type="hidden" name="action" value="activate">
+                                <button type="submit" class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-full transition-colors" title="Réactiver l'utilisateur">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    <span class="sr-only">Réactiver</span>
+                                </button>
+                                {% endif %}
+                            </form>
+                            {% if profile.can_be_deleted %}
+                            <a href="{% url 'hr:user_delete' profile.pk %}" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Supprimer l'utilisateur">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-3h4a1 1 0 011 1v1H9V5a1 1 0 011-1zM4 7h16"/></svg>
+                                <span class="sr-only">Supprimer</span>
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                        <i class="bi bi-people text-4xl mb-2"></i>
-                        <p class="text-lg">Aucun utilisateur trouvé</p>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                        <div class="flex flex-col items-center space-y-3">
+                            <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m8-10a4 4 0 100-8 4 4 0 000 8zm14 6v-3a4 4 0 00-3-3.87m-4 0a4 4 0 013 3.87V21"/></svg>
+                            <p class="text-lg font-semibold">Aucun utilisateur trouvé</p>
+                            <p class="text-sm text-gray-400">Commencez par créer un manager ou un employé.</p>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

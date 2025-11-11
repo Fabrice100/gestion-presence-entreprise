@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier l'utilisateur{% endblock %}
+{% block page_title %}Modifier l'utilisateur{% endblock %}
+{% block page_subtitle %}Mettre à jour les informations du profil{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+            <h2 class="text-xl font-semibold text-white">Informations du profil</h2>
+        </div>
+
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Département</label>
+                    {{ form.department }}
+                    {% if form.department.errors %}
+                    <p class="mt-1 text-xs text-red-600">{{ form.department.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Manager</label>
+                    {{ form.manager }}
+                    {% if form.manager.errors %}
+                    <p class="mt-1 text-xs text-red-600">{{ form.manager.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Rôle</label>
+                    {{ form.role }}
+                    {% if form.role.errors %}
+                    <p class="mt-1 text-xs text-red-600">{{ form.role.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Profil horaire</label>
+                    {{ form.current_work_schedule }}
+                    {% if form.current_work_schedule.errors %}
+                    <p class="mt-1 text-xs text-red-600">{{ form.current_work_schedule.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <a href="{% url 'hr:user_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Annuler
+                </a>
+                <button type="submit" class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

@@ -18,11 +18,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
+
+from attendance.models import Attendance
+from leave.models import LeaveRequest
 
 from .models import EmployeeProfile, Department
 from .forms import DepartmentForm, EmployeeProfileForm, EmployeeCreateFormSimple
@@ -34,6 +38,62 @@ from common.mixins import RHRequiredMixin as BaseRHRequiredMixin
 
 # Alias pour la compatibilité
 HRRequiredMixin = BaseRHRequiredMixin
+
+
+def annotate_profiles_with_dependencies(profiles):
+    """
+    Ajoute des informations sur les données liées à chaque profil employé.
+
+    - has_related_data : booléen indiquant s'il existe des données liées
+    - related_sources : liste textuelle des sources (pointages, congés, etc.)
+    - can_be_deleted : booléen pratique pour les templates
+    """
+    profile_list = list(profiles)
+
+    if not profile_list:
+        return profile_list
+
+    user_ids = [profile.user_id for profile in profile_list if profile.user_id]
+
+    dependency_labels = {
+        'attendance': 'pointages',
+        'leave_requests': 'demandes de congés',
+    }
+
+    attendance_user_ids = set()
+    leave_request_user_ids = set()
+
+    if user_ids:
+        attendance_user_ids = set(
+            Attendance.objects.filter(employee_id__in=user_ids)
+            .values_list('employee_id', flat=True)
+        )
+        leave_request_user_ids = set(
+            LeaveRequest.objects.filter(employee_id__in=user_ids)
+            .values_list('employee_id', flat=True)
+        )
+
+    for profile in profile_list:
+        sources = []
+
+        if profile.user_id in attendance_user_ids:
+            sources.append(dependency_labels['attendance'])
+        if profile.user_id in leave_request_user_ids:
+            sources.append(dependency_labels['leave_requests'])
+
+        profile.related_sources = sources
+        profile.has_related_data = bool(sources)
+        profile.can_be_deleted = not profile.has_related_data
+
+    return profile_list
+
+
+def get_profile_related_sources(profile):
+    """
+    Retourne la liste des sources de données liées pour un profil donné.
+    """
+    annotate_profiles_with_dependencies([profile])
+    return getattr(profile, 'related_sources', [])
 
 
 class DepartmentListView(HRRequiredMixin, ListView):
@@ -115,6 +175,21 @@ class UserListView(HRRequiredMixin, ListView):
             queryset = queryset.filter(department_id=department_id)
         
         return queryset.order_by('employee_id')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profiles = context.get('profiles')
+
+        if profiles is not None:
+            profile_list = list(profiles)
+            annotate_profiles_with_dependencies(profile_list)
+            context['profiles'] = profile_list
+            context['object_list'] = profile_list
+
+            if 'page_obj' in context and context['page_obj'] is not None:
+                context['page_obj'].object_list = profile_list
+
+        return context
 
 
 class ManagerCreateView(HRRequiredMixin, CreateView):
@@ -272,11 +347,105 @@ class UserDeleteView(HRRequiredMixin, DeleteView):
     template_name = 'hr/user_confirm_delete.html'
     success_url = reverse_lazy('hr:user_list')
     
+    def get(self, request, *args, **kwargs):
+        profile = self.get_object()
+        annotate_profiles_with_dependencies([profile])
+
+        if getattr(profile, 'has_related_data', False):
+            related = ', '.join(profile.related_sources)
+            messages.error(
+                request,
+                f'Impossible de supprimer "{profile.get_full_name()}" car des données existent déjà ({related}). '
+                'Désactivez l’utilisateur à la place.'
+            )
+            return redirect('hr:user_list')
+
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        annotate_profiles_with_dependencies([self.object])
+        context['related_sources'] = getattr(self.object, 'related_sources', [])
+        return context
+
     def delete(self, request, *args, **kwargs):
         profile = self.get_object()
+        annotate_profiles_with_dependencies([profile])
+
+        if getattr(profile, 'has_related_data', False):
+            related = ', '.join(profile.related_sources)
+            messages.error(
+                request,
+                f'Impossible de supprimer "{profile.get_full_name()}" car des données existent déjà ({related}). '
+                'Désactivez l’utilisateur à la place.'
+            )
+            return redirect('hr:user_list')
+
         username = profile.user.username
+        # Supprimer l'utilisateur principal pour éviter les comptes orphelins
+        user = profile.user
+        response = super().delete(request, *args, **kwargs)
+        if user:
+            user.delete()
+
         messages.success(request, f'Utilisateur "{username}" supprimé avec succès.')
-        return super().delete(request, *args, **kwargs)
+        return response
+
+
+class UserToggleActiveView(HRRequiredMixin, View):
+    """
+    Active ou désactive un utilisateur en conservant ses données.
+    """
+
+    def post(self, request, pk):
+        profile = get_object_or_404(EmployeeProfile, pk=pk)
+
+        if profile.user == request.user:
+            messages.error(request, 'Vous ne pouvez pas désactiver votre propre compte.')
+            return redirect('hr:user_list')
+
+        action = request.POST.get('action')
+        annotate_profiles_with_dependencies([profile])
+
+        if action == 'deactivate':
+            if not profile.is_active:
+                messages.info(request, f'L’utilisateur "{profile.user.username}" est déjà inactif.')
+            else:
+                profile.is_active = False
+                profile.save(update_fields=['is_active'])
+
+                if profile.user.is_active:
+                    profile.user.is_active = False
+                    profile.user.save(update_fields=['is_active'])
+
+                detail = ''
+                if getattr(profile, 'related_sources', None):
+                    detail = f' Données conservées : {", ".join(profile.related_sources)}.'
+
+                messages.success(
+                    request,
+                    f'Utilisateur "{profile.user.username}" désactivé avec succès.{detail}'
+                )
+
+        elif action == 'activate':
+            if profile.is_active:
+                messages.info(request, f'L’utilisateur "{profile.user.username}" est déjà actif.')
+            else:
+                profile.is_active = True
+                profile.save(update_fields=['is_active'])
+
+                if not profile.user.is_active:
+                    profile.user.is_active = True
+                    profile.user.save(update_fields=['is_active'])
+
+                messages.success(
+                    request,
+                    f'Utilisateur "{profile.user.username}" réactivé avec succès.'
+                )
+        else:
+            messages.error(request, 'Action invalide.')
+
+        return redirect('hr:user_list')
 
 
 def get_managers_by_department(request):
