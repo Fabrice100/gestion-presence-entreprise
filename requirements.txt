@@ -4,7 +4,8 @@ django-crispy-forms==2.0
 crispy-bootstrap5==0.7
 
 # Base de données
-psycopg2-binary==2.9.7
+# psycopg2-binary==2.9.7  # Incompatible avec Python 3.13
+psycopg[binary]==3.2.0  # Version moderne, compatible Python 3.13
 
 # Environnement et configuration
 python-decouple==3.8
