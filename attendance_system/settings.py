@@ -373,46 +373,53 @@ CACHES = {
 # ===================================================================
 # CONFIGURATION LOGGING STRUCTURÉ
 # ===================================================================
-import structlog
-from structlog.stdlib import LoggerFactory
+try:
+    import structlog
+    from structlog.stdlib import LoggerFactory
+    
+    # Configuration structlog
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.JSONRenderer()
+        ],
+        context_class=dict,
+        logger_factory=LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    # structlog non disponible, utiliser logging Django standard
+    STRUCTLOG_AVAILABLE = False
 
-# Configuration structlog
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-# Configuration logging Django avec structlog
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+# Configuration logging Django
+if STRUCTLOG_AVAILABLE:
+    # Configuration avec structlog
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+            'json': {
+                '()': structlog.stdlib.ProcessorFormatter,
+                'processor': structlog.processors.JSONRenderer(),
+            },
+            'console': {
+                '()': structlog.stdlib.ProcessorFormatter,
+                'processor': structlog.dev.ConsoleRenderer(colors=True),
+            },
         },
-        'json': {
-            '()': structlog.stdlib.ProcessorFormatter,
-            'processor': structlog.processors.JSONRenderer(),
-        },
-        'console': {
-            '()': structlog.stdlib.ProcessorFormatter,
-            'processor': structlog.dev.ConsoleRenderer(colors=True),
-        },
-    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
@@ -466,6 +473,74 @@ LOGGING = {
         },
     },
 }
+else:
+    # Configuration sans structlog (fallback)
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+            'simple': {
+                'format': '{levelname} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple',
+            },
+            'file': {
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'logs' / 'django.log',
+                'formatter': 'verbose',
+            },
+            'security': {
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'logs' / 'security.log',
+                'formatter': 'verbose',
+            },
+            'attendance': {
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'logs' / 'attendance.log',
+                'formatter': 'verbose',
+            },
+        },
+        'root': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console', 'file'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console', 'file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+            'attendance_system.security': {
+                'handlers': ['security', 'console'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'attendance_system.attendance': {
+                'handlers': ['attendance', 'console'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'attendance_system.accounts': {
+                'handlers': ['file', 'console'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+        },
+    }
 
 # ===================================================================
 # VALIDATION AUTOMATIQUE DE LA SÉCURITÉ
