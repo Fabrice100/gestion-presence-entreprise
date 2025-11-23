@@ -194,6 +194,60 @@ class UserAdmin(BaseUserAdmin):
             )
     
     employee_profile_display.short_description = "Profil Employé"
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Surcharge pour générer automatiquement un mot de passe temporaire
+        et envoyer un email lors de la création d'un compte avec profil employé.
+        """
+        from .user_services import UserService
+        from django.contrib import messages
+        
+        # Si c'est une création (pas une modification)
+        if not change:
+            # Vérifier si un mot de passe a été défini manuellement
+            # Si le mot de passe est vide ou n'a pas été changé, on génère un temporaire
+            password_was_set = form.cleaned_data.get('password1') or form.cleaned_data.get('password')
+            
+            if not password_was_set:
+                # Générer un mot de passe temporaire
+                temporary_password = UserService.generate_random_password()
+                obj.set_password(temporary_password)
+                # Stocker le mot de passe temporaire pour l'envoyer par email après la sauvegarde
+                obj._temporary_password = temporary_password
+            else:
+                obj._temporary_password = None
+        
+        # Sauvegarder le User
+        super().save_model(request, obj, form, change)
+        
+        # Après la sauvegarde, si un profil employé existe, envoyer l'email
+        if not change and hasattr(obj, '_temporary_password') and obj._temporary_password:
+            try:
+                profile = obj.employee_profile
+                if profile and profile.employee_id:
+                    # Envoyer l'email de bienvenue
+                    email_sent = UserService.send_welcome_email(
+                        obj, 
+                        profile.employee_id, 
+                        obj._temporary_password
+                    )
+                    
+                    if email_sent:
+                        messages.success(
+                            request,
+                            f'✓ Compte créé avec succès ! '
+                            f'Un email avec les identifiants a été envoyé à {obj.email}.'
+                        )
+                    else:
+                        messages.warning(
+                            request,
+                            f'✓ Compte créé avec succès ! '
+                            f'ID: {profile.employee_id} | Mot de passe: {obj._temporary_password} '
+                            f'(Email non envoyé - communiquez ces informations manuellement)'
+                        )
+            except EmployeeProfile.DoesNotExist:
+                pass  # Pas de profil employé, pas d'email à envoyer
 
 
 # Réenregistrer User avec notre configuration étendue
