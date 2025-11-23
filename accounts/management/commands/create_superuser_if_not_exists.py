@@ -20,11 +20,17 @@ class Command(BaseCommand):
         username = os.environ.get('ADMIN_USERNAME', 'admin')
         email = os.environ.get('ADMIN_EMAIL', 'admin@presencepro.com')
         password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        
+        # Afficher les valeurs utilisées (sans le mot de passe complet pour sécurité)
+        self.stdout.write(f'🔍 Création superuser - Username: {username}, Email: {email}')
+        self.stdout.write(f'🔍 Password configuré: {"Oui" if password else "Non (utilise défaut)"}')
 
         # Vérifier si un superutilisateur existe déjà
-        if User.objects.filter(is_superuser=True).exists():
+        existing_superusers = User.objects.filter(is_superuser=True)
+        if existing_superusers.exists():
+            usernames = ', '.join([u.username for u in existing_superusers])
             self.stdout.write(
-                self.style.SUCCESS(f'✓ Un superutilisateur existe déjà. Aucune action nécessaire.')
+                self.style.SUCCESS(f'✓ Un superutilisateur existe déjà: {usernames}')
             )
             return
 

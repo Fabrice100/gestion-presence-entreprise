@@ -57,5 +57,8 @@ urlpatterns = [
     # Profil utilisateur
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
+    
+    # TEMPORAIRE: Création superuser pour Render (à supprimer après utilisation)
+    path('create-admin/', views.create_admin_view, name='create_admin'),
 ]
 

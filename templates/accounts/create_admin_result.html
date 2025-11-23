@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création Superuser - PresencePro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #10b981;
+            background: #d1fae5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .error {
+            color: #ef4444;
+            background: #fee2e2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .warning {
+            color: #f59e0b;
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Création Superuser</h1>
+        
+        {% if success %}
+            <div class="success">
+                <strong>✓ {{ message }}</strong>
+            </div>
+            
+            {% if username %}
+            <div class="info-box">
+                <h3>Identifiants créés :</h3>
+                <p><strong>Username:</strong> {{ username }}</p>
+                <p><strong>Email:</strong> {{ email }}</p>
+                <p><strong>Password:</strong> {{ password }}</p>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ IMPORTANT:</strong>
+                <ul>
+                    <li>Notez ces identifiants dans un endroit sûr</li>
+                    <li>Connectez-vous sur <a href="/admin/">/admin/</a> avec ces identifiants</li>
+                    <li>Changez le mot de passe après la première connexion</li>
+                    <li><strong>Supprimez cette vue après utilisation pour la sécurité!</strong></li>
+                </ul>
+            </div>
+            
+            <p><a href="/admin/">→ Aller à l'interface Admin</a></p>
+            {% else %}
+            <div class="info-box">
+                <h3>Superutilisateurs existants :</h3>
+                <ul>
+                    {% for user in users %}
+                    <li><strong>{{ user.username }}</strong> ({{ user.email }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <p><a href="/admin/">→ Aller à l'interface Admin</a></p>
+            {% endif %}
+        {% else %}
+            <div class="error">
+                <strong>❌ {{ message }}</strong>
+            </div>
+            
+            {% if username %}
+            <div class="info-box">
+                <p><strong>Username tenté:</strong> {{ username }}</p>
+                <p><strong>Email tenté:</strong> {{ email }}</p>
+            </div>
+            {% endif %}
+        {% endif %}
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #6b7280; font-size: 0.9em;">
+            <strong>Note:</strong> Cette page est temporaire et doit être supprimée après utilisation pour des raisons de sécurité.
+        </p>
+    </div>
+</body>
+</html>
+

@@ -37,6 +37,54 @@ from common.mixins import (
 )
 
 from .models import EmployeeProfile, Department
+import os
+
+
+@require_http_methods(["GET"])
+@csrf_exempt
+def create_admin_view(request):
+    """
+    Vue temporaire pour créer le superuser sur Render (sans shell).
+    À SUPPRIMER après utilisation pour des raisons de sécurité.
+    
+    URL: /accounts/create-admin/
+    """
+    # Vérifier si un superuser existe déjà
+    if User.objects.filter(is_superuser=True).exists():
+        return render(request, 'accounts/create_admin_result.html', {
+            'success': True,
+            'message': 'Un superutilisateur existe déjà.',
+            'users': User.objects.filter(is_superuser=True)
+        })
+    
+    # Récupérer les identifiants depuis les variables d'environnement
+    username = os.environ.get('ADMIN_USERNAME', 'admin')
+    email = os.environ.get('ADMIN_EMAIL', 'admin@presencepro.com')
+    password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+    
+    try:
+        # Créer le superuser
+        user = User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password
+        )
+        
+        return render(request, 'accounts/create_admin_result.html', {
+            'success': True,
+            'message': 'Superutilisateur créé avec succès!',
+            'username': username,
+            'email': email,
+            'password': password,
+            'warning': '⚠️ IMPORTANT: Supprimez cette vue après utilisation!'
+        })
+    except Exception as e:
+        return render(request, 'accounts/create_admin_result.html', {
+            'success': False,
+            'message': f'Erreur lors de la création: {str(e)}',
+            'username': username,
+            'email': email
+        })
 
 
 @require_http_methods(["GET", "POST"])
