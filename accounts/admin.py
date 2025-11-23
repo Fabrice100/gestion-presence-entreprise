@@ -221,31 +221,38 @@ class UserAdmin(BaseUserAdmin):
         # Sauvegarder le User
         super().save_model(request, obj, form, change)
         
-        # Après la sauvegarde, si un profil employé existe, envoyer l'email
-        if not change and hasattr(obj, '_temporary_password') and obj._temporary_password:
+        # Après la sauvegarde, si un profil employé existe, activer force_password_change et envoyer l'email
+        if not change:
             try:
                 profile = obj.employee_profile
                 if profile and profile.employee_id:
-                    # Envoyer l'email de bienvenue
-                    email_sent = UserService.send_welcome_email(
-                        obj, 
-                        profile.employee_id, 
-                        obj._temporary_password
-                    )
+                    # Activer le flag force_password_change pour forcer le changement à la première connexion
+                    if not profile.force_password_change:
+                        profile.force_password_change = True
+                        profile.save(update_fields=['force_password_change'])
                     
-                    if email_sent:
-                        messages.success(
-                            request,
-                            f'✓ Compte créé avec succès ! '
-                            f'Un email avec les identifiants a été envoyé à {obj.email}.'
+                    # Si un mot de passe temporaire a été généré, envoyer l'email
+                    if hasattr(obj, '_temporary_password') and obj._temporary_password:
+                        email_sent = UserService.send_welcome_email(
+                            obj, 
+                            profile.employee_id, 
+                            obj._temporary_password
                         )
-                    else:
-                        messages.warning(
-                            request,
-                            f'✓ Compte créé avec succès ! '
-                            f'ID: {profile.employee_id} | Mot de passe: {obj._temporary_password} '
-                            f'(Email non envoyé - communiquez ces informations manuellement)'
-                        )
+                        
+                        if email_sent:
+                            messages.success(
+                                request,
+                                f'✓ Compte créé avec succès ! '
+                                f'Un email avec les identifiants a été envoyé à {obj.email}. '
+                                f'L\'utilisateur devra changer son mot de passe à la première connexion.'
+                            )
+                        else:
+                            messages.warning(
+                                request,
+                                f'✓ Compte créé avec succès ! '
+                                f'ID: {profile.employee_id} | Mot de passe: {obj._temporary_password} '
+                                f'(Email non envoyé - communiquez ces informations manuellement)'
+                            )
             except EmployeeProfile.DoesNotExist:
                 pass  # Pas de profil employé, pas d'email à envoyer
 
