@@ -2,6 +2,7 @@
 Django==5.2.6
 django-crispy-forms==2.0
 crispy-bootstrap5==0.7
+django-ratelimit==4.1.0  # Limitation de taux pour sécurité
 
 # Base de données
 # psycopg2-binary==2.9.7  # Incompatible avec Python 3.13
