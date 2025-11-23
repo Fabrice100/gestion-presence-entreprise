@@ -400,6 +400,11 @@ except ImportError:
     # structlog non disponible, utiliser logging Django standard
     STRUCTLOG_AVAILABLE = False
 
+# Créer le dossier logs s'il n'existe pas
+import os
+logs_dir = BASE_DIR / 'logs'
+os.makedirs(logs_dir, exist_ok=True)
+
 # Configuration logging Django
 if STRUCTLOG_AVAILABLE:
     # Configuration avec structlog
