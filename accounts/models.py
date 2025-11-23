@@ -462,13 +462,19 @@ def assign_department_manager(sender, instance, **kwargs):
     """
     Assigne automatiquement le manager du département à l'employé
     si aucun manager n'est spécifié.
+    
+    EXCEPTION: Le RH ne reçoit jamais de manager automatiquement,
+    même si son département en a un (évite les références circulaires).
     """
     # Si l'employé a un département mais pas de manager
-    if instance.department and not instance.manager:
+    # ET si ce n'est pas un RH (le RH ne doit jamais avoir de manager)
+    if instance.department and not instance.manager and instance.role != 'rh':
         # Si le département a un manager
         if instance.department.manager:
-            # Assigner le manager du département
-            instance.manager = instance.department.manager
+            # Vérifier que ce n'est pas une auto-référence
+            if instance.department.manager != instance.user:
+                # Assigner le manager du département
+                instance.manager = instance.department.manager
 
 @receiver(post_save, sender=User)
 def create_employee_profile(sender, instance, created, **kwargs):
