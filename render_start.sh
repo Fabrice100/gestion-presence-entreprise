@@ -5,9 +5,10 @@
 set -e  # Arrêter en cas d'erreur
 
 echo "=== Démarrage de l'application PresencePro ==="
+echo "Répertoire actuel: $(pwd)"
 
-# Aller dans le répertoire du projet
-cd attendance_system
+# Le script est dans attendance_system/, donc on est déjà au bon endroit
+# après le "cd attendance_system" du Start Command
 
 # Exécuter les migrations
 echo "=== Exécution des migrations ==="
