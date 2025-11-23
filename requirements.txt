@@ -22,6 +22,7 @@ whitenoise==6.6.0
 
 # Utilitaires
 python-dateutil==2.8.2
+structlog==24.1.0  # Logging structuré
 
 # Export PDF et Excel
 reportlab==4.0.7
