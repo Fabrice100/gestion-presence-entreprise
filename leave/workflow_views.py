@@ -193,10 +193,10 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
                     leave_request.status = 'pending'
                     leave_request.manager = profile.manager
                 elif profile.role == 'manager':
-                    # MANAGER : Bypass pré-validation, va DIRECTEMENT au RH
-                    # Status 'approved_manager' = "Prêt pour validation RH finale"
-                    # Conforme capture : "Demandes Manager → directement au RH"
-                    leave_request.status = 'approved_manager'
+                    # MANAGER : Passe directement au RH avec status 'pending' (comme les employés)
+                    # Pas d'auto-validation : workflow cohérent et traçable
+                    leave_request.status = 'pending'
+                    leave_request.manager = None  # Pas de manager pour les managers
                 elif profile.role == 'rh':
                     # RH : Auto-approbation immédiate
                     leave_request.status = 'approved_rh'
@@ -236,11 +236,19 @@ class LeaveRequestCreateView(LoginRequiredMixin, CreateView):
                             return
                         
                         # Envoyer les notifications
-                        if saved_request.status == 'pending' and hasattr(saved_request, 'manager') and saved_request.manager:
-                            # Notifier le manager
-                            NotificationService.send_leave_pending_notification(saved_request, saved_request.manager)
+                        if saved_request.status == 'pending':
+                            # Vérifier si c'est une demande de manager ou d'employé
+                            employee_profile = saved_request.employee.employee_profile
+                            if employee_profile.role == 'manager':
+                                # Manager : notifier directement les RH
+                                rh_users = User.objects.filter(employee_profile__role='rh', employee_profile__is_active=True)
+                                for rh_user in rh_users:
+                                    NotificationService.send_leave_pending_notification(saved_request, rh_user)
+                            elif hasattr(saved_request, 'manager') and saved_request.manager:
+                                # Employé : notifier le manager
+                                NotificationService.send_leave_pending_notification(saved_request, saved_request.manager)
                         elif saved_request.status == 'approved_manager':
-                            # Notifier les RH
+                            # Employé validé par manager : notifier les RH
                             rh_users = User.objects.filter(employee_profile__role='rh', employee_profile__is_active=True)
                             for rh_user in rh_users:
                                 NotificationService.send_leave_pending_notification(saved_request, rh_user)
@@ -380,15 +388,18 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
             
             queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile')
         elif profile.role == 'rh':
-            # RH : voir les demandes 'approved_manager' qui attendent validation finale
+            # RH : voir les demandes en attente de validation finale
             # Cela inclut :
-            # 1. Demandes des employés validées par leur manager (status='approved_manager' avec manager_decision)
-            # 2. Demandes des managers directement (status='approved_manager' sans manager_decision)
+            # 1. Demandes des employés validées par leur manager (status='approved_manager')
+            # 2. Demandes des managers directement (status='pending' avec role='manager')
             status_filter = self.request.GET.get('status')
             if status_filter:
                 if status_filter == 'pending':
-                    # Pour RH, "en attente" = approuvé par manager (en attente de validation finale RH)
-                    queryset = LeaveRequest.objects.filter(status='approved_manager')
+                    # Pour RH, "en attente" = managers directs (pending) + employés validés par manager (approved_manager)
+                    queryset = LeaveRequest.objects.filter(
+                        Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+                        Q(status='approved_manager')  # Employés validés par manager
+                    )
                 elif status_filter == 'approved':
                     # Approuvées finales par RH uniquement
                     queryset = LeaveRequest.objects.filter(status='approved_rh')
@@ -399,8 +410,11 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
                     queryset = LeaveRequest.objects.filter(status=status_filter)
             else:
                 # Par défaut: voir toutes les demandes pertinentes pour RH (validation finale)
+                # Managers directs (pending) + Employés validés par manager (approved_manager) + Finalisées
                 queryset = LeaveRequest.objects.filter(
-                    status__in=['approved_manager', 'approved_rh', 'rejected_rh']
+                    Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+                    Q(status='approved_manager') |  # Employés validés par manager
+                    Q(status__in=['approved_rh', 'rejected_rh'])  # Finalisées
                 )
             
             queryset = queryset.select_related('employee', 'leave_type', 'employee__employee_profile', 'employee__employee_profile__department')
@@ -465,12 +479,18 @@ class LeaveApprovalListView(LoginRequiredMixin, ListView):
             
         elif profile.role == 'rh':
             # Pour le RH : calculer les statistiques sur ses validations finales
-            context['pending_count'] = LeaveRequest.objects.filter(status='approved_manager').count()
+            # Managers directs (pending) + Employés validés par manager (approved_manager)
+            context['pending_count'] = LeaveRequest.objects.filter(
+                Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+                Q(status='approved_manager')  # Employés validés par manager
+            ).count()
             # Pas de traçage par RH spécifique dans le modèle; on affiche global finalisé
             context['approved_count'] = LeaveRequest.objects.filter(status='approved_rh').count()
             context['rejected_count'] = LeaveRequest.objects.filter(status='rejected_rh').count()
             context['total_count'] = LeaveRequest.objects.filter(
-                status__in=['approved_manager', 'approved_rh', 'rejected_rh']
+                Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+                Q(status='approved_manager') |  # Employés validés par manager
+                Q(status__in=['approved_rh', 'rejected_rh'])  # Finalisées
             ).count()
         
         return context
@@ -725,7 +745,11 @@ def leave_statistics_api(request):
         # Statistiques pour RH (toute l'entreprise)
         leave_requests = LeaveRequest.objects.all()
         stats['total_requests'] = leave_requests.count()
-        stats['pending_requests'] = leave_requests.filter(status='approved_manager').count()
+        # Managers directs (pending) + Employés validés par manager (approved_manager)
+        stats['pending_requests'] = leave_requests.filter(
+            Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+            Q(status='approved_manager')  # Employés validés par manager
+        ).count()
         stats['approved_requests'] = leave_requests.filter(status='approved_rh').count()
         stats['rejected_requests'] = leave_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count()
     

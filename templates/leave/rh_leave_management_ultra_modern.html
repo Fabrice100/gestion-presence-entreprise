@@ -34,6 +34,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statut</label>
                 <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">Tous</option>
+                    <option value="pending_manager" {% if request.GET.status == 'pending_manager' %}selected{% endif %}>Managers (en attente RH)</option>
                     <option value="approved_manager" {% if request.GET.status == 'approved_manager' %}selected{% endif %}>Validé Manager (en attente RH)</option>
                     <option value="approved_rh" {% if request.GET.status == 'approved_rh' %}selected{% endif %}>Approuvé RH</option>
                     <option value="rejected_rh" {% if request.GET.status == 'rejected_rh' %}selected{% endif %}>Refusé RH</option>
@@ -116,7 +117,9 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            {% if request.status == 'approved_manager' %}
+                            {% if request.status == 'pending' and request.employee.employee_profile.role == 'manager' %}
+                                {% include 'components/status_badge.html' with status='pending' icon='bi-clock' text='À valider' %}
+                            {% elif request.status == 'approved_manager' %}
                                 {% include 'components/status_badge.html' with status='pending' icon='bi-clock' text='À valider' %}
                             {% elif request.status == 'approved_rh' %}
                                 {% include 'components/status_badge.html' with status='approved' icon='bi-check-circle' text='Approuvé' %}
@@ -136,7 +139,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
-                                {% if request.status == 'approved_manager' %}
+                                {% if request.status == 'pending' and request.employee.employee_profile.role == 'manager' or request.status == 'approved_manager' %}
                                 <form method="post" action="{% url 'leave:leave_approval_process' request.pk %}" class="inline">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="approve_rh">

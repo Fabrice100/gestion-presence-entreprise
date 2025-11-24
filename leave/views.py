@@ -72,7 +72,11 @@ class RHLeaveManagementView(EnhancedLoginRequiredMixin, ListView):
         # Statistiques globales
         all_requests = LeaveRequest.objects.all()
         context['stats'] = {
-            'pending_count': all_requests.filter(status='approved_manager').count(),
+            # Managers directs (pending) + Employés validés par manager (approved_manager)
+            'pending_count': all_requests.filter(
+                Q(status='pending', employee__employee_profile__role='manager') |  # Managers directs
+                Q(status='approved_manager')  # Employés validés par manager
+            ).count(),
             'approved_count': all_requests.filter(status='approved_rh').count(),
             'rejected_count': all_requests.filter(status__in=['rejected_manager', 'rejected_rh']).count(),
             'this_month_count': all_requests.filter(
