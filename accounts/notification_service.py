@@ -126,30 +126,25 @@ Solde de congés :
             # URL de consultation
             detail_url = f"{settings.SITE_URL}/leave/requests/{leave_request.pk}/"
             
+            # Message simplifié et professionnel
+            decision_date = leave_request.rh_decision_at.strftime('%d/%m/%Y à %H:%M') if is_final_approval and leave_request.rh_decision_at else (leave_request.manager_decision_at.strftime('%d/%m/%Y à %H:%M') if leave_request.manager_decision_at else 'Non disponible')
+            approver_name = approved_by.get_full_name()
+            approver_role = 'Ressources Humaines' if is_final_approval else 'Votre Manager'
+            
             message = f"""
 Bonjour {leave_request.employee.get_full_name()},
 
-═══════════════════════════════════════════════════════════
-{approval_status}
-═══════════════════════════════════════════════════════════
+Votre demande de congé a été approuvée.
 
-Bonne nouvelle ! Votre demande de congé a été approuvée.
+Détails :
+• Type : {leave_request.leave_type.name}
+• Période : {leave_request.start_date.strftime('%d/%m/%Y')} au {leave_request.end_date.strftime('%d/%m/%Y')}
+• Durée : {leave_request.duration_days} jour(s){comment}{balance_info}
 
-📋 DÉTAILS DE LA DEMANDE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Type de congé : {leave_request.leave_type.name}
-Période : Du {leave_request.start_date.strftime('%d/%m/%Y')} au {leave_request.end_date.strftime('%d/%m/%Y')}
-Durée : {leave_request.duration_days} jour(s)
-{comment}{balance_info}
-👤 VALIDATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Approuvé par : {approved_by.get_full_name()} ({'Ressources Humaines' if is_final_approval else 'Votre Manager'})
-Date : {leave_request.rh_decision_at.strftime('%d/%m/%Y à %H:%M') if is_final_approval and leave_request.rh_decision_at else (leave_request.manager_decision_at.strftime('%d/%m/%Y à %H:%M') if leave_request.manager_decision_at else 'Non disponible')}
-{next_step}
-🔗 CONSULTATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Vous pouvez consulter les détails complets de votre demande en suivant ce lien :
-{detail_url}
+Approuvé par : {approver_name} ({approver_role})
+Date : {decision_date}{next_step}
+
+Consulter la demande : {detail_url}
 
 Cordialement,
 L'équipe {settings.SITE_NAME}
@@ -218,37 +213,26 @@ L'équipe {settings.SITE_NAME}
             detail_url = f"{settings.SITE_URL}/leave/requests/{leave_request.pk}/"
             new_request_url = f"{settings.SITE_URL}/leave/requests/create/"
             
+            # Message simplifié et professionnel
+            rejected_by_name = rejected_by.get_full_name()
+            rejected_by_role = 'Ressources Humaines' if is_final_rejection else 'Votre Manager'
+            
             message = f"""
 Bonjour {leave_request.employee.get_full_name()},
 
-═══════════════════════════════════════════════════════════
-❌ {rejection_level}
-═══════════════════════════════════════════════════════════
+Votre demande de congé a été rejetée.
 
-Nous regrettons de vous informer que votre demande de congé a été rejetée.
+Détails :
+• Type : {leave_request.leave_type.name}
+• Période : {leave_request.start_date.strftime('%d/%m/%Y')} au {leave_request.end_date.strftime('%d/%m/%Y')}
+• Durée : {leave_request.duration_days} jour(s)
 
-📋 DÉTAILS DE LA DEMANDE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Type de congé : {leave_request.leave_type.name}
-Période demandée : Du {leave_request.start_date.strftime('%d/%m/%Y')} au {leave_request.end_date.strftime('%d/%m/%Y')}
-Durée : {leave_request.duration_days} jour(s)
-{"Motif de la demande : " + leave_request.reason if leave_request.reason else ""}
-
-👤 DÉCISION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Rejeté par : {rejected_by.get_full_name()} ({'Ressources Humaines' if is_final_rejection else 'Votre Manager'})
+Rejeté par : {rejected_by_name} ({rejected_by_role})
 Date : {rejection_date if rejection_date else 'Non disponible'}
 
-📝 MOTIF DU REJET
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{comment}
+Motif : {comment}
 
-💡 PROCHAINES ÉTAPES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Vous pouvez :
-• Consulter les détails de votre demande : {detail_url}
-• Soumettre une nouvelle demande de congé si nécessaire : {new_request_url}
-• Contacter les Ressources Humaines pour plus d'informations
+Consulter la demande : {detail_url}
 
 Cordialement,
 L'équipe {settings.SITE_NAME}
