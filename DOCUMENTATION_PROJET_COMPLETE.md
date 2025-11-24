@@ -1,8 +1,10 @@
 # 📋 Documentation Complète du Système de Gestion de Présence
 
-**Date de création :** Décembre 2024  
+**Date de création :** Novembre 2025  
+**Dernière mise à jour :** Novembre 2025  
 **Version :** 1.0  
-**Branche :** `full-project-snapshot`
+**Branche :** `full-project-snapshot`  
+**État :** Fonctionnel complet - Prêt pour génération de diagrammes UML
 
 ---
 
@@ -55,7 +57,7 @@ attendance_system/
 
 ## 👥 Acteurs et Rôles
 
-Le système distingue **3 rôles principaux** :
+Le système distingue **4 types d'acteurs** :
 
 ### 1. 👤 **EMPLOYÉ (Employee)**
 - **Profil :** Utilisateur standard du système
@@ -84,6 +86,17 @@ Le système distingue **3 rôles principaux** :
   - Accès aux rapports et exports
   - Tableau de bord RH avec statistiques globales
 
+### 4. 🔧 **ADMIN (Administrateur Django)**
+- **Profil :** Superutilisateur Django avec accès à l'interface d'administration
+- **Accès :** `/admin/` (interface d'administration Django)
+- **Permissions :** 
+  - Accès complet à tous les modèles via l'interface admin Django
+  - Gestion directe de la base de données
+  - Configuration système avancée
+  - Généralement utilisé pour la maintenance et la configuration initiale
+
+**Note :** L'admin Django est distinct du rôle RH. Il s'agit d'un superutilisateur système, tandis que RH est un rôle métier dans l'application.
+
 ---
 
 ## 🎯 Fonctionnalités par Rôle
@@ -106,7 +119,7 @@ Le système distingue **3 rôles principaux** :
 2. **Consultation Présences**
    - Voir l'historique de ses pointages
    - Voir les heures travaillées par jour/semaine/mois
-   - Format d'affichage : "XhYYmin"
+   - Format d'affichage : "X.XXh" (format décimal avec 2 décimales, ex: "8.50h")
 
 3. **Demande de Congés**
    - Créer une nouvelle demande
@@ -221,7 +234,34 @@ Le système distingue **3 rôles principaux** :
 **Règles de Calcul :**
 - Heures travaillées = Sortie - Entrée - Pauses
 - Caps appliqués selon le profil horaire
-- Format d'affichage : "XhYYmin"
+- Format d'affichage : "X.XXh" (format décimal avec 2 décimales, ex: "8.50h")
+
+**Validation GPS (ACTUELLEMENT ACTIVE) :**
+- **Calcul de distance** : Formule de Haversine pour calculer la distance entre la position GPS de l'employé et le site de travail
+- **Rayon autorisé** : 200 mètres par défaut (configurable dans `CompanySettings`)
+- **Précision GPS** : Maximum 100 mètres (refus si précision insuffisante)
+- **Mode démo** : Si GPS indisponible ou en mode démo, utilise automatiquement les coordonnées du bureau configurées
+- **Fallback automatique** : Si les coordonnées GPS ne sont pas disponibles (0.0 ou vide), le système utilise les coordonnées du site configurées
+- **Stockage** : Toutes les coordonnées GPS sont stockées dans `Attendance` (latitude, longitude, accuracy, distance_from_site)
+
+**Validation de Zone :**
+```
+1. Récupération des coordonnées GPS (latitude, longitude, accuracy)
+   ↓
+2. Vérification de précision GPS :
+   - Si accuracy > 100m → Refus avec message d'erreur
+   - Sinon → Continuer
+   ↓
+3. Calcul distance (formule Haversine) :
+   distance = 2 × R × arcsin(√(sin²(Δφ/2) + cos(φ1)×cos(φ2)×sin²(Δλ/2)))
+   où R = 6371000 mètres (rayon de la Terre)
+   ↓
+4. Vérification rayon autorisé :
+   - Si distance > 200m → Refus avec message d'erreur
+   - Sinon → Pointage accepté
+   ↓
+5. Enregistrement avec coordonnées et distance
+```
 
 ---
 
@@ -264,12 +304,40 @@ Le système distingue **3 rôles principaux** :
 **États Possibles :**
 - `pending` : En attente de validation manager
 - `approved_manager` : Validé par le manager, en attente RH
-- `approved` : Approuvé définitivement
-- `rejected` : Refusé (par manager ou RH)
+- `approved_rh` : Approuvé définitivement par RH
+- `rejected_manager` : Refusé par le manager
+- `rejected_rh` : Refusé par RH (rejet final)
 
 **Déduction du Solde :**
-- Se fait uniquement après validation RH finale
-- Selon le type de congé (certains types déduisent, d'autres non)
+- Se fait uniquement après validation RH finale (`approved_rh`)
+- Selon le type de congé (champ `deducts_balance` dans `LeaveType`)
+- Les types de congés qui déduisent : Congés payés, etc.
+- Les types qui ne déduisent pas : Maladie (selon configuration)
+
+**Notifications Email Automatiques (ACTUELLEMENT ACTIVES) :**
+- ✅ **Email de bienvenue** : Envoyé automatiquement lors de la création de compte avec :
+  - ID employé (format EMPXXX)
+  - Mot de passe temporaire généré automatiquement
+  - Lien de connexion
+- ✅ **Notification d'approbation** : Envoyée automatiquement lorsque :
+  - Manager approuve → Email "Demande validée par votre manager"
+  - RH approuve → Email "Demande définitivement approuvée" avec solde restant
+- ✅ **Notification de rejet** : Envoyée automatiquement avec :
+  - Motif du rejet (commentaire obligatoire)
+  - Niveau de rejet (manager ou RH)
+  - Date de décision
+
+**Gestion des Jours Fériés du Togo (ACTUELLEMENT ACTIVE) :**
+- **Jours fériés fixes** : Jour de l'An (01-01), Fête du Travail (05-01), Fête Nationale (27-04), Noël (25-12)
+- **Jours fériés variables (calculés automatiquement)** :
+  - Lundi de Pâques (calculé selon algorithme de Pâques)
+  - Ascension (39 jours après Pâques)
+  - Lundi de Pentecôte (50 jours après Pâques)
+  - Assomption (15-08)
+  - Toussaint (01-11)
+- **Vérification automatique** : Le système vérifie automatiquement si une période de congé chevauche un jour férié
+- **Types de jours fériés** : `national`, `regional`, `company`, `religious`
+- **Jours fériés récurrents** : Support des jours fériés qui se répètent chaque année
 
 ---
 
@@ -282,19 +350,29 @@ Le système distingue **3 rôles principaux** :
    ↓
 2. Formulaire de création :
    - Nom, Prénom
-   - Email (utilisé comme username)
-   - Mot de passe (généré automatiquement ou défini)
+   - Email (utilisé comme username - partie avant @)
+   - Mot de passe : GÉNÉRÉ AUTOMATIQUEMENT (8 caractères aléatoires sécurisés)
    - Département
    - Manager (si employé)
    - Rôle (Manager ou Employé)
    - Profil horaire
    ↓
-3. Système crée :
-   - User Django
-   - EmployeeProfile lié
-   - Solde de congés initialisé
+3. Système crée (TRANSACTION ATOMIQUE) :
+   - Génération ID employé unique : EMPXXX (XXX = nombre aléatoire 100-999)
+   - User Django avec username généré depuis email
+   - EmployeeProfile lié avec :
+     - employee_id = EMPXXX
+     - force_password_change = True (OBLIGATOIRE)
+     - is_active = True
+     - can_punch = True (si role = employee ou manager)
+   - Solde de congés initialisé (LeaveBalance)
    ↓
-4. Confirmation et affichage dans la liste
+4. Envoi automatique email de bienvenue avec :
+   - ID employé (EMPXXX)
+   - Mot de passe temporaire
+   - Lien de connexion
+   ↓
+5. Confirmation et affichage dans la liste
 ```
 
 #### Modification d'Utilisateur
@@ -356,6 +434,24 @@ Le système distingue **3 rôles principaux** :
 - ❌ Ne peut pas supprimer : Utilisateur avec pointages OU demandes de congés
 - 💡 Alternative : Désactiver au lieu de supprimer
 
+**Génération Automatique d'ID Employé (ACTUELLEMENT ACTIVE) :**
+- **Format** : EMPXXX où XXX est un nombre aléatoire entre 100 et 999
+- **Génération** : Algorithme qui génère un nombre aléatoire et vérifie l'unicité dans la base de données
+- **Fallback** : Si tous les IDs 100-999 sont pris, utilise 001-099 avec padding zéro
+- **Rôles** : Tous les rôles utilisent le même format EMPXXX (pas de distinction MGR/RH dans l'ID)
+- **Exemples** : EMP472, EMP819, EMP156, EMP003
+- **Implémentation** : Méthode `UserService.generate_employee_id(role)` dans `accounts/user_services.py`
+
+**Changement de Mot de Passe Obligatoire (ACTUELLEMENT ACTIF) :**
+- **Flag** : `force_password_change = True` sur `EmployeeProfile` lors de la création
+- **Middleware** : `ForcePasswordChangeMiddleware` intercepte toutes les requêtes authentifiées
+- **Comportement** :
+  - Si `force_password_change = True` → Redirection automatique vers `/accounts/force-password-change/`
+  - Bloque l'accès à toutes les pages sauf : logout, changement MDP, static files, media
+  - Après changement réussi → `force_password_change = False` et accès normal au système
+- **Sécurité** : Empêche l'utilisation de comptes avec mot de passe temporaire
+- **Implémentation** : Middleware dans `accounts/force_password_middleware.py`, Vue dans `accounts/force_password_views.py`
+
 ---
 
 ### 📊 Workflow de Génération de Rapport
@@ -376,20 +472,26 @@ Le système distingue **3 rôles principaux** :
 4. Affichage du rapport dans l'interface
    ↓
 5. RH peut exporter :
-   - Format PDF (via bouton "Export PDF")
-   - Format Excel (via bouton "Export Excel")
+   - **Dashboard rapports** : Format PDF ou Excel (via boutons "Export Paie (PDF)" et "Export Paie (Excel)")
+   - **Rapport heures travaillées** : Format Excel uniquement (via bouton "Excel")
+   - **Backend** : Support complet PDF et Excel (PayrollReportExportView)
    ↓
 6. Fichier téléchargé avec :
    - En-tête avec période
    - Tableau détaillé par employé
-   - Totaux par département
-   - Format : "XhYYmin"
+   - Format heures : "X.XXh" (format décimal avec 2 décimales, ex: "8.50h")
+   - Note : Sans ligne TOTAL (conformité PME)
 ```
 
 **Exports Disponibles :**
-- ✅ Rapport Heures travaillées (PDF/Excel) - **ACTIF**
-- ❌ Rapport Anomalies - **DÉSACTIVÉ**
-- ❌ Rapport Solde Congés - **DÉSACTIVÉ**
+- ✅ Rapport Heures travaillées - **ACTIF**
+  - **Backend** : Support PDF et Excel (PayrollReportExportView)
+  - **Interface Dashboard** : Boutons "Export Paie (PDF)" et "Export Paie (Excel)" dans le dashboard rapports
+  - **Interface Rapport** : Bouton "Excel" uniquement dans le rapport heures travaillées
+  - Formats : PDF (.pdf) et Excel (.xlsx)
+  - Note : Sans heures supplémentaires, sans ligne TOTAL (conformité PME)
+- ❌ Rapport Anomalies - **DÉSACTIVÉ** (code commenté dans report_exports.py)
+- ❌ Rapport Solde Congés - **DÉSACTIVÉ** (code commenté dans report_exports.py, lien commenté dans leave_report.html)
 
 ---
 
@@ -586,7 +688,7 @@ Le système distingue **3 rôles principaux** :
 ### Exports Désactivés
 - ❌ Export Anomalies : Désactivé (fonctionnalité non utilisée)
 - ❌ Export Solde Congés : Désactivé (fonctionnalité non utilisée)
-- ✅ Export Heures Travaillées : Actif (PDF et Excel)
+- ✅ Export Heures Travaillées : Actif (Excel uniquement dans l'interface)
 
 ### Interface Utilisateur
 - **Framework CSS :** TailwindCSS (pas Bootstrap)
@@ -603,25 +705,115 @@ Le système distingue **3 rôles principaux** :
 
 ## 🎯 Résumé des Fonctionnalités Actives
 
-### ✅ Fonctionnalités Actives
-- Pointage entrée/sortie avec calcul automatique
-- Gestion des demandes de congés
-- Workflow de validation à deux niveaux (Manager → RH)
-- Tableaux de bord par rôle
-- Gestion RH complète (utilisateurs, départements, horaires)
-- Export rapport heures travaillées (PDF/Excel)
-- Désactivation/Réactivation d'utilisateurs
-- Suppression conditionnelle d'utilisateurs
+### ✅ Fonctionnalités Actives (État Fonctionnel Actuel)
+
+#### 📍 Pointage
+- ✅ Pointage entrée/sortie avec calcul automatique des heures travaillées
+- ✅ Validation GPS avec calcul de distance (formule Haversine)
+- ✅ Validation de zone autorisée (rayon 200m par défaut)
+- ✅ Vérification de précision GPS (max 100m)
+- ✅ Mode démo / Fallback automatique si GPS indisponible
+- ✅ Stockage des coordonnées GPS (latitude, longitude, accuracy, distance)
+
+#### 🏖️ Congés
+- ✅ Gestion des demandes de congés
+- ✅ Workflow de validation à deux niveaux (Manager → RH)
+- ✅ Vérification automatique du solde disponible
+- ✅ Détection des chevauchements
+- ✅ Gestion des jours fériés du Togo (fixes et variables)
+- ✅ Calcul automatique des jours fériés religieux (Pâques, Ascension, Pentecôte)
+- ✅ Déduction automatique du solde après validation RH finale
+
+#### 📧 Notifications
+- ✅ Email de bienvenue automatique avec credentials
+- ✅ Notification d'approbation (manager et RH)
+- ✅ Notification de rejet avec motif
+
+#### 👥 Gestion Utilisateurs
+- ✅ Création automatique avec génération d'ID (EMPXXX)
+- ✅ Génération automatique de mot de passe sécurisé (8 caractères)
+- ✅ Changement de mot de passe obligatoire à la première connexion
+- ✅ Envoi automatique des credentials par email
+- ✅ Gestion RH complète (utilisateurs, départements, horaires)
+- ✅ Désactivation/Réactivation d'utilisateurs
+- ✅ Suppression conditionnelle d'utilisateurs (sans données)
+
+#### 📊 Rapports
+- ✅ Tableaux de bord par rôle
+- ✅ Export rapport heures travaillées :
+  - **Dashboard rapports** : PDF et Excel disponibles
+  - **Rapport heures travaillées** : Excel uniquement dans l'interface
+  - **Backend** : Support complet PDF et Excel (PayrollReportExportView)
 
 ### ❌ Fonctionnalités Désactivées
-- Gestion des anomalies de pointage
-- Export rapport anomalies
-- Export rapport solde congés
-- Gestion des heures supplémentaires
+- ❌ Gestion des anomalies de pointage (module désactivé)
+- ❌ Export rapport anomalies
+- ❌ Export rapport solde congés
+- ❌ Gestion des heures supplémentaires (fonctionnalité non active)
 
 ---
 
-**Document généré le :** Décembre 2024  
+---
+
+## 📊 Structure pour Diagrammes UML
+
+Ce document décrit l'état fonctionnel actuel du système. Il peut être utilisé pour générer les diagrammes suivants :
+
+### Diagrammes de Cas d'Utilisation
+**Acteurs identifiés :**
+- Employé
+- Manager
+- RH (Ressources Humaines)
+- Admin (Superutilisateur Django)
+
+**Cas d'utilisation principaux :**
+1. **Pointage**
+   - Pointer entrée (Employé, Manager, RH)
+   - Pointer sortie (Employé, Manager, RH)
+   - Consulter ses présences (Employé, Manager, RH)
+
+2. **Gestion Congés**
+   - Demander congé (Employé, Manager, RH)
+   - Valider congé manager (Manager)
+   - Valider congé RH (RH)
+   - Consulter ses congés (Employé, Manager, RH)
+
+3. **Gestion Utilisateurs**
+   - Créer utilisateur (RH)
+   - Modifier utilisateur (RH)
+   - Désactiver/Réactiver utilisateur (RH)
+   - Supprimer utilisateur (RH)
+
+4. **Rapports**
+   - Consulter rapport heures travaillées (RH)
+   - Exporter rapport PDF (RH) - Dashboard uniquement
+   - Exporter rapport Excel (RH) - Dashboard et Rapport heures
+
+### Diagrammes de Séquence
+**Workflows détaillés décrits :**
+- Workflow de Pointage (avec validation GPS)
+- Workflow de Demande de Congés (2 niveaux de validation)
+- Workflow de Création d'Utilisateur (avec génération ID et envoi email)
+- Workflow de Validation Congés (Manager → RH)
+
+### Diagrammes d'Activité
+**Processus métier décrits :**
+- Processus de pointage avec validation GPS
+- Processus de demande et validation de congés
+- Processus de création de compte utilisateur
+
+### Diagrammes de Classes
+**Modèles de données documentés :**
+- User, EmployeeProfile, Department, WorkSchedule
+- Attendance (avec champs GPS)
+- LeaveRequest, LeaveType, LeaveBalance, Holiday
+- Relations et contraintes détaillées
+
+---
+
+**Document généré le :** Novembre 2025  
 **Branche :** `full-project-snapshot`  
-**Version du projet :** 1.0
+**Version du projet :** 1.0  
+**Dernière mise à jour :** Novembre 2025  
+**État :** Fonctionnel complet - Prêt pour génération de diagrammes UML
 
